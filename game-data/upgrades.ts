@@ -25,6 +25,7 @@ export interface UpgradeEffects {
   water?: number;
   comfort?: number;
   contentQuality?: number;
+  sponsorPotential?: number;
   maintenance?: number;
   oceanReadiness?: number;
   riskReduction?: number;

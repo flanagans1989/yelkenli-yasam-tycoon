@@ -80,19 +80,21 @@ button {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(2px 2px at 12% 7%,  rgba(240,248,255,1.0) 0%, transparent 100%),
-    radial-gradient(2px 2px at 38% 12%, rgba(240,248,255,0.9) 0%, transparent 100%),
-    radial-gradient(3px 3px at 63% 5%,  rgba(240,248,255,1.0) 0%, transparent 100%),
-    radial-gradient(2px 2px at 79% 17%, rgba(240,248,255,0.8) 0%, transparent 100%),
-    radial-gradient(2px 2px at 52% 3%,  rgba(240,248,255,0.9) 0%, transparent 100%),
-    radial-gradient(3px 3px at 27% 21%, rgba(240,248,255,0.9) 0%, transparent 100%),
-    radial-gradient(2px 2px at 88% 9%,  rgba(200,230,255,0.8) 0%, transparent 100%),
-    radial-gradient(2px 2px at 31% 2%,  rgba(240,248,255,1.0) 0%, transparent 100%),
-    radial-gradient(2px 2px at 71% 15%, rgba(240,248,255,0.7) 0%, transparent 100%),
-    radial-gradient(2px 2px at 7%  19%, rgba(240,248,255,0.9) 0%, transparent 100%),
-    radial-gradient(2px 2px at 45% 25%, rgba(240,248,255,0.6) 0%, transparent 100%),
-    radial-gradient(3px 3px at 95% 4%,  rgba(240,248,255,0.8) 0%, transparent 100%),
-    radial-gradient(2px 2px at 20% 30%, rgba(200,230,255,0.5) 0%, transparent 100%);
+    radial-gradient(3px 3px at 12% 7%,  #ffffff 0%, transparent 100%),
+    radial-gradient(2px 2px at 38% 12%, rgba(240,248,255,0.95) 0%, transparent 100%),
+    radial-gradient(4px 4px at 63% 5%,  #ffffff 0%, transparent 100%),
+    radial-gradient(3px 3px at 79% 17%, rgba(240,248,255,0.9) 0%, transparent 100%),
+    radial-gradient(3px 3px at 52% 3%,  #ffffff 0%, transparent 100%),
+    radial-gradient(4px 4px at 27% 21%, rgba(240,248,255,0.95) 0%, transparent 100%),
+    radial-gradient(2px 2px at 88% 9%,  rgba(200,230,255,0.9) 0%, transparent 100%),
+    radial-gradient(3px 3px at 31% 2%,  #ffffff 0%, transparent 100%),
+    radial-gradient(2px 2px at 71% 15%, rgba(240,248,255,0.85) 0%, transparent 100%),
+    radial-gradient(3px 3px at 7%  19%, rgba(240,248,255,0.9) 0%, transparent 100%),
+    radial-gradient(2px 2px at 45% 25%, rgba(240,248,255,0.7) 0%, transparent 100%),
+    radial-gradient(3px 3px at 95% 4%,  rgba(240,248,255,0.9) 0%, transparent 100%),
+    radial-gradient(2px 2px at 20% 30%, rgba(200,230,255,0.7) 0%, transparent 100%),
+    radial-gradient(3px 3px at 58% 19%, #ffffff 0%, transparent 100%),
+    radial-gradient(2px 2px at 4%  28%, rgba(240,248,255,0.8) 0%, transparent 100%);
   animation: twinkle-stars 3s ease-in-out infinite alternate;
 }
 
@@ -101,10 +103,11 @@ button {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(2px 2px at 55% 10%, rgba(240,248,255,0.7) 0%, transparent 100%),
-    radial-gradient(2px 2px at 3%  14%, rgba(240,248,255,0.8) 0%, transparent 100%),
-    radial-gradient(3px 3px at 84% 23%, rgba(240,248,255,0.9) 0%, transparent 100%),
-    radial-gradient(2px 2px at 66% 28%, rgba(200,230,255,0.6) 0%, transparent 100%);
+    radial-gradient(3px 3px at 55% 10%, rgba(240,248,255,0.9) 0%, transparent 100%),
+    radial-gradient(2px 2px at 3%  14%, #ffffff 0%, transparent 100%),
+    radial-gradient(4px 4px at 84% 23%, rgba(240,248,255,0.95) 0%, transparent 100%),
+    radial-gradient(3px 3px at 66% 28%, rgba(200,230,255,0.8) 0%, transparent 100%),
+    radial-gradient(2px 2px at 42% 8%,  #ffffff 0%, transparent 100%);
   animation: twinkle-stars 5s ease-in-out infinite alternate-reverse;
 }
 
@@ -150,15 +153,16 @@ button {
 /* TEKNE SİLÜETİ */
 .menu-boat-silhouette {
   position: absolute;
-  top: 18%;
+  top: 16%;
   left: 50%;
   transform: translateX(-50%);
-  width: 120px;
-  height: 110px;
+  width: 140px;
+  height: 130px;
   color: #1e9fd4;
   animation: boat-float 4s ease-in-out infinite;
-  filter: drop-shadow(0 0 20px rgba(30,159,212,0.8))
-          drop-shadow(0 8px 16px rgba(30,159,212,0.4));
+  filter: drop-shadow(0 0 24px rgba(30,159,212,1.0))
+          drop-shadow(0 0 48px rgba(30,159,212,0.6))
+          drop-shadow(0 12px 20px rgba(0,0,0,0.5));
 }
 
 @keyframes boat-float {
@@ -196,17 +200,17 @@ button {
 }
 
 .wave-layer.w1 {
-  bottom: 32%;
-  height: 140px;
+  bottom: 40%;
+  height: 180px;
   animation: wave-move 6s linear infinite;
-  opacity: 0.85;
+  opacity: 1.0;
 }
 
 .wave-layer.w2 {
-  bottom: 30%;
-  height: 120px;
+  bottom: 37%;
+  height: 160px;
   animation: wave-move 9s linear infinite reverse;
-  opacity: 0.55;
+  opacity: 0.7;
 }
 
 @keyframes wave-move {
@@ -218,9 +222,14 @@ button {
 .hero-copy {
   position: relative;
   z-index: 2;
-  padding: 24px 20px 40px;
-  background: linear-gradient(180deg, transparent 0%, rgba(8,20,32,0.95) 30%);
+  padding: 0 20px 36px;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(8,20,32,0.7) 10%,
+    rgba(8,20,32,0.97) 28%
+  );
   text-align: center;
+  margin-top: auto;
 }
 
 .hero-copy h1 {

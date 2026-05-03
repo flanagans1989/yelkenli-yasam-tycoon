@@ -24,6 +24,16 @@ type Step =
 
 type Tab = "liman" | "icerik" | "rota" | "tekne" | "kaptan";
 
+interface ContentResult {
+  platform: string;
+  type: string;
+  quality: number;
+  viral: boolean;
+  followersGained: number;
+  creditsGained: number;
+  comment: string;
+}
+
 const skillLabels: Record<string, string> = {
   seamanship: "Denizcilik",
   content: "İçerik",
@@ -56,7 +66,7 @@ function App() {
   const [firstContentDone, setFirstContentDone] = useState(false);
   const [purchasedUpgradeIds, setPurchasedUpgradeIds] = useState<string[]>([]);
 
-  // New State variables for Sea Mode MVP
+  // Sea Mode MVP states
   const [currentLocationName, setCurrentLocationName] = useState("");
   const [worldProgress, setWorldProgress] = useState(0);
   const [energy, setEnergy] = useState(100);
@@ -70,6 +80,11 @@ function App() {
   const [voyageTotalDays, setVoyageTotalDays] = useState(0);
   const [voyageDaysRemaining, setVoyageDaysRemaining] = useState(0);
   const [currentSeaEvent, setCurrentSeaEvent] = useState("");
+
+  // Content V2 States
+  const [selectedPlatformId, setSelectedPlatformId] = useState<string | null>(null);
+  const [selectedContentType, setSelectedContentType] = useState<string | null>(null);
+  const [contentResult, setContentResult] = useState<ContentResult | null>(null);
 
   const [hasSave, setHasSave] = useState(false);
   const [saveBoatName, setSaveBoatName] = useState("");
@@ -102,9 +117,9 @@ function App() {
     }
   }, []);
 
-  // Save game when hub states change
+  // Save game when hub/sea states change
   useEffect(() => {
-    if (step === "HUB" || step === "SEA_MODE" || step === "ARRIVAL_SCREEN") {
+    if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
       const saveObj = {
         profileIndex,
         marinaIndex,
@@ -130,6 +145,10 @@ function App() {
         voyageDaysRemaining,
         currentSeaEvent,
         
+        selectedPlatformId,
+        selectedContentType,
+        contentResult,
+        
         hasSave: true,
       };
       localStorage.setItem("yelkenli_save", JSON.stringify(saveObj));
@@ -139,7 +158,8 @@ function App() {
   }, [
     step, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone, 
     logs, purchasedUpgradeIds, activeTab, currentLocationName, worldProgress, energy, water, 
-    fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining, currentSeaEvent
+    fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining, 
+    currentSeaEvent, selectedPlatformId, selectedContentType, contentResult
   ]);
 
   // Flow handlers
@@ -166,6 +186,10 @@ function App() {
     setBoatCondition(100);
     setCompletedRouteIds([]);
     setCurrentRouteId("greek_islands");
+    
+    setContentResult(null);
+    setSelectedPlatformId(null);
+    setSelectedContentType(null);
     
     setStep("HUB");
     setActiveTab("liman");
@@ -197,6 +221,10 @@ function App() {
         setVoyageTotalDays(parsed.voyageTotalDays ?? 0);
         setVoyageDaysRemaining(parsed.voyageDaysRemaining ?? 0);
         setCurrentSeaEvent(parsed.currentSeaEvent ?? "");
+
+        setSelectedPlatformId(parsed.selectedPlatformId ?? null);
+        setSelectedContentType(parsed.selectedContentType ?? null);
+        setContentResult(parsed.contentResult ?? null);
 
         setStep(parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB");
         setActiveTab(parsed.activeTab ?? "liman");
@@ -398,25 +426,6 @@ function App() {
     </div>
   );
 
-  const handleProduceContent = (platformId?: string) => {
-    let gainCredits = 300;
-    let gainFollowers = 150;
-    let logMsg = "İçerik üretildi.";
-
-    if (platformId === "clipTok") {
-      gainFollowers = 250;
-      logMsg = "ClipTok için viral içerik üretildi!";
-    } else if (platformId === "viewTube") {
-      gainCredits = 500;
-      logMsg = "ViewTube için detaylı içerik üretildi!";
-    }
-
-    setCredits(prev => prev + gainCredits);
-    setFollowers(prev => prev + gainFollowers);
-    setFirstContentDone(true);
-    setLogs(prev => [`${logMsg} +${gainCredits} TL, +${gainFollowers} Takipçi.`, ...prev.slice(0, 4)]);
-  };
-
   const handleStartVoyage = () => {
     if (!currentRoute) return;
     
@@ -429,6 +438,7 @@ function App() {
     setCurrentSeaEvent("Rotaya çıkıldı. Rüzgar kolayına.");
     setLogs(prev => [`${currentRoute.name} rotasına çıkıldı.`, ...prev.slice(0, 4)]);
     setStep("SEA_MODE");
+    setActiveTab("liman"); // Switch back to sea mode view
   };
 
   const handleBuyUpgrade = (upgradeId: string) => {
@@ -496,6 +506,97 @@ function App() {
     setActiveTab("liman");
   };
 
+  const handleProduceContentV2 = () => {
+    if (!selectedPlatformId || !selectedContentType) return;
+
+    let quality = 40;
+    
+    // Skill bonus
+    quality += (selectedProfile.skills.content || 0) * 5;
+    
+    // Platform match
+    const platform = SOCIAL_PLATFORMS.find(p => p.id === selectedPlatformId);
+    if (platform && platform.bestContentTypes.includes(selectedContentType as any)) {
+      quality += 10;
+    }
+    
+    // Custom specific type logic matching user request
+    const isViewTubeMatch = selectedPlatformId === "viewTube" && ["boat_tour", "maintenance_upgrade", "sailing_vlog"].includes(selectedContentType);
+    const isClipTokMatch = selectedPlatformId === "clipTok" && ["nature_bay", "sailing_vlog", "storm_vlog"].includes(selectedContentType);
+    const isInstaSeaMatch = selectedPlatformId === "instaSea" && ["marina_life", "city_trip", "nature_bay"].includes(selectedContentType);
+    const isFacePortMatch = selectedPlatformId === "facePort" && ["marina_life", "boat_tour", "ocean_diary"].includes(selectedContentType);
+    
+    if (isViewTubeMatch || isClipTokMatch || isInstaSeaMatch || isFacePortMatch) {
+      quality += 10;
+    }
+
+    // Upgrades bonus
+    const upgradeQuality = purchasedUpgradeIds.reduce((tot, id) => {
+      const u = BOAT_UPGRADES.find(x => x.id === id);
+      return tot + (u?.effects.contentQuality || 0);
+    }, 0);
+    quality += upgradeQuality;
+
+    // Location/Route bonus
+    if (step === "SEA_MODE" && currentRoute) {
+       if (currentRoute.contentPotential === "very_high") quality += 15;
+       else if (currentRoute.contentPotential === "high") quality += 10;
+       else if (currentRoute.contentPotential === "medium_high") quality += 5;
+    } else {
+       quality += 5;
+    }
+
+    // Randomizer
+    quality += Math.floor(Math.random() * 26) - 10;
+    quality = Math.max(0, Math.min(100, quality));
+
+    // Viral Chance
+    let viralChance = 0;
+    if (quality >= 85) viralChance = 0.25;
+    else if (quality >= 70) viralChance = 0.10;
+    else if (quality >= 40) viralChance = 0.03;
+
+    const isViral = Math.random() < viralChance;
+
+    let gainFollowers = quality * 5;
+    let gainCredits = quality * 8;
+
+    if (selectedPlatformId === "viewTube") { gainCredits *= 1.5; gainFollowers *= 1.0; }
+    if (selectedPlatformId === "clipTok") { gainCredits *= 0.8; gainFollowers *= 1.8; }
+    if (selectedPlatformId === "instaSea") { gainCredits *= 1.1; gainFollowers *= 1.3; }
+    if (selectedPlatformId === "facePort") { gainCredits *= 1.0; gainFollowers *= 1.1; }
+
+    if (isViral) {
+      gainFollowers *= 3;
+      gainCredits *= 2;
+    }
+
+    gainFollowers = Math.floor(gainFollowers);
+    gainCredits = Math.floor(gainCredits);
+
+    let comment = "İzleyici bu hikayeyi sevdi.";
+    if (isViral) comment = "Algoritma bu içeriği öne çıkardı. Viral oldun!";
+    else if (quality < 40) comment = "Görsel kalite iyi ama hikaye zayıf kaldı.";
+    else if (quality >= 70) comment = "Sponsorlar bu tarzı fark etmeye başladı.";
+
+    setContentResult({
+      platform: platform?.name || "Bilinmeyen",
+      type: selectedContentType,
+      quality,
+      viral: isViral,
+      followersGained: gainFollowers,
+      creditsGained: gainCredits,
+      comment
+    });
+
+    setCredits(prev => prev + gainCredits);
+    setFollowers(prev => prev + gainFollowers);
+    setFirstContentDone(true);
+
+    const logMsg = `${platform?.name} platformunda içerik yayınlandı: +${gainFollowers} Takipçi, +${gainCredits} TL.`;
+    setLogs(prev => [logMsg, ...prev.slice(0, 4)]);
+  };
+
   const renderLimanTab = () => (
     <div className="tab-content fade-in">
       <div className="hub-center-visual">
@@ -517,11 +618,11 @@ function App() {
       </div>
 
       {!firstContentDone ? (
-        <button className="quest-card pulse" onClick={() => handleProduceContent()}>
+        <button className="quest-card pulse" onClick={() => setActiveTab("icerik")}>
           <div className="quest-icon">🎬</div>
           <div className="quest-texts">
             <h3>İlk içeriğini üret</h3>
-            <p>Ödül: +500 TL, +250 Takipçi</p>
+            <p>İçerik Stüdyosuna Git</p>
           </div>
         </button>
       ) : (
@@ -541,35 +642,120 @@ function App() {
     </div>
   );
 
-  const renderIcerikTab = () => (
-    <div className="tab-content fade-in">
-      <span className="card-label">Sosyal Medya Stüdyosu</span>
-      <h2>İçerik Üret</h2>
-      <p className="tab-desc">Doğru platformda doğru içerik paylaşarak büyü.</p>
-
-      <div className="platform-grid">
-        {SOCIAL_PLATFORMS.filter(p => p.mvpStatus === "active").map(platform => (
-          <button key={platform.id} className="platform-card" onClick={() => handleProduceContent(platform.id)}>
-            <div className="platform-header">
-              <strong>{platform.name}</strong>
-              <span>{platform.id === "viewTube" ? "💰+" : platform.id === "clipTok" ? "👥+" : ""}</span>
-            </div>
-            <small>{platform.tagline}</small>
-          </button>
-        ))}
+  const renderSeaModeTab = () => (
+    <div className="sea-mode-content fade-in">
+      <div className="sea-visual">
+        <div className="boat-animation">⛵</div>
       </div>
-
-      <div className="content-types-list">
-        <h3>İçerik Türleri</h3>
-        <div className="type-pills">
-          <span>Marina Yaşamı</span>
-          <span>Tekne Turu</span>
-          <span>Seyir Vlogu</span>
-          <span>Bakım / Upgrade</span>
+      
+      <div className="sea-status-card">
+        <h3 className="days-left">{voyageDaysRemaining} Gün Kaldı</h3>
+        <div className="progress-bar-container">
+          <div className="progress-fill" style={{width: `${(1 - (voyageDaysRemaining / voyageTotalDays)) * 100}%`}}></div>
         </div>
+        <p className="sea-event-text">{currentSeaEvent}</p>
       </div>
+      
+      <div className="resource-grid">
+        <div className="res-card"><span>⚡ Enerji</span><strong>{energy}%</strong></div>
+        <div className="res-card"><span>💧 Su</span><strong>{water}%</strong></div>
+        <div className="res-card"><span>⛽ Yakıt</span><strong>{fuel}%</strong></div>
+        <div className="res-card"><span>🔧 Durum</span><strong>{boatCondition}%</strong></div>
+      </div>
+      
+      <button className="btn-primary large mt-20 pulse-btn" onClick={advanceDay}>Bir Gün İlerle</button>
     </div>
   );
+
+  const renderIcerikTab = () => {
+    const CONTENT_TYPES = [
+      { id: "marina_life", label: "Marina Yaşamı" },
+      { id: "boat_tour", label: "Tekne Turu" },
+      { id: "maintenance_upgrade", label: "Bakım / Upgrade" },
+      { id: "city_trip", label: "Şehir Gezisi" },
+      { id: "nature_bay", label: "Koy / Doğa" },
+      { id: "sailing_vlog", label: "Seyir Vlogu" },
+    ];
+  
+    if (step === "SEA_MODE") {
+      CONTENT_TYPES.push({ id: "ocean_diary", label: "Deniz Günlüğü" });
+      CONTENT_TYPES.push({ id: "storm_vlog", label: "Fırtına / Olay" });
+    }
+
+    return (
+      <div className="tab-content fade-in">
+        <div className="content-stats-header">
+           <div className="stat-box"><span>Takipçi</span><strong>{followers.toLocaleString("tr-TR")}</strong></div>
+           <div className="stat-box"><span>Bütçe</span><strong>{credits.toLocaleString("tr-TR")} TL</strong></div>
+        </div>
+        
+        {!contentResult ? (
+          <>
+            <span className="card-label">1. Platform Seç</span>
+            <div className="platform-grid">
+              {SOCIAL_PLATFORMS.filter(p => p.mvpStatus === "active").map(platform => (
+                <button 
+                  key={platform.id} 
+                  className={`platform-card ${selectedPlatformId === platform.id ? "active" : ""}`} 
+                  onClick={() => setSelectedPlatformId(platform.id)}
+                >
+                  <div className="platform-header">
+                    <strong>{platform.name}</strong>
+                  </div>
+                  <small>{platform.tagline}</small>
+                </button>
+              ))}
+            </div>
+  
+            <span className="card-label mt-20">2. İçerik Türü Seç</span>
+            <div className="type-pills">
+              {CONTENT_TYPES.map(type => (
+                <button 
+                  key={type.id} 
+                  className={`type-pill ${selectedContentType === type.id ? "active" : ""}`}
+                  onClick={() => setSelectedContentType(type.id)}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+  
+            <button 
+              className={`btn-primary large mt-20 ${(!selectedPlatformId || !selectedContentType) ? "disabled" : ""}`} 
+              onClick={handleProduceContentV2}
+            >
+              🎬 İçerik Üret
+            </button>
+          </>
+        ) : (
+          <div className="content-result-card fade-in">
+             <div className="result-header">
+                <h2>Yayınlandı!</h2>
+                {contentResult.viral && <span className="viral-badge">🔥 VİRAL</span>}
+             </div>
+             
+             <div className="result-details">
+               <div className="res-row"><span>Platform:</span> <strong>{contentResult.platform}</strong></div>
+               <div className="res-row"><span>Kalite Skoru:</span> <strong>{contentResult.quality} / 100</strong></div>
+             </div>
+             
+             <div className="result-gains">
+               <div className="gain-box followers"><span>+{contentResult.followersGained.toLocaleString("tr-TR")}</span><small>Takipçi</small></div>
+               <div className="gain-box credits"><span>+{contentResult.creditsGained.toLocaleString("tr-TR")} TL</span><small>Kredi</small></div>
+             </div>
+             
+             <p className="result-comment">"{contentResult.comment}"</p>
+             
+             <button className="btn-secondary full-width mt-20" onClick={() => {
+               setContentResult(null);
+               setSelectedPlatformId(null);
+               setSelectedContentType(null);
+             }}>Yeni İçerik Üret</button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderRotaTab = () => (
     <div className="tab-content fade-in">
@@ -589,7 +775,9 @@ function App() {
             <div><span>İçerik:</span> <strong>{currentRoute.contentPotential.toUpperCase()}</strong></div>
           </div>
 
-          <button className="btn-primary full-width mt-20" onClick={handleStartVoyage}>Rotaya Çık</button>
+          <button className="btn-primary full-width mt-20" onClick={handleStartVoyage} disabled={step === "SEA_MODE"}>
+            {step === "SEA_MODE" ? "Zaten Denizdesin" : "Rotaya Çık"}
+          </button>
         </article>
       ) : (
         <p>Tüm rotalar tamamlandı!</p>
@@ -681,78 +869,56 @@ function App() {
     </div>
   );
 
-  const renderHub = () => (
-    <div className="hub-wrapper fade-in">
-      <header className="hub-topbar">
-        <div className="hub-boat-info">
-          <h2>{boatName}</h2>
-          <small>{selectedBoat.name}</small>
-        </div>
-        <div className="hub-stats">
-          <div className="stat"><span>💰</span> {credits.toLocaleString("tr-TR")}</div>
-          <div className="stat"><span>👥</span> {followers.toLocaleString("tr-TR")}</div>
-        </div>
-      </header>
+  const renderMainGame = () => {
+    return (
+      <div className={step === "SEA_MODE" ? "sea-mode-wrapper fade-in" : "hub-wrapper fade-in"}>
+        {step === "SEA_MODE" ? (
+          <header className="sea-topbar">
+            <h2>{boatName}</h2>
+            <p>{currentRoute?.name}: {currentRoute?.from} ➔ {currentRoute?.to}</p>
+          </header>
+        ) : (
+          <header className="hub-topbar">
+            <div className="hub-boat-info">
+              <h2>{boatName}</h2>
+              <small>{selectedBoat.name}</small>
+            </div>
+            <div className="hub-stats">
+              <div className="stat"><span>💰</span> {credits.toLocaleString("tr-TR")}</div>
+              <div className="stat"><span>👥</span> {followers.toLocaleString("tr-TR")}</div>
+            </div>
+          </header>
+        )}
 
-      <main className="hub-content">
-        {activeTab === "liman" && renderLimanTab()}
-        {activeTab === "icerik" && renderIcerikTab()}
-        {activeTab === "rota" && renderRotaTab()}
-        {activeTab === "tekne" && renderTekneTab()}
-        {activeTab === "kaptan" && renderKaptanTab()}
-      </main>
+        <main className={step === "SEA_MODE" ? "sea-content" : "hub-content"}>
+          {activeTab === "liman" && step === "HUB" && renderLimanTab()}
+          {activeTab === "liman" && step === "SEA_MODE" && renderSeaModeTab()}
+          {activeTab === "icerik" && renderIcerikTab()}
+          {activeTab === "rota" && renderRotaTab()}
+          {activeTab === "tekne" && renderTekneTab()}
+          {activeTab === "kaptan" && renderKaptanTab()}
+        </main>
 
-      <nav className="bottom-tab-bar">
-        <button className={`tab ${activeTab === "liman" ? "active" : ""}`} onClick={() => setActiveTab("liman")}>
-          <span>🏠</span> Liman
-        </button>
-        <button className={`tab ${activeTab === "icerik" ? "active" : ""}`} onClick={() => setActiveTab("icerik")}>
-          <span>📹</span> İçerik
-        </button>
-        <button className={`tab ${activeTab === "rota" ? "active" : ""}`} onClick={() => setActiveTab("rota")}>
-          <span>🗺️</span> Rota
-        </button>
-        <button className={`tab ${activeTab === "tekne" ? "active" : ""}`} onClick={() => setActiveTab("tekne")}>
-          <span>🔧</span> Tekne
-        </button>
-        <button className={`tab ${activeTab === "kaptan" ? "active" : ""}`} onClick={() => setActiveTab("kaptan")}>
-          <span>👤</span> Kaptan
-        </button>
-      </nav>
-    </div>
-  );
-
-  const renderSeaMode = () => (
-    <div className="sea-mode-wrapper fade-in">
-      <header className="sea-topbar">
-        <h2>{boatName}</h2>
-        <p>{currentRoute?.name}: {currentRoute?.from} ➔ {currentRoute?.to}</p>
-      </header>
-      
-      <main className="sea-content">
-        <div className="sea-visual">
-          <div className="boat-animation">⛵</div>
-        </div>
-        
-        <div className="sea-status-card">
-          <h3 className="days-left">{voyageDaysRemaining} Gün Kaldı</h3>
-          <div className="progress-bar-container">
-            <div className="progress-fill" style={{width: `${(1 - (voyageDaysRemaining / voyageTotalDays)) * 100}%`}}></div>
-          </div>
-          <p className="sea-event-text">{currentSeaEvent}</p>
-        </div>
-        
-        <div className="resource-grid">
-          <div className="res-card"><span>⚡ Enerji</span><strong>{energy}%</strong></div>
-          <div className="res-card"><span>💧 Su</span><strong>{water}%</strong></div>
-          <div className="res-card"><span>⛽ Yakıt</span><strong>{fuel}%</strong></div>
-          <div className="res-card"><span>🔧 Durum</span><strong>{boatCondition}%</strong></div>
-        </div>
-        
-        <button className="btn-primary large mt-20 pulse-btn" onClick={advanceDay}>Bir Gün İlerle</button>
-      </main>
-    </div>
-  );
+        <nav className="bottom-tab-bar">
+          <button className={`tab ${activeTab === "liman" ? "active" : ""}`} onClick={() => setActiveTab("liman")}>
+            <span>{step === "SEA_MODE" ? "🌊" : "🏠"}</span> {step === "SEA_MODE" ? "Deniz" : "Liman"}
+          </button>
+          <button className={`tab ${activeTab === "icerik" ? "active" : ""}`} onClick={() => setActiveTab("icerik")}>
+            <span>📹</span> İçerik
+          </button>
+          <button className={`tab ${activeTab === "rota" ? "active" : ""}`} onClick={() => setActiveTab("rota")}>
+            <span>🗺️</span> Rota
+          </button>
+          <button className={`tab ${activeTab === "tekne" ? "active" : ""}`} onClick={() => setActiveTab("tekne")}>
+            <span>🔧</span> Tekne
+          </button>
+          <button className={`tab ${activeTab === "kaptan" ? "active" : ""}`} onClick={() => setActiveTab("kaptan")}>
+            <span>👤</span> Kaptan
+          </button>
+        </nav>
+      </div>
+    );
+  };
 
   const renderArrivalScreen = () => (
     <div className="selection-screen fade-in cinematic-bg" style={{justifyContent: 'center'}}>
@@ -773,8 +939,7 @@ function App() {
       {step === "PICK_MARINA" && renderMarinaSelection()}
       {step === "PICK_BOAT" && renderBoatSelection()}
       {step === "NAME_BOAT" && renderBoatNaming()}
-      {step === "HUB" && renderHub()}
-      {step === "SEA_MODE" && renderSeaMode()}
+      {(step === "HUB" || step === "SEA_MODE") && renderMainGame()}
       {step === "ARRIVAL_SCREEN" && renderArrivalScreen()}
     </div>
   );

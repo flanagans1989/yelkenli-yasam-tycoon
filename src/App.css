@@ -200,8 +200,8 @@ button {
 /* DALGALAR */
 .wave-layer {
   position: absolute;
-  left: -10%;
-  width: 120%;
+  left: 0;
+  width: 200%;
 }
 
 .wave-layer.w1 {
@@ -220,7 +220,7 @@ button {
 
 @keyframes wave-move {
   0%   { transform: translateX(0); }
-  100% { transform: translateX(-20%); }
+  100% { transform: translateX(-50%); }
 }
 
 /* İÇERİK KARTI (alt) */

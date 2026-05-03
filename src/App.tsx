@@ -26,18 +26,31 @@ const skillLabels: Record<string, string> = {
   lifestyle: "Yaşam",
 };
 
+// Basit ikon map
+const profileIcons: Record<string, string> = {
+  old_captain: "⚓",
+  content_creator: "📹",
+  technical_master: "🔧",
+  adventure_traveler: "🗺️",
+  social_entrepreneur: "💼",
+  family_lifestyle: "👨‍👩‍👧",
+};
+
 function App() {
   const [step, setStep] = useState<Step>("MAIN_MENU");
   const [profileIndex, setProfileIndex] = useState(0);
   const [marinaIndex, setMarinaIndex] = useState(0);
   const [boatIndex, setBoatIndex] = useState(0);
   const [boatName, setBoatName] = useState("");
+  
+  const [credits, setCredits] = useState(0);
+  const [followers, setFollowers] = useState(0);
+  const [logs, setLogs] = useState<string[]>([]);
+  const [firstContentDone, setFirstContentDone] = useState(false);
 
   const selectedProfile: PlayerProfile = PLAYER_PROFILES[profileIndex];
   const selectedMarina: StartingMarina = STARTING_MARINAS[marinaIndex];
   const selectedBoat: StartingBoat = STARTING_BOATS[boatIndex];
-
-  const remainingBudget = STARTING_BUDGET - selectedBoat.purchaseCost;
 
   const firstRealRoute = WORLD_ROUTES.find((route) => route.order === 2);
 
@@ -51,122 +64,120 @@ function App() {
       alert("Lütfen teknenize bir isim verin.");
       return;
     }
+    setCredits(STARTING_BUDGET - selectedBoat.purchaseCost);
+    setFollowers(0);
+    setLogs(["Kariyer başladı. Limana giriş yapıldı."]);
     setStep("HUB");
   };
 
+  const nextProfile = () => setProfileIndex((i) => (i + 1) % PLAYER_PROFILES.length);
+  const prevProfile = () => setProfileIndex((i) => (i - 1 + PLAYER_PROFILES.length) % PLAYER_PROFILES.length);
+
+  const renderStepHeader = (current: number, title: string) => (
+    <div className="progress-header fade-in">
+      <div className="progress-indicator">
+        {current}/5
+      </div>
+      <h2>{title}</h2>
+    </div>
+  );
+
   const renderMainMenu = () => (
-    <div className="menu-container fade-in">
-      <div className="hero-copy centered">
-        <p className="eyebrow">Okyanus Tycoon Simülasyonu</p>
-        <h1>Yelkenli Yaşam</h1>
-        <p className="hero-text">
-          Denizlere açılmaya, içerik üretmeye ve dünyayı keşfetmeye hazır mısın?
-        </p>
+    <div className="menu-container fade-in cinematic-bg">
+      <div className="hero-copy centered transparent-card">
+        <h1>Yelkenli Yaşam Tycoon</h1>
+        <p className="hero-text">Türkiye’den dünya turuna</p>
         <div className="menu-actions">
           <button className="btn-primary large" onClick={startNewGame}>
-            Yeni Oyun
+            ⚓ Yeni Oyun
           </button>
           <button className="btn-secondary large disabled" title="Çok Yakında">
-            Ayarlar
+            📖 Devam Et
           </button>
         </div>
       </div>
     </div>
   );
 
-  const renderProfileSelection = () => (
-    <div className="selection-screen fade-in">
-      <div className="screen-header">
-        <h1>Kaptanını Seç</h1>
-        <p>Her profilin kendine has yetenekleri ve başlangıç bonusları vardır.</p>
-      </div>
+  const renderProfileSelection = () => {
+    // Get top 3 skills
+    const topSkills = Object.entries(selectedProfile.skills)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
 
-      <div className="selection-layout">
-        <div className="list-panel">
-          {PLAYER_PROFILES.map((profile, index) => (
-            <button
-              key={profile.id}
-              className={index === profileIndex ? "choice active" : "choice"}
-              onClick={() => setProfileIndex(index)}
-            >
-              <strong>{profile.name}</strong>
-              <small>{profile.tagline}</small>
-            </button>
-          ))}
-        </div>
-
-        <div className="detail-panel">
-          <article className="detail-card full-height">
-            <span className="card-label">Profil Detayı</span>
+    return (
+      <div className="selection-screen fade-in">
+        {renderStepHeader(1, "Kaptanını Seç")}
+        
+        <div className="profile-carousel">
+          <button className="nav-btn" onClick={prevProfile}>◀</button>
+          
+          <article className="profile-card big-card fade-in" key={selectedProfile.id}>
+            <div className="profile-icon">{profileIcons[selectedProfile.id] || "👤"}</div>
             <h2>{selectedProfile.name}</h2>
-            <p>{selectedProfile.story}</p>
-            <div className="skills">
-              {Object.entries(selectedProfile.skills).map(([key, value]) => (
-                <div key={key}>
-                  <span>{skillLabels[key] ?? key}</span>
-                  <strong>{value}/5</strong>
+            <p className="tagline">"{selectedProfile.tagline}"</p>
+            
+            <div className="skills-mini">
+              {topSkills.map(([k, v]) => (
+                <div key={k} className="skill-row">
+                  <span>{skillLabels[k] ?? k}</span>
+                  <div className="skill-bar"><div className="skill-fill" style={{width: `${v*20}%`}}></div></div>
                 </div>
               ))}
             </div>
-            <div className="step-actions">
-              <button className="btn-secondary" onClick={() => setStep("MAIN_MENU")}>
-                Geri
-              </button>
-              <button className="btn-primary" onClick={goToMarina}>
-                Devam Et
-              </button>
+
+            <div className="pros-cons">
+              <div className="pro"><strong>+</strong> {selectedProfile.advantage.title}</div>
+              <div className="con"><strong>-</strong> {selectedProfile.disadvantage.title}</div>
             </div>
           </article>
+          
+          <button className="nav-btn" onClick={nextProfile}>▶</button>
+        </div>
+
+        <div className="step-actions centered-actions mt-20">
+          <button className="btn-secondary" onClick={() => setStep("MAIN_MENU")}>Geri</button>
+          <button className="btn-primary large" onClick={goToMarina}>Limanlara Bak</button>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderMarinaSelection = () => (
     <div className="selection-screen fade-in">
-      <div className="screen-header">
-        <h1>Başlangıç Marinası</h1>
-        <p>Hangi limandan yola çıkacaksın? Her bölgenin avantajları farklıdır.</p>
-      </div>
+      {renderStepHeader(2, "Başlangıç Marinası")}
 
-      <div className="selection-layout">
-        <div className="list-panel">
-          {STARTING_MARINAS.map((marina, index) => (
-            <button
-              key={marina.id}
-              className={index === marinaIndex ? "choice active" : "choice"}
-              onClick={() => setMarinaIndex(index)}
-            >
-              <strong>{marina.name}</strong>
-              <small>{marina.tagline}</small>
-            </button>
-          ))}
+      <div className="marina-layout">
+        <div className="map-area">
+          {STARTING_MARINAS.map((marina, idx) => {
+            const isRecommended = marina.bestProfiles.includes(selectedProfile.id);
+            return (
+              <button 
+                key={marina.id} 
+                className={`map-dot ${idx === marinaIndex ? "active" : ""}`}
+                onClick={() => setMarinaIndex(idx)}
+              >
+                <div className="dot"></div>
+                <span>{marina.name} {isRecommended && "⭐"}</span>
+              </button>
+            );
+          })}
         </div>
 
-        <div className="detail-panel">
-          <article className="detail-card full-height">
-            <span className="card-label">Marina Detayı</span>
-            <h2>{selectedMarina.name}</h2>
-            <p>{selectedMarina.description}</p>
-            <div className="info-list">
-              <div>
-                <span>Bonus</span>
-                <strong>{selectedMarina.bonus.title}</strong>
-              </div>
-              <div>
-                <span>Dezavantaj</span>
-                <strong>{selectedMarina.disadvantage.title}</strong>
-              </div>
-            </div>
-            <div className="step-actions">
-              <button className="btn-secondary" onClick={() => setStep("PICK_PROFILE")}>
-                Geri
-              </button>
-              <button className="btn-primary" onClick={goToBoat}>
-                Limanı Seç
-              </button>
-            </div>
-          </article>
+        <div className="marina-bottom-sheet slide-up">
+          <h2>{selectedMarina.name} <span className="region-badge">{selectedMarina.region}</span></h2>
+          <p>"{selectedMarina.tagline}"</p>
+          
+          <div className="marina-details">
+            <div className="detail-box"><strong>Bonus:</strong> {selectedMarina.bonus.title}</div>
+            <div className="detail-box warning"><strong>Dezavantaj:</strong> {selectedMarina.disadvantage.title}</div>
+          </div>
+          <p className="route-hint">İlk Rotalar: {selectedMarina.firstRouteOptions.join(", ")}</p>
+
+          <div className="step-actions">
+            <button className="btn-secondary" onClick={() => setStep("PICK_PROFILE")}>Geri</button>
+            <button className="btn-primary" onClick={goToBoat}>Tekne Seçimine Geç</button>
+          </div>
         </div>
       </div>
     </div>
@@ -174,152 +185,150 @@ function App() {
 
   const renderBoatSelection = () => (
     <div className="selection-screen fade-in">
-      <div className="screen-header">
-        <h1>Tekneni Seç</h1>
-        <p>Bütçene ve hedeflerine uygun tekneyi belirle. Kalan kredi ekipman için kullanılacak.</p>
-      </div>
+      {renderStepHeader(3, "Tekneni Seç")}
 
-      <div className="selection-layout">
-        <div className="list-panel">
-          {STARTING_BOATS.map((boat, index) => (
-            <button
-              key={boat.id}
-              className={index === boatIndex ? "choice active" : "choice"}
-              onClick={() => setBoatIndex(index)}
+      <div className="boat-layout">
+        <div className="boat-tabs">
+          {STARTING_BOATS.map((boat, idx) => (
+            <button 
+              key={boat.id} 
+              className={`boat-tab ${idx === boatIndex ? "active" : ""}`}
+              onClick={() => setBoatIndex(idx)}
             >
-              <strong>{boat.name}</strong>
-              <small>{boat.lengthFt} ft · {boat.purchaseCost.toLocaleString("tr-TR")} Kredi</small>
+              {boat.lengthFt} ft
             </button>
           ))}
         </div>
 
-        <div className="detail-panel">
-          <article className="detail-card full-height">
-            <span className="card-label">Tekne Detayı</span>
-            <h2>{selectedBoat.name}</h2>
-            <p>{selectedBoat.description}</p>
-            <div className="info-list">
-              <div>
-                <span>Avantaj</span>
-                <strong>{selectedBoat.advantage.title}</strong>
-              </div>
-              <div>
-                <span>Kalan Bütçe</span>
-                <strong>{remainingBudget.toLocaleString("tr-TR")} Kredi</strong>
-              </div>
-            </div>
-            <div className="step-actions">
-              <button className="btn-secondary" onClick={() => setStep("PICK_MARINA")}>
-                Geri
-              </button>
-              <button className="btn-primary" onClick={goToNaming}>
-                Tekneyi Al
-              </button>
-            </div>
-          </article>
-        </div>
+        <article className="boat-card big-card fade-in" key={selectedBoat.id}>
+          <div className="boat-silhouette">⛵</div>
+          <h2>{selectedBoat.name}</h2>
+          <p className="tagline">"{selectedBoat.tagline}"</p>
+          
+          <div className="budget-calculator">
+            <div className="budget-row"><span>Başlangıç Bütçesi:</span> <span>{STARTING_BUDGET.toLocaleString("tr-TR")} TL</span></div>
+            <div className="budget-row"><span>Tekne Maliyeti:</span> <span>- {selectedBoat.purchaseCost.toLocaleString("tr-TR")} TL</span></div>
+            <div className="budget-row total"><span>Kalan Bütçe:</span> <span>{(STARTING_BUDGET - selectedBoat.purchaseCost).toLocaleString("tr-TR")} TL</span></div>
+          </div>
+
+          <div className="pros-cons">
+            <div className="pro"><strong>+</strong> {selectedBoat.advantage.title}</div>
+            <div className="con"><strong>-</strong> {selectedBoat.disadvantage.title}</div>
+          </div>
+
+          <div className="step-actions mt-20">
+            <button className="btn-secondary" onClick={() => setStep("PICK_MARINA")}>Geri</button>
+            <button className="btn-primary" onClick={goToNaming}>Bu Tekneyi Al</button>
+          </div>
+        </article>
       </div>
     </div>
   );
 
+  const generateRandomName = () => {
+    const names = ["Mavi Rüya", "Poyraz", "Rüzgar Gülü", "Derin Mavi", "Özgürlük", "Kuzey Yıldızı", "Ege Ruhu", "Atlantis"];
+    setBoatName(names[Math.floor(Math.random() * names.length)]);
+  };
+
   const renderBoatNaming = () => (
-    <div className="menu-container fade-in">
-      <div className="hero-copy centered naming-box">
-        <span className="card-label">Son Hazırlık</span>
-        <h1>Tekneye İsim Ver</h1>
-        <p>Yeni hayatına eşlik edecek yelkenlinin adı ne olsun?</p>
+    <div className="selection-screen fade-in">
+      {renderStepHeader(4, "Son Hazırlık")}
+      
+      <div className="naming-box centered transparent-card">
+        <div className="boat-silhouette big">⛵</div>
+        <h2>Tekneye İsim Ver</h2>
+        <p>Denizlerdeki yeni yuvana bir isim koy.</p>
         
         <div className="naming-input-group">
           <input
             type="text"
-            placeholder="Mavi Yolcu..."
+            placeholder="Teknenin adını yaz..."
             value={boatName}
             onChange={(e) => setBoatName(e.target.value)}
             autoFocus
           />
         </div>
+        
+        <button className="btn-text" onClick={generateRandomName}>🎲 Rastgele İsim Öner</button>
 
-        <div className="menu-actions">
-          <button className="btn-secondary" onClick={() => setStep("PICK_BOAT")}>
-            Geri
-          </button>
-          <button className="btn-primary large" onClick={finalizeGame}>
-            Oyunu Başlat
-          </button>
+        <div className="step-actions centered-actions mt-20">
+          <button className="btn-secondary" onClick={() => setStep("PICK_BOAT")}>Geri</button>
+          <button className="btn-primary large" onClick={finalizeGame}>⚓ Denize İndir</button>
         </div>
       </div>
     </div>
   );
 
+  const handleProduceContent = () => {
+    setCredits(prev => prev + 500);
+    setFollowers(prev => prev + 250);
+    setFirstContentDone(true);
+    setLogs(prev => ["İlk içerik üretildi! +500 TL, +250 Takipçi.", ...prev]);
+  };
+
   const renderHub = () => (
-    <main className="app-shell hub-screen fade-in">
-      <header className="hub-header">
-        <div className="hub-title">
-          <span className="card-label">{selectedMarina.name} Limanı</span>
-          <h1>{boatName}</h1>
-          <p>{selectedBoat.name} · {selectedBoat.lengthFt} ft</p>
+    <div className="hub-wrapper fade-in">
+      <header className="hub-topbar">
+        <div className="hub-boat-info">
+          <h2>{boatName}</h2>
+          <small>{selectedBoat.name}</small>
         </div>
-        <div className="hub-stats-main">
-          <div className="stat-pill">
-            <span>Bütçe</span>
-            <strong>{remainingBudget.toLocaleString("tr-TR")} TL</strong>
-          </div>
-          <div className="stat-pill highlight">
-            <span>Takipçi</span>
-            <strong>0</strong>
-          </div>
+        <div className="hub-stats">
+          <div className="stat"><span>💰</span> {credits.toLocaleString("tr-TR")}</div>
+          <div className="stat"><span>👥</span> {followers.toLocaleString("tr-TR")}</div>
         </div>
       </header>
 
-      <section className="hub-grid">
-        <article className="hub-panel profile-summary">
-          <h2>{selectedProfile.name}</h2>
-          <p>{selectedProfile.tagline}</p>
-          <div className="mini-skills">
-            {Object.entries(selectedProfile.skills).map(([key, value]) => (
-              <div key={key} className="skill-item">
-                <span>{skillLabels[key] ?? key}</span>
-                <div className="skill-bar">
-                  <div className="skill-fill" style={{ width: `${(value / 5) * 100}%` }}></div>
-                </div>
-              </div>
-            ))}
+      <main className="hub-content">
+        <div className="hub-center-visual">
+          <div className="visual-circle">
+            <span className="visual-icon">⛵</span>
           </div>
-        </article>
+          <h3>{selectedMarina.name} Limanı</h3>
+        </div>
 
-        <article className="hub-panel game-progress">
-          <div className="progress-item">
-            <div className="progress-info">
-              <span>Dünya Turu</span>
-              <strong>%0</strong>
+        <div className="hub-progress-cards">
+          <div className="prog-card">
+            <span>Dünya Turu</span>
+            <strong>%0</strong>
+          </div>
+          <div className="prog-card">
+            <span>Okyanus Hazırlığı</span>
+            <strong>{selectedBoat.oceanReadiness}</strong>
+          </div>
+        </div>
+
+        {!firstContentDone ? (
+          <button className="quest-card pulse" onClick={handleProduceContent}>
+            <div className="quest-icon">🎬</div>
+            <div className="quest-texts">
+              <h3>İlk içeriğini üret</h3>
+              <p>Ödül: +500 TL, +250 Takipçi</p>
             </div>
-            <div className="progress-bar-container">
-              <div className="progress-bar-fill" style={{ width: "0%" }}></div>
+          </button>
+        ) : (
+          <div className="quest-card done">
+            <div className="quest-icon">✅</div>
+            <div className="quest-texts">
+              <h3>Sıradaki Görev Bekleniyor</h3>
+              <p>Rota: {firstRealRoute?.name || "Yunan Adaları"}</p>
             </div>
           </div>
-          <div className="progress-item">
-            <div className="progress-info">
-              <span>Okyanus Hazırlığı</span>
-              <strong>{selectedBoat.oceanReadiness}</strong>
-            </div>
-            <div className="progress-bar-container">
-              <div className="progress-bar-fill" style={{ width: "0%" }}></div>
-            </div>
-          </div>
-        </article>
+        )}
 
-        <article className="hub-panel next-goal">
-          <span className="card-label">İlk Görev</span>
-          <h2>Rota: {firstRealRoute?.name || "Yunan Adaları"}</h2>
-          <p>Yolculuğa başlamadan önce tekneni kontrol et ve içerik planını yap.</p>
-          <button className="btn-primary full-width disabled">Seyre Çık (Yakında)</button>
-        </article>
-      </section>
+        <div className="event-log">
+          {logs.map((log, i) => <div key={i} className="log-entry">{log}</div>)}
+        </div>
+      </main>
 
-      <div className="hub-footer">
-        <p>Liman Modu · Erken Erişim Prototipi</p>
-      </div>
-    </main>
+      <nav className="bottom-tab-bar">
+        <button className="tab active"><span>🏠</span> Liman</button>
+        <button className="tab"><span>📹</span> İçerik</button>
+        <button className="tab"><span>🗺️</span> Rota</button>
+        <button className="tab"><span>🔧</span> Tekne</button>
+        <button className="tab"><span>👤</span> Kaptan</button>
+      </nav>
+    </div>
   );
 
   return (

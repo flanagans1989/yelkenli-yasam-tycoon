@@ -1122,3 +1122,183 @@ h2 {
 .gain-box.credits span { color: #f5a623; font-size: 20px; font-weight: 800; display: block; margin-bottom: 4px;}
 
 .result-comment { font-style: italic; color: #8aafcc; text-align: center; font-size: 14px; }
+
+/* Tekne Upgrade V2 */
+.boat-summary-card {
+  background: rgba(13, 32, 53, 0.8);
+  border: 1px solid rgba(30, 159, 212, 0.3);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.boat-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.boat-summary-visual {
+  font-size: 40px;
+  background: rgba(0,0,0,0.2);
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.boat-summary-header h2 { margin: 0; font-size: 18px; }
+.boat-summary-header p { margin: 4px 0 0 0; font-size: 13px; color: #8aafcc; }
+
+.boat-summary-credits {
+  margin-left: auto;
+  text-align: right;
+}
+.boat-summary-credits strong { display: block; font-size: 18px; color: #f5a623; }
+.boat-summary-credits small { font-size: 11px; color: #8aafcc; }
+
+.ocean-readiness-box {
+  background: rgba(0,0,0,0.2);
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+.or-header { display: flex; justify-content: space-between; align-items: center; }
+.or-header span { font-size: 13px; color: #8aafcc; }
+.or-header strong { font-size: 16px; color: #2ec4a0; }
+
+.mt-10 { margin-top: 10px; }
+
+.boat-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.stat-box-small {
+  background: rgba(255,255,255,0.03);
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+.stat-box-small span { font-size: 11px; color: #8aafcc; }
+.stat-box-small strong { font-size: 13px; }
+
+.upgrade-categories-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+.upgrade-categories-scroll::-webkit-scrollbar { display: none; }
+
+.category-pill {
+  white-space: nowrap;
+  background: rgba(255,255,255,0.05);
+  color: #8aafcc;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: 0.2s;
+  flex-shrink: 0;
+}
+.category-pill.active {
+  background: #1e9fd4;
+  color: white;
+}
+
+.upgrade-list-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.upgrade-card-v2 {
+  background: #0d2035;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 16px;
+  position: relative;
+}
+.upgrade-card-v2.incompatible {
+  opacity: 0.6;
+}
+
+.upg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.upg-header strong { font-size: 16px; }
+
+.badge-purchased {
+  background: rgba(46, 196, 160, 0.2);
+  color: #2ec4a0;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  border: 1px solid rgba(46, 196, 160, 0.4);
+}
+
+.upg-desc {
+  font-size: 12px;
+  color: #8aafcc;
+  line-height: 1.4;
+  margin: 0 0 12px 0;
+}
+
+.upg-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: rgba(0,0,0,0.2);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+.upg-details-grid small { color: #8aafcc; display: block; margin-bottom: 2px;}
+
+.upg-warning {
+  background: rgba(245, 166, 35, 0.1);
+  color: #f5a623;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  margin-bottom: 12px;
+  border-left: 2px solid #f5a623;
+}
+
+.upg-error {
+  background: rgba(224, 82, 82, 0.1);
+  color: #e05252;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  margin-bottom: 12px;
+  border-left: 2px solid #e05252;
+}
+
+.upg-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.effect-badge {
+  background: rgba(30, 159, 212, 0.1);
+  color: #1e9fd4;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: capitalize;
+}

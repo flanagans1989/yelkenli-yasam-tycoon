@@ -10,7 +10,8 @@ import type { StartingBoat } from "../game-data/boats";
 import { WORLD_ROUTES, getNextRoute } from "../game-data/routes";
 import type { RouteId } from "../game-data/routes";
 import { SOCIAL_PLATFORMS } from "../game-data/socialPlatforms";
-import { BOAT_UPGRADES } from "../game-data/upgrades";
+import { BOAT_UPGRADES, UPGRADE_CATEGORIES } from "../game-data/upgrades";
+import type { UpgradeCategoryId } from "../game-data/upgrades";
 
 type Step =
   | "MAIN_MENU"
@@ -52,6 +53,13 @@ const profileIcons: Record<string, string> = {
   family_lifestyle: "👨‍👩‍👧",
 };
 
+const getBaseOceanReadiness = (boatId: string) => {
+  if (boatId === "kirlangic_28") return 15;
+  if (boatId === "denizkusu_34") return 30;
+  if (boatId === "atlas_40") return 45;
+  return 0;
+};
+
 function App() {
   const [step, setStep] = useState<Step>("MAIN_MENU");
   const [activeTab, setActiveTab] = useState<Tab>("liman");
@@ -86,6 +94,9 @@ function App() {
   const [selectedContentType, setSelectedContentType] = useState<string | null>(null);
   const [contentResult, setContentResult] = useState<ContentResult | null>(null);
 
+  // Upgrade V2 State
+  const [selectedUpgradeCategory, setSelectedUpgradeCategory] = useState<UpgradeCategoryId>("energy");
+
   const [hasSave, setHasSave] = useState(false);
   const [saveBoatName, setSaveBoatName] = useState("");
 
@@ -95,11 +106,19 @@ function App() {
 
   const currentRoute = WORLD_ROUTES.find((route) => route.id === currentRouteId);
 
-  // Dynamic calculations
-  const currentOceanReadiness = selectedBoat.oceanReadiness + purchasedUpgradeIds.reduce((total, id) => {
-    const upg = BOAT_UPGRADES.find(u => u.id === id);
-    return total + (upg?.effects.oceanReadiness || 0);
-  }, 0);
+  // Dynamic calculations for Upgrades V2
+  const purchasedUpgradeObjects = purchasedUpgradeIds.map(id => BOAT_UPGRADES.find(u => u.id === id)).filter(Boolean) as typeof BOAT_UPGRADES;
+
+  const baseOcean = getBaseOceanReadiness(selectedBoat?.id || "");
+  const upgradeOceanBonus = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.oceanReadiness || 0), 0);
+  const currentOceanReadiness = Math.min(100, baseOcean + upgradeOceanBonus);
+
+  const upgradeContentBonus = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.contentQuality || 0), 0);
+  const upgradeEnergyBonus = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.energy || 0), 0);
+  const upgradeWaterBonus = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.water || 0), 0);
+  const upgradeSafetyBonus = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.safety || 0), 0);
+  const upgradeNavigationBonus = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.navigation || 0), 0);
+  const upgradeRiskReduction = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.riskReduction || 0), 0);
 
   // Load save on mount
   useEffect(() => {
@@ -148,6 +167,7 @@ function App() {
         selectedPlatformId,
         selectedContentType,
         contentResult,
+        selectedUpgradeCategory,
         
         hasSave: true,
       };
@@ -159,7 +179,7 @@ function App() {
     step, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone, 
     logs, purchasedUpgradeIds, activeTab, currentLocationName, worldProgress, energy, water, 
     fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining, 
-    currentSeaEvent, selectedPlatformId, selectedContentType, contentResult
+    currentSeaEvent, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory
   ]);
 
   // Flow handlers
@@ -190,6 +210,7 @@ function App() {
     setContentResult(null);
     setSelectedPlatformId(null);
     setSelectedContentType(null);
+    setSelectedUpgradeCategory("energy");
     
     setStep("HUB");
     setActiveTab("liman");
@@ -225,6 +246,7 @@ function App() {
         setSelectedPlatformId(parsed.selectedPlatformId ?? null);
         setSelectedContentType(parsed.selectedContentType ?? null);
         setContentResult(parsed.contentResult ?? null);
+        setSelectedUpgradeCategory(parsed.selectedUpgradeCategory ?? "energy");
 
         setStep(parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB");
         setActiveTab(parsed.activeTab ?? "liman");
@@ -452,19 +474,40 @@ function App() {
 
     setCredits(prev => prev - upgrade.cost);
     setPurchasedUpgradeIds(prev => [...prev, upgradeId]);
-    setLogs(prev => [`${upgrade.name} satın alındı ve kuruldu.`, ...prev.slice(0, 4)]);
+    
+    let effectText = "";
+    if (upgrade.effects.oceanReadiness) effectText = "Okyanus hazırlığı arttı.";
+    else if (upgrade.effects.contentQuality) effectText = "İçerik kalitesi arttı.";
+    else effectText = "Tekne donanımı güçlendi.";
+    
+    setLogs(prev => [`${upgrade.name} satın alındı. ${effectText}`, ...prev.slice(0, 4)]);
   };
 
   const advanceDay = () => {
     setVoyageDaysRemaining(prev => {
       const newDays = prev - 1;
       
-      setEnergy(e => Math.max(0, e - 5));
-      setWater(w => Math.max(0, w - 4));
-      setFuel(f => Math.max(0, f - 3));
+      let energyDrop = 5;
+      if (upgradeEnergyBonus > 20) energyDrop = 3;
+      else if (upgradeEnergyBonus > 10) energyDrop = 4;
       
-      if (Math.random() > 0.7) {
-        setBoatCondition(c => Math.max(0, c - (Math.floor(Math.random() * 3) + 1)));
+      let waterDrop = 4;
+      if (upgradeWaterBonus > 20) waterDrop = 2;
+      else if (upgradeWaterBonus > 10) waterDrop = 3;
+
+      let fuelDrop = 3;
+      
+      setEnergy(e => Math.max(0, e - energyDrop));
+      setWater(w => Math.max(0, w - waterDrop));
+      setFuel(f => Math.max(0, f - fuelDrop));
+      
+      let conditionDropChance = 0.7;
+      if (upgradeNavigationBonus > 15 || upgradeSafetyBonus > 15) conditionDropChance = 0.85; 
+      
+      if (Math.random() > conditionDropChance) {
+        let dmg = Math.floor(Math.random() * 3) + 1;
+        if (upgradeRiskReduction > 10) dmg = Math.max(1, dmg - 1);
+        setBoatCondition(c => Math.max(0, c - dmg));
       }
       
       const events = [
@@ -531,11 +574,7 @@ function App() {
     }
 
     // Upgrades bonus
-    const upgradeQuality = purchasedUpgradeIds.reduce((tot, id) => {
-      const u = BOAT_UPGRADES.find(x => x.id === id);
-      return tot + (u?.effects.contentQuality || 0);
-    }, 0);
-    quality += upgradeQuality;
+    quality += upgradeContentBonus;
 
     // Location/Route bonus
     if (step === "SEA_MODE" && currentRoute) {
@@ -613,7 +652,7 @@ function App() {
         </div>
         <div className="prog-card">
           <span>Okyanus Hazırlığı</span>
-          <strong>{currentOceanReadiness} / 100</strong>
+          <strong>{currentOceanReadiness}%</strong>
         </div>
       </div>
 
@@ -786,45 +825,98 @@ function App() {
   );
 
   const renderTekneTab = () => {
-    const availableUpgrades = BOAT_UPGRADES.filter(u => 
-      u.compatibility.some(c => c.boatId === selectedBoat.id && c.compatible) &&
-      !purchasedUpgradeIds.includes(u.id)
-    ).slice(0, 6);
+    const filteredUpgrades = BOAT_UPGRADES.filter(u => u.categoryId === selectedUpgradeCategory);
 
     return (
       <div className="tab-content fade-in">
-        <span className="card-label">Tekne ve Ekipman</span>
-        <h2>{boatName}</h2>
-        <p>{selectedBoat.name} · {selectedBoat.lengthFt} ft</p>
-
-        <div className="hub-progress-cards">
-          <div className="prog-card">
-            <span>Hazırlık</span>
-            <strong>{currentOceanReadiness}%</strong>
+        <div className="boat-summary-card">
+          <div className="boat-summary-header">
+             <div className="boat-summary-visual">⛵</div>
+             <div>
+                <h2>{boatName}</h2>
+                <p>{selectedBoat.name} · {selectedBoat.lengthFt} ft</p>
+             </div>
+             <div className="boat-summary-credits">
+                <strong>{credits.toLocaleString("tr-TR")} TL</strong>
+                <small>Bütçe</small>
+             </div>
           </div>
-          <div className="prog-card">
-            <span>Kredi</span>
-            <strong>{credits.toLocaleString("tr-TR")} TL</strong>
+          
+          <div className="ocean-readiness-box">
+             <div className="or-header">
+                <span>Okyanus Hazırlığı</span>
+                <strong>{currentOceanReadiness}%</strong>
+             </div>
+             <div className="progress-bar-container mt-10">
+                <div className="progress-fill" style={{width: `${currentOceanReadiness}%`}}></div>
+             </div>
+          </div>
+          
+          <div className="boat-stats-grid">
+             <div className="stat-box-small"><span>Enerji Puanı</span><strong>{upgradeEnergyBonus}</strong></div>
+             <div className="stat-box-small"><span>Su / Yaşam</span><strong>{upgradeWaterBonus}</strong></div>
+             <div className="stat-box-small"><span>Güvenlik</span><strong>{upgradeSafetyBonus}</strong></div>
+             <div className="stat-box-small"><span>Navigasyon</span><strong>{upgradeNavigationBonus}</strong></div>
           </div>
         </div>
 
-        <div className="upgrade-list">
-          <h3>Mevcut Upgrade'ler</h3>
-          {availableUpgrades.map(upgrade => (
-            <div key={upgrade.id} className="upgrade-card">
-              <div className="upgrade-info">
-                <strong>{upgrade.name}</strong>
-                <p>{upgrade.description}</p>
-                <div className="upgrade-effect">Okyanus Hazırlığı: +{upgrade.effects.oceanReadiness || 0}</div>
-              </div>
+        <div className="upgrade-categories-scroll">
+           {UPGRADE_CATEGORIES.map(cat => (
               <button 
-                className={`btn-buy ${credits < upgrade.cost ? "disabled" : ""}`}
-                onClick={() => handleBuyUpgrade(upgrade.id)}
+                key={cat.id} 
+                className={`category-pill ${selectedUpgradeCategory === cat.id ? "active" : ""}`}
+                onClick={() => setSelectedUpgradeCategory(cat.id)}
               >
-                {upgrade.cost.toLocaleString("tr-TR")} TL
+                 {cat.name}
               </button>
-            </div>
-          ))}
+           ))}
+        </div>
+
+        <div className="upgrade-list-v2">
+          {filteredUpgrades.map(upgrade => {
+            const isPurchased = purchasedUpgradeIds.includes(upgrade.id);
+            const comp = upgrade.compatibility.find(c => c.boatId === selectedBoat.id);
+            const isCompatible = comp ? comp.compatible : false;
+            const hasWarning = comp && (comp.efficiency === "poor" || comp.efficiency === "limited");
+
+            return (
+              <div key={upgrade.id} className={`upgrade-card-v2 ${!isCompatible ? "incompatible" : ""}`}>
+                <div className="upg-header">
+                  <strong>{upgrade.name}</strong>
+                  {isPurchased && <span className="badge-purchased">ALINDI</span>}
+                </div>
+                <p className="upg-desc">{upgrade.description}</p>
+                
+                <div className="upg-details-grid">
+                   <div><small>Süre:</small> {upgrade.installDays} Gün</div>
+                   <div><small>Marina:</small> {upgrade.marinaRequirement.toUpperCase()}</div>
+                </div>
+
+                {hasWarning && !isPurchased && isCompatible && (
+                  <div className="upg-warning">⚠️ Bu teknede verimi sınırlı: {comp.note}</div>
+                )}
+                {!isCompatible && (
+                  <div className="upg-error">❌ Bu tekne için uygun değil.</div>
+                )}
+
+                <div className="upg-effects">
+                  {Object.entries(upgrade.effects).map(([key, val]) => {
+                     if (!val) return null;
+                     return <span key={key} className="effect-badge">{key}: +{val}</span>;
+                  })}
+                </div>
+                
+                {!isPurchased && isCompatible && (
+                  <button 
+                    className={`btn-primary full-width mt-10 ${credits < upgrade.cost ? "disabled" : ""}`}
+                    onClick={() => handleBuyUpgrade(upgrade.id)}
+                  >
+                    {credits < upgrade.cost ? "Yetersiz Bütçe" : `${upgrade.cost.toLocaleString("tr-TR")} TL - Satın Al`}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -864,7 +956,7 @@ function App() {
 
       <div className="event-log-compact mt-20">
         <span className="card-label">Son Olaylar</span>
-        {logs.map((log, i) => <div key={i} className="log-entry">{log}</div>)}
+        {logs.map((log, i) => <div key={log + i} className="log-entry">{log}</div>)}
       </div>
     </div>
   );

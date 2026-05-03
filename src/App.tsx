@@ -322,19 +322,25 @@ function App() {
 
   const renderMainMenu = () => (
     <div className="menu-container fade-in cinematic-bg">
-      <div className="hero-copy centered transparent-card">
+      <div className="menu-ocean-scene">
+        <div className="stars-layer"></div>
+        <div className="horizon-glow"></div>
+        <div className="menu-boat-silhouette">{getBoatSvg("denizkusu_34")}</div>
+        <svg className="wave-layer w1" viewBox="0 0 1200 80" preserveAspectRatio="none"><path d="M0 40 Q150 0 300 40 T600 40 T900 40 T1200 40 T1500 40 T1800 40 T2100 40 T2400 40 V80 H0Z" fill="rgba(30,159,212,0.3)"/></svg>
+        <svg className="wave-layer w2" viewBox="0 0 1200 80" preserveAspectRatio="none"><path d="M0 50 Q150 20 300 50 T600 50 T900 50 T1200 50 T1500 50 T1800 50 T2100 50 T2400 50 V80 H0Z" fill="rgba(30,159,212,0.3)"/></svg>
+      </div>
+      <div className="hero-copy centered transparent-card" style={{position: 'relative', zIndex: 2}}>
         <h1>Yelkenli Yaşam Tycoon</h1>
-        <p className="hero-text">Türkiye’den dünya turuna</p>
+        <p className="hero-text">Türkiye'den dünya turuna</p>
         <div className="menu-actions">
           <button className="btn-primary large" onClick={startNewGame}>
             ⚓ Yeni Oyun
           </button>
-          <button 
-            className={`btn-secondary large ${!hasSave ? "disabled" : ""}`} 
-            onClick={hasSave ? loadGame : undefined}
-          >
-            📖 Devam Et
-          </button>
+          {hasSave && (
+            <button className="btn-secondary large" onClick={loadGame}>
+              📖 Devam Et
+            </button>
+          )}
           {hasSave && <p style={{fontSize: "13px", color: "#8aafcc", marginTop: "8px", fontWeight: 600}}>Kayıt bulundu: {saveBoatName}</p>}
         </div>
       </div>
@@ -362,7 +368,7 @@ function App() {
               {topSkills.map(([k, v]) => (
                 <div key={k} className="skill-row">
                   <span>{skillLabels[k] ?? k}</span>
-                  <div className="skill-bar"><div className="skill-fill" style={{width: `${v*20}%`}}></div></div>
+                  <div className="skill-bar"><div className="skill-fill" data-skill={k} style={{width: `${v*20}%`}}></div></div>
                 </div>
               ))}
             </div>
@@ -488,6 +494,10 @@ function App() {
             onChange={(e) => setBoatName(e.target.value)}
             autoFocus
           />
+        </div>
+        
+        <div className={`name-live-preview ${boatName.trim() ? 'visible' : ''}`}>
+          « {boatName || '...'} »
         </div>
         
         <button className="btn-text" onClick={generateRandomName}>🎲 Rastgele İsim Öner</button>
@@ -737,8 +747,9 @@ function App() {
   const renderLimanTab = () => (
     <div className="tab-content fade-in">
       <div className="hub-center-visual">
-        <div className="visual-circle">
-          <div className="visual-icon">{getBoatSvg(selectedBoat.id)}</div>
+        <div className="hub-scene">
+          <div className="hub-boat-display">{getBoatSvg(selectedBoat.id)}</div>
+          <div className="hub-water-line"></div>
         </div>
         <h3>{currentLocationName}</h3>
       </div>

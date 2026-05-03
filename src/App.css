@@ -45,6 +45,25 @@ button {
   100% { transform: scale(1); }
 }
 
+@keyframes waveMove1 {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes waveMove2 {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes horizonGlow {
+  0% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+  100% { opacity: 0.4; }
+}
+@keyframes menuBoatFloat {
+  0% { transform: translate(-50%, 0) rotate(0deg); }
+  50% { transform: translate(-50%, -6px) rotate(1.5deg); }
+  100% { transform: translate(-50%, 0) rotate(0deg); }
+}
+
 .game-wrapper {
   max-width: 500px;
   margin: 0 auto;
@@ -58,10 +77,67 @@ button {
 
 /* Backgrounds */
 .cinematic-bg {
-  background: linear-gradient(180deg, rgba(13, 32, 53, 0) 0%, #040d16 100%), 
-              url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><defs><linearGradient id="g" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="%231e9fd4" stop-opacity="0.15"/><stop offset="100%" stop-color="%23040d16" stop-opacity="1"/></linearGradient></defs><rect width="100%" height="100%" fill="url(%23g)"/></svg>');
-  background-size: cover;
-  background-position: center bottom;
+  background: linear-gradient(180deg, #0a1c30 0%, #040d16 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-ocean-scene {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.horizon-glow {
+  position: absolute;
+  top: 28%;
+  left: -10%;
+  right: -10%;
+  height: 120px;
+  background: radial-gradient(ellipse at center, rgba(30, 159, 212, 0.25) 0%, transparent 70%);
+  animation: horizonGlow 6s ease-in-out infinite;
+}
+
+.stars-layer {
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 40%;
+  background: radial-gradient(1px 1px at 20% 10%, rgba(255,255,255,0.4), transparent),
+              radial-gradient(1px 1px at 60% 20%, rgba(255,255,255,0.3), transparent),
+              radial-gradient(1px 1px at 80% 8%, rgba(255,255,255,0.5), transparent),
+              radial-gradient(1px 1px at 40% 25%, rgba(255,255,255,0.2), transparent),
+              radial-gradient(1px 1px at 10% 30%, rgba(255,255,255,0.3), transparent),
+              radial-gradient(1px 1px at 90% 15%, rgba(255,255,255,0.4), transparent);
+}
+
+.menu-boat-silhouette {
+  position: absolute;
+  top: 32%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  color: rgba(30, 159, 212, 0.5);
+  animation: menuBoatFloat 4s ease-in-out infinite;
+  filter: drop-shadow(0 4px 12px rgba(30, 159, 212, 0.3));
+}
+
+.wave-layer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 80px;
+}
+.wave-layer.w1 {
+  bottom: 180px;
+  opacity: 0.08;
+  animation: waveMove1 12s linear infinite;
+}
+.wave-layer.w2 {
+  bottom: 160px;
+  opacity: 0.05;
+  animation: waveMove2 18s linear infinite;
 }
 
 /* Buttons */
@@ -221,17 +297,19 @@ button {
 }
 
 .nav-btn {
-  background: rgba(255,255,255,0.05);
-  width: 48px;
-  height: 48px;
-  border-radius: 24px;
+  background: rgba(255,255,255,0.08);
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  font-size: 18px;
   transition: 0.2s;
+  flex-shrink: 0;
 }
-.nav-btn:active { background: rgba(255,255,255,0.1); transform: scale(0.9); }
+.nav-btn:active { background: rgba(255,255,255,0.15); transform: scale(0.9); }
 
 .big-card {
   flex: 1;
@@ -243,18 +321,27 @@ button {
   box-shadow: 0 16px 40px rgba(0,0,0,0.4);
 }
 
+@keyframes profileBorderSpin {
+  0% { border-color: rgba(30,159,212,0.4) rgba(46,196,160,0.2) rgba(245,166,35,0.2) rgba(30,159,212,0.2); }
+  25% { border-color: rgba(30,159,212,0.2) rgba(30,159,212,0.4) rgba(46,196,160,0.2) rgba(245,166,35,0.2); }
+  50% { border-color: rgba(245,166,35,0.2) rgba(30,159,212,0.2) rgba(30,159,212,0.4) rgba(46,196,160,0.2); }
+  75% { border-color: rgba(46,196,160,0.2) rgba(245,166,35,0.2) rgba(30,159,212,0.2) rgba(30,159,212,0.4); }
+  100% { border-color: rgba(30,159,212,0.4) rgba(46,196,160,0.2) rgba(245,166,35,0.2) rgba(30,159,212,0.2); }
+}
+
 .profile-icon {
-  font-size: 56px;
-  margin-bottom: 16px;
-  background: rgba(0,0,0,0.3);
-  width: 96px;
-  height: 96px;
-  border-radius: 48px;
+  font-size: 64px;
+  background: rgba(0,0,0,0.4);
+  width: 120px;
+  height: 120px;
+  border-radius: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 16px auto;
-  border: 2px solid rgba(255,255,255,0.1);
+  margin: 0 auto 20px auto;
+  border: 3px solid rgba(30,159,212,0.4);
+  animation: profileBorderSpin 4s linear infinite;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 0 20px rgba(30,159,212,0.1);
 }
 
 .big-card h2 { margin: 0 0 8px 0; font-size: 24px; }
@@ -281,16 +368,23 @@ button {
 }
 .skill-bar {
   flex: 1;
-  height: 6px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 3px;
+  height: 10px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 5px;
   overflow: hidden;
 }
 .skill-fill {
   height: 100%;
-  background: #2ec4a0;
-  border-radius: 3px;
+  border-radius: 5px;
+  transition: width 0.6s ease-out;
 }
+.skill-fill[data-skill="seamanship"] { background: linear-gradient(90deg, #1e9fd4, #23abdf); }
+.skill-fill[data-skill="content"] { background: linear-gradient(90deg, #f5a623, #f7c26b); }
+.skill-fill[data-skill="technical"] { background: linear-gradient(90deg, #8a6fff, #b49bff); }
+.skill-fill[data-skill="sponsor"] { background: linear-gradient(90deg, #2ec4a0, #5de0c2); }
+.skill-fill[data-skill="riskManagement"] { background: linear-gradient(90deg, #e05252, #f07070); }
+.skill-fill[data-skill="lifestyle"] { background: linear-gradient(90deg, #e88fd0, #f0b4e0); }
+.skill-fill[data-skill] { background: linear-gradient(90deg, #2ec4a0, #5de0c2); }
 
 .pros-cons {
   text-align: left;
@@ -504,6 +598,22 @@ button {
   border-color: #1e9fd4;
 }
 
+.name-live-preview {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #f5a623;
+  margin-top: 16px;
+  min-height: 32px;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 12px rgba(245, 166, 35, 0.3);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.name-live-preview.visible {
+  opacity: 1;
+}
+
 /* HUB Wrapper */
 .hub-wrapper {
   flex: 1;
@@ -523,10 +633,17 @@ button {
   z-index: 10;
 }
 
+.hub-boat-info {
+  min-width: 0;
+  flex: 1;
+}
 .hub-boat-info h2 {
   font-size: 18px;
   margin: 0 0 4px 0;
   color: #f7fbff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hub-boat-info small {
@@ -563,25 +680,49 @@ button {
 }
 
 /* Liman Tab */
+@keyframes hubWaterShimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes hubBoatIdle {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(1deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
 .hub-center-visual {
   text-align: center;
   margin-bottom: 32px;
-  background: radial-gradient(circle at center, rgba(30, 159, 212, 0.1) 0%, transparent 70%);
-  padding: 20px 0;
+  padding: 24px 0 0 0;
+  position: relative;
 }
 
-.visual-circle {
-  width: 140px;
-  height: 140px;
-  border-radius: 70px;
-  background: linear-gradient(135deg, rgba(30, 159, 212, 0.2), rgba(4, 13, 22, 0.8));
-  border: 2px solid rgba(30, 159, 212, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px auto;
+.hub-scene {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  margin-bottom: 16px;
+}
+
+.hub-boat-display {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto;
   color: #1e9fd4;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  animation: hubBoatIdle 3.5s ease-in-out infinite;
+  filter: drop-shadow(0 8px 20px rgba(30, 159, 212, 0.4));
+}
+
+.hub-water-line {
+  position: absolute;
+  bottom: 0;
+  left: -10%;
+  right: -10%;
+  height: 60px;
+  background: linear-gradient(90deg, transparent, rgba(30,159,212,0.08), rgba(30,159,212,0.15), rgba(30,159,212,0.08), transparent);
+  background-size: 200% 100%;
+  animation: hubWaterShimmer 4s linear infinite;
+  border-radius: 50%;
 }
 
 .visual-icon {
@@ -698,11 +839,11 @@ button {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(4, 13, 22, 0.85);
+  background: rgba(4, 13, 22, 0.92);
   backdrop-filter: blur(20px);
   display: flex;
-  padding: 12px 16px 24px 16px;
-  border-top: 1px solid rgba(255,255,255,0.05);
+  padding: 10px 16px 24px 16px;
+  border-top: 2px solid rgba(30, 159, 212, 0.15);
   z-index: 20;
 }
 
@@ -711,11 +852,12 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  color: #6a8ba8;
+  gap: 4px;
+  color: #4a6a85;
   font-size: 11px;
   font-weight: 700;
   transition: 0.2s;
+  position: relative;
 }
 
 .tab span {
@@ -728,8 +870,19 @@ button {
 }
 
 .tab.active span {
-  transform: translateY(-4px);
-  filter: drop-shadow(0 4px 8px rgba(30,159,212,0.4));
+  transform: translateY(-6px);
+  filter: drop-shadow(0 4px 12px rgba(30,159,212,0.5));
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: #1e9fd4;
+  box-shadow: 0 0 8px rgba(30,159,212,0.6);
 }
 
 /* Content V2 & Sponsor UI */

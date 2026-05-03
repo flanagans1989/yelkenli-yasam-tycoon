@@ -4,17 +4,11 @@
 
 \## Belge Durumu
 
-
-
-\- Durum: Taslak
-
-\- Sürüm: V1.0 Taslak
-
-\- İlgili ana belge: docs/01\_Oyun\_Anayasasi.md
-
-\- Amaç: Oyuncunun Türkiye’den seçeceği başlangıç marinalarını oyun sistemi olarak netleştirmek
-
-\- Not: Bu belge son kontrolden sonra “Kilitlendi” durumuna alınacaktır.
+- Durum: Kilitlendi
+- Sürüm: V1.0
+- İlgili ana belge: docs/01_Oyun_Anayasasi.md
+- Amaç: Oyuncunun Türkiye’den seçeceği başlangıç marinalarını oyun sistemi olarak netleştirmek
+- Kilit kararı: Bu belge Başlangıç Marinaları V1.0 olarak kabul edilmiştir.
 
 
 
@@ -1426,27 +1420,41 @@ Bu belge kilitlenmeden önce şu sorular cevaplanmalıdır:
 
 
 
-\# 22. Geçici Karar
+\# 22. Kilit Kararı
 
+Bu belge Başlangıç Marinaları V1.0 olarak kabul edilmiş ve kilitlenmiştir.
 
+İlk MVP’de 10 başlangıç marinası kullanılacaktır:
 
-Bu belge V1.0 taslak olarak hazırlanmıştır.
+1. Marmaris
+2. Göcek
+3. Fethiye
+4. Kaş
+5. Bodrum
+6. Kuşadası
+7. Çeşme
+8. Antalya
+9. İstanbul
+10. Yalova
 
+Marina seçimi oyuncunun başlangıç ekonomisini, ilk rota hissini, içerik potansiyelini, sponsor fırsatlarını, teknik hizmet imkanlarını ve ilk oyun zorluğunu etkileyecektir.
 
+MVP’de marina sistemi şu kapsamla uygulanacaktır:
 
-Son kontrolden sonra şu şekilde güncellenecektir:
+- 10 başlangıç marinası
+- Her marina için kısa tanım
+- Her marina için başlangıç bonusu
+- Her marina için dezavantaj
+- Başlangıç zorluğu
+- Marina maliyeti seviyesi
+- Sponsor potansiyeli
+- İçerik potansiyeli
+- Teknik hizmet seviyesi
+- İlk rota önerileri
+- Profil ve marina uyum matrisi
 
+Gerçek harita tabanlı rota görünümü, marina özel görevleri, marina itibarı, fiyat dalgalanması ve sezonluk marina etkinlikleri MVP sonrası değerlendirilecektir.
 
-
-\- Durum: Kilitlendi
-
-\- Sürüm: V1.0
-
-
-
-Kilitlendikten sonra sıradaki ana bölüm:
-
-
+Bu belge kilitlendikten sonra sıradaki ana tasarım bölümü:
 
 > Başlangıç Tekneleri V1.0
-

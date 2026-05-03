@@ -61,6 +61,31 @@ const getBaseOceanReadiness = (boatId: string) => {
   return 0;
 };
 
+const getBoatSvg = (boatId: string) => {
+  if (boatId === "kirlangic_28") {
+    return (
+      <svg viewBox="0 0 100 100" fill="currentColor" width="100%" height="100%">
+        <path d="M 50 10 L 50 70 L 90 70 Z M 45 20 L 20 70 L 45 70 Z M 10 75 Q 50 90 90 75 L 80 85 Q 50 100 20 85 Z" />
+      </svg>
+    );
+  }
+  if (boatId === "denizkusu_34") {
+    return (
+      <svg viewBox="0 0 100 100" fill="currentColor" width="100%" height="100%">
+        <path d="M 45 5 L 45 65 L 95 65 Z M 40 15 L 10 65 L 40 65 Z M 5 70 Q 50 95 95 70 L 85 85 Q 50 105 15 85 Z" />
+      </svg>
+    );
+  }
+  if (boatId === "atlas_40") {
+    return (
+      <svg viewBox="0 0 100 100" fill="currentColor" width="100%" height="100%">
+        <path d="M 35 5 L 35 60 L 70 60 Z M 30 15 L 5 60 L 30 60 Z M 75 10 L 75 60 L 95 60 Z M 5 65 L 95 65 L 90 85 L 10 85 Z" />
+      </svg>
+    );
+  }
+  return <span>⛵</span>;
+};
+
 function App() {
   const [step, setStep] = useState<Step>("MAIN_MENU");
   const [activeTab, setActiveTab] = useState<Tab>("liman");
@@ -417,7 +442,7 @@ function App() {
         </div>
 
         <article className="boat-card big-card fade-in" key={selectedBoat.id}>
-          <div className="boat-silhouette">⛵</div>
+          <div className="boat-silhouette">{getBoatSvg(selectedBoat.id)}</div>
           <h2>{selectedBoat.name}</h2>
           <p className="tagline">"{selectedBoat.tagline}"</p>
           
@@ -451,7 +476,7 @@ function App() {
       {renderStepHeader(4, "Son Hazırlık")}
       
       <div className="naming-box centered transparent-card">
-        <div className="boat-silhouette big">⛵</div>
+        <div className="boat-silhouette big">{getBoatSvg(selectedBoat.id)}</div>
         <h2>Tekneye İsim Ver</h2>
         <p>Denizlerdeki yeni yuvana bir isim koy.</p>
         
@@ -713,7 +738,7 @@ function App() {
     <div className="tab-content fade-in">
       <div className="hub-center-visual">
         <div className="visual-circle">
-          <span className="visual-icon">⛵</span>
+          <div className="visual-icon">{getBoatSvg(selectedBoat.id)}</div>
         </div>
         <h3>{currentLocationName}</h3>
       </div>
@@ -757,7 +782,7 @@ function App() {
   const renderSeaModeTab = () => (
     <div className="sea-mode-content fade-in">
       <div className="sea-visual">
-        <div className="boat-animation">⛵</div>
+        <div className="boat-animation">{getBoatSvg(selectedBoat.id)}</div>
       </div>
       
       <div className="sea-status-card">
@@ -953,7 +978,7 @@ function App() {
       <div className="tab-content fade-in">
         <div className="boat-summary-card">
           <div className="boat-summary-header">
-             <div className="boat-summary-visual">⛵</div>
+             <div className="boat-summary-visual">{getBoatSvg(selectedBoat.id)}</div>
              <div>
                 <h2>{boatName}</h2>
                 <p>{selectedBoat.name} · {selectedBoat.lengthFt} ft</p>

@@ -329,7 +329,7 @@ function App() {
         <svg className="wave-layer w1" viewBox="0 0 1200 80" preserveAspectRatio="none"><path d="M0 40 Q150 0 300 40 T600 40 T900 40 T1200 40 T1500 40 T1800 40 T2100 40 T2400 40 V80 H0Z" fill="rgba(30,159,212,0.3)"/></svg>
         <svg className="wave-layer w2" viewBox="0 0 1200 80" preserveAspectRatio="none"><path d="M0 50 Q150 20 300 50 T600 50 T900 50 T1200 50 T1500 50 T1800 50 T2100 50 T2400 50 V80 H0Z" fill="rgba(30,159,212,0.3)"/></svg>
       </div>
-      <div className="hero-copy centered transparent-card" style={{position: 'relative', zIndex: 2}}>
+      <div className="hero-copy">
         <h1>Yelkenli Yaşam Tycoon</h1>
         <p className="hero-text">Türkiye'den dünya turuna</p>
         <div className="menu-actions">

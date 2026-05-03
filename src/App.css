@@ -45,25 +45,199 @@ button {
   100% { transform: scale(1); }
 }
 
-@keyframes waveMove1 {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-@keyframes waveMove2 {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-@keyframes horizonGlow {
-  0% { opacity: 0.4; }
-  50% { opacity: 0.7; }
-  100% { opacity: 0.4; }
-}
-@keyframes menuBoatFloat {
-  0% { transform: translate(-50%, 0) rotate(0deg); }
-  50% { transform: translate(-50%, -6px) rotate(1.5deg); }
-  100% { transform: translate(-50%, 0) rotate(0deg); }
+/* ── ANA MENÜ ── */
+.menu-container {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: #040d14;
 }
 
+.cinematic-bg {
+  background: linear-gradient(180deg, #040d14 0%, #081420 45%, #0d2035 100%);
+}
+
+.menu-ocean-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* YILDIZLAR */
+.stars-layer {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 8%, rgba(240,248,255,0.9) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 13%, rgba(240,248,255,0.6) 0%, transparent 100%),
+    radial-gradient(2px 2px at 65% 6%, rgba(240,248,255,0.8) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 18%, rgba(240,248,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 4%, rgba(240,248,255,0.7) 0%, transparent 100%),
+    radial-gradient(2px 2px at 28% 22%, rgba(240,248,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 10%, rgba(138,175,204,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 32% 3%, rgba(240,248,255,0.8) 0%, transparent 100%),
+    radial-gradient(1px 1px at 72% 16%, rgba(240,248,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 8%  20%, rgba(240,248,255,0.6) 0%, transparent 100%);
+  animation: twinkle-stars 4s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle-stars {
+  0%   { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* UFUK GLOW */
+.horizon-glow {
+  position: absolute;
+  top: 36%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(30,159,212,0.4),
+    rgba(46,196,160,0.7),
+    rgba(30,159,212,0.4),
+    transparent
+  );
+  animation: horizon-pulse 4s ease-in-out infinite;
+}
+
+.horizon-glow::after {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 10%;
+  right: 10%;
+  height: 40px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(46,196,160,0.15), transparent);
+  animation: horizon-pulse 4s ease-in-out infinite;
+}
+
+@keyframes horizon-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1;   }
+}
+
+/* TEKNE SİLÜETİ */
+.menu-boat-silhouette {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 70px;
+  color: #1e9fd4;
+  animation: boat-float 4s ease-in-out infinite;
+  filter: drop-shadow(0 4px 12px rgba(30,159,212,0.3));
+}
+
+@keyframes boat-float {
+  0%, 100% { transform: translateX(-50%) translateY(0)   rotate(-1deg); }
+  50%       { transform: translateX(-50%) translateY(-8px) rotate(1deg);  }
+}
+
+/* DALGALAR */
+.wave-layer {
+  position: absolute;
+  bottom: 0;
+  left: -10%;
+  width: 120%;
+  height: 120px;
+}
+
+.wave-layer.w1 {
+  bottom: 35%;
+  animation: wave-move 7s linear infinite;
+  opacity: 0.6;
+}
+
+.wave-layer.w2 {
+  bottom: 33%;
+  animation: wave-move 10s linear infinite reverse;
+  opacity: 0.4;
+}
+
+@keyframes wave-move {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-20%); }
+}
+
+/* İÇERİK KARTI (alt) */
+.hero-copy {
+  position: relative;
+  z-index: 2;
+  padding: 24px 20px 40px;
+  background: linear-gradient(180deg, transparent 0%, rgba(8,20,32,0.95) 30%);
+  text-align: center;
+}
+
+.hero-copy h1 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #f0f8ff;
+  margin: 0 0 4px;
+  letter-spacing: -0.5px;
+  text-shadow: 0 0 40px rgba(30,159,212,0.5);
+}
+
+.hero-copy .hero-text {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #8aafcc;
+  margin: 0 0 24px;
+}
+
+.menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-primary.large {
+  width: 100%;
+  max-width: 320px;
+  height: 56px;
+  background: #1e9fd4;
+  border: none;
+  border-radius: 16px;
+  color: #f0f8ff;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  animation: btn-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes btn-pulse {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(30,159,212,0.5); }
+  70%       { box-shadow: 0 0 0 14px rgba(30,159,212,0);   }
+}
+
+.btn-secondary.large {
+  width: 100%;
+  max-width: 320px;
+  height: 48px;
+  background: rgba(13,32,53,0.85);
+  border: 1px solid rgba(30,159,212,0.25);
+  border-radius: 14px;
+  color: #8aafcc;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* ── GENEL ── */
 .game-wrapper {
   max-width: 500px;
   margin: 0 auto;
@@ -75,72 +249,7 @@ button {
   flex-direction: column;
 }
 
-/* Backgrounds */
-.cinematic-bg {
-  background: linear-gradient(180deg, #0a1c30 0%, #040d16 100%);
-  position: relative;
-  overflow: hidden;
-}
-
-.menu-ocean-scene {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.horizon-glow {
-  position: absolute;
-  top: 28%;
-  left: -10%;
-  right: -10%;
-  height: 120px;
-  background: radial-gradient(ellipse at center, rgba(30, 159, 212, 0.25) 0%, transparent 70%);
-  animation: horizonGlow 6s ease-in-out infinite;
-}
-
-.stars-layer {
-  position: absolute;
-  top: 0; left: 0; right: 0; height: 40%;
-  background: radial-gradient(1px 1px at 20% 10%, rgba(255,255,255,0.4), transparent),
-              radial-gradient(1px 1px at 60% 20%, rgba(255,255,255,0.3), transparent),
-              radial-gradient(1px 1px at 80% 8%, rgba(255,255,255,0.5), transparent),
-              radial-gradient(1px 1px at 40% 25%, rgba(255,255,255,0.2), transparent),
-              radial-gradient(1px 1px at 10% 30%, rgba(255,255,255,0.3), transparent),
-              radial-gradient(1px 1px at 90% 15%, rgba(255,255,255,0.4), transparent);
-}
-
-.menu-boat-silhouette {
-  position: absolute;
-  top: 32%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 60px;
-  color: rgba(30, 159, 212, 0.5);
-  animation: menuBoatFloat 4s ease-in-out infinite;
-  filter: drop-shadow(0 4px 12px rgba(30, 159, 212, 0.3));
-}
-
-.wave-layer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 200%;
-  height: 80px;
-}
-.wave-layer.w1 {
-  bottom: 180px;
-  opacity: 0.08;
-  animation: waveMove1 12s linear infinite;
-}
-.wave-layer.w2 {
-  bottom: 160px;
-  opacity: 0.05;
-  animation: waveMove2 18s linear infinite;
-}
-
-/* Buttons */
+/* Buttons (global) */
 .btn-primary {
   background: linear-gradient(180deg, #23abdf, #12638f);
   color: white;
@@ -168,11 +277,6 @@ button {
   color: #8aafcc;
   box-shadow: 0 4px 0 #1c2836;
   pointer-events: none;
-}
-
-.btn-primary.large {
-  font-size: 18px;
-  width: 100%;
 }
 
 .btn-secondary {
@@ -215,44 +319,6 @@ button {
 
 .mt-20 { margin-top: 20px; }
 .mb-20 { margin-bottom: 20px; }
-
-/* Main Menu */
-.menu-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 40px 24px;
-}
-
-.hero-copy {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.hero-copy h1 {
-  font-size: 36px;
-  line-height: 1.1;
-  margin: 0 0 12px 0;
-  background: linear-gradient(to bottom, #ffffff, #8aafcc);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.hero-text {
-  font-size: 16px;
-  color: #8aafcc;
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
-
-.menu-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-}
 
 /* Cards & Glassmorphism */
 .transparent-card {

@@ -7,7 +7,8 @@ import { STARTING_MARINAS } from "../game-data/marinas";
 import type { StartingMarina } from "../game-data/marinas";
 import { STARTING_BOATS, STARTING_BUDGET } from "../game-data/boats";
 import type { StartingBoat } from "../game-data/boats";
-import { WORLD_ROUTES } from "../game-data/routes";
+import { WORLD_ROUTES, getNextRoute } from "../game-data/routes";
+import type { RouteId } from "../game-data/routes";
 import { SOCIAL_PLATFORMS } from "../game-data/socialPlatforms";
 import { BOAT_UPGRADES } from "../game-data/upgrades";
 
@@ -17,7 +18,9 @@ type Step =
   | "PICK_MARINA"
   | "PICK_BOAT"
   | "NAME_BOAT"
-  | "HUB";
+  | "HUB"
+  | "SEA_MODE"
+  | "ARRIVAL_SCREEN";
 
 type Tab = "liman" | "icerik" | "rota" | "tekne" | "kaptan";
 
@@ -53,6 +56,21 @@ function App() {
   const [firstContentDone, setFirstContentDone] = useState(false);
   const [purchasedUpgradeIds, setPurchasedUpgradeIds] = useState<string[]>([]);
 
+  // New State variables for Sea Mode MVP
+  const [currentLocationName, setCurrentLocationName] = useState("");
+  const [worldProgress, setWorldProgress] = useState(0);
+  const [energy, setEnergy] = useState(100);
+  const [water, setWater] = useState(100);
+  const [fuel, setFuel] = useState(100);
+  const [boatCondition, setBoatCondition] = useState(100);
+  
+  const [currentRouteId, setCurrentRouteId] = useState<string>("greek_islands");
+  const [completedRouteIds, setCompletedRouteIds] = useState<string[]>([]);
+  
+  const [voyageTotalDays, setVoyageTotalDays] = useState(0);
+  const [voyageDaysRemaining, setVoyageDaysRemaining] = useState(0);
+  const [currentSeaEvent, setCurrentSeaEvent] = useState("");
+
   const [hasSave, setHasSave] = useState(false);
   const [saveBoatName, setSaveBoatName] = useState("");
 
@@ -60,7 +78,7 @@ function App() {
   const selectedMarina: StartingMarina = STARTING_MARINAS[marinaIndex];
   const selectedBoat: StartingBoat = STARTING_BOATS[boatIndex];
 
-  const firstRealRoute = WORLD_ROUTES.find((route) => route.order === 2);
+  const currentRoute = WORLD_ROUTES.find((route) => route.id === currentRouteId);
 
   // Dynamic calculations
   const currentOceanReadiness = selectedBoat.oceanReadiness + purchasedUpgradeIds.reduce((total, id) => {
@@ -86,7 +104,7 @@ function App() {
 
   // Save game when hub states change
   useEffect(() => {
-    if (step === "HUB") {
+    if (step === "HUB" || step === "SEA_MODE" || step === "ARRIVAL_SCREEN") {
       const saveObj = {
         profileIndex,
         marinaIndex,
@@ -97,13 +115,32 @@ function App() {
         firstContentDone,
         logs,
         purchasedUpgradeIds,
+        step,
+        activeTab,
+        
+        currentLocationName,
+        worldProgress,
+        energy,
+        water,
+        fuel,
+        boatCondition,
+        currentRouteId,
+        completedRouteIds,
+        voyageTotalDays,
+        voyageDaysRemaining,
+        currentSeaEvent,
+        
         hasSave: true,
       };
       localStorage.setItem("yelkenli_save", JSON.stringify(saveObj));
       setHasSave(true);
       setSaveBoatName(boatName);
     }
-  }, [step, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone, logs, purchasedUpgradeIds]);
+  }, [
+    step, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone, 
+    logs, purchasedUpgradeIds, activeTab, currentLocationName, worldProgress, energy, water, 
+    fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining, currentSeaEvent
+  ]);
 
   // Flow handlers
   const startNewGame = () => setStep("PICK_PROFILE");
@@ -119,6 +156,17 @@ function App() {
     setFollowers(0);
     setPurchasedUpgradeIds([]);
     setLogs(["Kariyer başladı. Limana giriş yapıldı."]);
+    
+    // Init Game State
+    setCurrentLocationName(selectedMarina.name);
+    setWorldProgress(0);
+    setEnergy(100);
+    setWater(100);
+    setFuel(100);
+    setBoatCondition(100);
+    setCompletedRouteIds([]);
+    setCurrentRouteId("greek_islands");
+    
     setStep("HUB");
     setActiveTab("liman");
   };
@@ -137,8 +185,21 @@ function App() {
         setFirstContentDone(parsed.firstContentDone ?? false);
         setLogs(parsed.logs ?? []);
         setPurchasedUpgradeIds(parsed.purchasedUpgradeIds ?? []);
-        setStep("HUB");
-        setActiveTab("liman");
+        
+        setCurrentLocationName(parsed.currentLocationName ?? "");
+        setWorldProgress(parsed.worldProgress ?? 0);
+        setEnergy(parsed.energy ?? 100);
+        setWater(parsed.water ?? 100);
+        setFuel(parsed.fuel ?? 100);
+        setBoatCondition(parsed.boatCondition ?? 100);
+        setCurrentRouteId(parsed.currentRouteId ?? "greek_islands");
+        setCompletedRouteIds(parsed.completedRouteIds ?? []);
+        setVoyageTotalDays(parsed.voyageTotalDays ?? 0);
+        setVoyageDaysRemaining(parsed.voyageDaysRemaining ?? 0);
+        setCurrentSeaEvent(parsed.currentSeaEvent ?? "");
+
+        setStep(parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB");
+        setActiveTab(parsed.activeTab ?? "liman");
       } catch (e) {
         console.error("Load error", e);
       }
@@ -356,8 +417,18 @@ function App() {
     setLogs(prev => [`${logMsg} +${gainCredits} TL, +${gainFollowers} Takipçi.`, ...prev.slice(0, 4)]);
   };
 
-  const handlePrepareRoute = () => {
-    setLogs(prev => [`${firstRealRoute?.name || "Yunan Adaları"} rotası incelendi.`, ...prev.slice(0, 4)]);
+  const handleStartVoyage = () => {
+    if (!currentRoute) return;
+    
+    const minD = currentRoute.baseDurationDays.min;
+    const maxD = currentRoute.baseDurationDays.max;
+    const days = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
+    
+    setVoyageTotalDays(days);
+    setVoyageDaysRemaining(days);
+    setCurrentSeaEvent("Rotaya çıkıldı. Rüzgar kolayına.");
+    setLogs(prev => [`${currentRoute.name} rotasına çıkıldı.`, ...prev.slice(0, 4)]);
+    setStep("SEA_MODE");
   };
 
   const handleBuyUpgrade = (upgradeId: string) => {
@@ -374,19 +445,70 @@ function App() {
     setLogs(prev => [`${upgrade.name} satın alındı ve kuruldu.`, ...prev.slice(0, 4)]);
   };
 
+  const advanceDay = () => {
+    setVoyageDaysRemaining(prev => {
+      const newDays = prev - 1;
+      
+      setEnergy(e => Math.max(0, e - 5));
+      setWater(w => Math.max(0, w - 4));
+      setFuel(f => Math.max(0, f - 3));
+      
+      if (Math.random() > 0.7) {
+        setBoatCondition(c => Math.max(0, c - (Math.floor(Math.random() * 3) + 1)));
+      }
+      
+      const events = [
+        { text: "Uygun rüzgar yakalandı. Harika bir seyir.", effect: () => {} },
+        { text: "Harika görüntü fırsatı! +100 takipçi.", effect: () => setFollowers(f => f + 100) },
+        { text: "Hafif teknik sorun.", effect: () => setBoatCondition(c => Math.max(0, c - 3)) },
+        { text: "Değişken hava. Enerji üretimi azaldı.", effect: () => setEnergy(e => Math.max(0, e - 3)) },
+        { text: "Sakin seyir.", effect: () => {} },
+        { text: "Kısa video fırsatı. +150 takipçi.", effect: () => setFollowers(f => f + 150) },
+        { text: "Küçük sponsor ilgisi. +100 TL.", effect: () => setCredits(cr => cr + 100) },
+      ];
+      
+      const evt = events[Math.floor(Math.random() * events.length)];
+      evt.effect();
+      setCurrentSeaEvent(evt.text);
+      setLogs(logsPrev => [evt.text, ...logsPrev.slice(0, 4)]);
+      
+      if (newDays <= 0) {
+        setStep("ARRIVAL_SCREEN");
+      }
+      return newDays;
+    });
+  };
+
+  const handleArrival = () => {
+    if (!currentRoute) return;
+    
+    setWorldProgress(currentRoute.worldProgressPercent);
+    setCompletedRouteIds(prev => [...prev, currentRoute.id]);
+    setCurrentLocationName(currentRoute.to);
+    
+    const nextR = getNextRoute(currentRoute.id as RouteId);
+    if (nextR) {
+       setCurrentRouteId(nextR.id);
+    }
+    
+    setLogs(prev => [`${currentRoute.name} rotası tamamlandı. ${currentRoute.to} limanına varıldı.`, ...prev.slice(0, 4)]);
+    setStep("HUB");
+    setActiveTab("liman");
+  };
+
   const renderLimanTab = () => (
     <div className="tab-content fade-in">
       <div className="hub-center-visual">
         <div className="visual-circle">
           <span className="visual-icon">⛵</span>
         </div>
-        <h3>{selectedMarina.name} Limanı</h3>
+        <h3>{currentLocationName}</h3>
       </div>
 
       <div className="hub-progress-cards">
         <div className="prog-card">
           <span>Dünya Turu</span>
-          <strong>%0</strong>
+          <strong>%{worldProgress}</strong>
         </div>
         <div className="prog-card">
           <span>Okyanus Hazırlığı</span>
@@ -406,8 +528,8 @@ function App() {
         <div className="quest-card done">
           <div className="quest-icon">✅</div>
           <div className="quest-texts">
-            <h3>Sıradaki Görev Bekleniyor</h3>
-            <p>Rota: {firstRealRoute?.name || "Yunan Adaları"}</p>
+            <h3>{completedRouteIds.length > 0 ? "Yeni limana ulaştın" : "Sıradaki rotaya hazırlan"}</h3>
+            <p>Sıradaki Rota: {currentRoute?.name || "Bilinmiyor"}</p>
           </div>
         </div>
       )}
@@ -454,21 +576,23 @@ function App() {
       <span className="card-label">Navigasyon Masası</span>
       <h2>Sıradaki Rotalar</h2>
       
-      {firstRealRoute && (
+      {currentRoute ? (
         <article className="route-card">
           <div className="route-header">
-            <h3>{firstRealRoute.name}</h3>
-            <span className="risk-badge" data-risk={firstRealRoute.riskLevel}>{firstRealRoute.riskLevel.toUpperCase()}</span>
+            <h3>{currentRoute.name}</h3>
+            <span className="risk-badge" data-risk={currentRoute.riskLevel}>{currentRoute.riskLevel.toUpperCase()}</span>
           </div>
-          <p>{firstRealRoute.description}</p>
+          <p>{currentRoute.description}</p>
           
           <div className="route-stats">
-            <div><span>Süre:</span> <strong>{firstRealRoute.baseDurationDays.min}-{firstRealRoute.baseDurationDays.max} Gün</strong></div>
-            <div><span>İçerik:</span> <strong>{firstRealRoute.contentPotential.toUpperCase()}</strong></div>
+            <div><span>Süre:</span> <strong>{currentRoute.baseDurationDays.min}-{currentRoute.baseDurationDays.max} Gün</strong></div>
+            <div><span>İçerik:</span> <strong>{currentRoute.contentPotential.toUpperCase()}</strong></div>
           </div>
 
-          <button className="btn-primary full-width mt-20" onClick={handlePrepareRoute}>Rotaya Hazırlan</button>
+          <button className="btn-primary full-width mt-20" onClick={handleStartVoyage}>Rotaya Çık</button>
         </article>
+      ) : (
+        <p>Tüm rotalar tamamlandı!</p>
       )}
     </div>
   );
@@ -542,7 +666,7 @@ function App() {
         <h3>Kariyer Hedefleri</h3>
         <div className="goal-item">
           <span>Dünya Turu</span>
-          <div className="goal-bar"><div className="goal-fill" style={{width: "0%"}}></div></div>
+          <div className="goal-bar"><div className="goal-fill" style={{width: `${worldProgress}%`}}></div></div>
         </div>
         <div className="goal-item">
           <span>Takipçi Hedefi (1M)</span>
@@ -598,6 +722,50 @@ function App() {
     </div>
   );
 
+  const renderSeaMode = () => (
+    <div className="sea-mode-wrapper fade-in">
+      <header className="sea-topbar">
+        <h2>{boatName}</h2>
+        <p>{currentRoute?.name}: {currentRoute?.from} ➔ {currentRoute?.to}</p>
+      </header>
+      
+      <main className="sea-content">
+        <div className="sea-visual">
+          <div className="boat-animation">⛵</div>
+        </div>
+        
+        <div className="sea-status-card">
+          <h3 className="days-left">{voyageDaysRemaining} Gün Kaldı</h3>
+          <div className="progress-bar-container">
+            <div className="progress-fill" style={{width: `${(1 - (voyageDaysRemaining / voyageTotalDays)) * 100}%`}}></div>
+          </div>
+          <p className="sea-event-text">{currentSeaEvent}</p>
+        </div>
+        
+        <div className="resource-grid">
+          <div className="res-card"><span>⚡ Enerji</span><strong>{energy}%</strong></div>
+          <div className="res-card"><span>💧 Su</span><strong>{water}%</strong></div>
+          <div className="res-card"><span>⛽ Yakıt</span><strong>{fuel}%</strong></div>
+          <div className="res-card"><span>🔧 Durum</span><strong>{boatCondition}%</strong></div>
+        </div>
+        
+        <button className="btn-primary large mt-20 pulse-btn" onClick={advanceDay}>Bir Gün İlerle</button>
+      </main>
+    </div>
+  );
+
+  const renderArrivalScreen = () => (
+    <div className="selection-screen fade-in cinematic-bg" style={{justifyContent: 'center'}}>
+      <div className="transparent-card centered">
+        <h2>Varış!</h2>
+        <p>{currentRoute?.to} limanına ulaştın.</p>
+        <div style={{fontSize: "64px", margin: "24px 0"}}>⚓</div>
+        <p>Dünya turu ilerlemesi: %{currentRoute?.worldProgressPercent}</p>
+        <button className="btn-primary large mt-20" onClick={handleArrival}>Limana Dön</button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="game-wrapper">
       {step === "MAIN_MENU" && renderMainMenu()}
@@ -606,6 +774,8 @@ function App() {
       {step === "PICK_BOAT" && renderBoatSelection()}
       {step === "NAME_BOAT" && renderBoatNaming()}
       {step === "HUB" && renderHub()}
+      {step === "SEA_MODE" && renderSeaMode()}
+      {step === "ARRIVAL_SCREEN" && renderArrivalScreen()}
     </div>
   );
 }

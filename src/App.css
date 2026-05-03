@@ -930,3 +930,126 @@ h2 {
 }
 
 .full-width { width: 100%; }
+
+/* Sea Mode MVP */
+.sea-mode-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #0f3057 0%, #081420 100%);
+  min-height: 100vh;
+}
+
+.sea-topbar {
+  padding: 24px;
+  text-align: center;
+  background: rgba(0,0,0,0.2);
+}
+
+.sea-topbar h2 {
+  margin: 0;
+  color: #f0f8ff;
+}
+
+.sea-topbar p {
+  margin: 4px 0 0 0;
+  color: #8aafcc;
+  font-size: 14px;
+}
+
+.sea-content {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sea-visual {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+}
+
+.boat-animation {
+  font-size: 80px;
+  animation: floatBoat 3s ease-in-out infinite;
+}
+
+@keyframes floatBoat {
+  0% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-15px) rotate(2deg); }
+  100% { transform: translateY(0) rotate(-2deg); }
+}
+
+.sea-status-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 24px;
+  border-radius: 20px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.days-left {
+  font-size: 24px;
+  margin: 0 0 16px 0;
+}
+
+.progress-bar-container {
+  height: 8px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #2ec4a0;
+  transition: width 0.3s ease;
+}
+
+.sea-event-text {
+  font-size: 14px;
+  color: #8aafcc;
+  margin: 0;
+  font-style: italic;
+  min-height: 20px;
+}
+
+.resource-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.res-card {
+  background: rgba(0,0,0,0.2);
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.res-card span {
+  font-size: 12px;
+  color: #8aafcc;
+}
+
+.res-card strong {
+  font-size: 16px;
+}
+
+.pulse-btn {
+  animation: pulseBtn 2s infinite;
+}
+
+@keyframes pulseBtn {
+  0% { box-shadow: 0 0 0 0 rgba(30, 159, 212, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(30, 159, 212, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(30, 159, 212, 0); }
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 
 import { PLAYER_PROFILES } from "../game-data/playerProfiles";
@@ -48,11 +48,49 @@ function App() {
   const [logs, setLogs] = useState<string[]>([]);
   const [firstContentDone, setFirstContentDone] = useState(false);
 
+  const [hasSave, setHasSave] = useState(false);
+  const [saveBoatName, setSaveBoatName] = useState("");
   const selectedProfile: PlayerProfile = PLAYER_PROFILES[profileIndex];
   const selectedMarina: StartingMarina = STARTING_MARINAS[marinaIndex];
   const selectedBoat: StartingBoat = STARTING_BOATS[boatIndex];
 
   const firstRealRoute = WORLD_ROUTES.find((route) => route.order === 2);
+
+  // Load save on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("yelkenli_save");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.hasSave) {
+          setHasSave(true);
+          setSaveBoatName(parsed.boatName || "Bilinmeyen Tekne");
+        }
+      } catch (e) {
+        console.error("Save load error", e);
+      }
+    }
+  }, []);
+
+  // Save game when hub states change
+  useEffect(() => {
+    if (step === "HUB") {
+      const saveObj = {
+        profileIndex,
+        marinaIndex,
+        boatIndex,
+        boatName,
+        credits,
+        followers,
+        firstContentDone,
+        logs,
+        hasSave: true,
+      };
+      localStorage.setItem("yelkenli_save", JSON.stringify(saveObj));
+      setHasSave(true);
+      setSaveBoatName(boatName);
+    }
+  }, [step, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone, logs]);
 
   // Flow handlers
   const startNewGame = () => setStep("PICK_PROFILE");
@@ -68,6 +106,26 @@ function App() {
     setFollowers(0);
     setLogs(["Kariyer başladı. Limana giriş yapıldı."]);
     setStep("HUB");
+  };
+
+  const loadGame = () => {
+    const saved = localStorage.getItem("yelkenli_save");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setProfileIndex(parsed.profileIndex ?? 0);
+        setMarinaIndex(parsed.marinaIndex ?? 0);
+        setBoatIndex(parsed.boatIndex ?? 0);
+        setBoatName(parsed.boatName ?? "");
+        setCredits(parsed.credits ?? 0);
+        setFollowers(parsed.followers ?? 0);
+        setFirstContentDone(parsed.firstContentDone ?? false);
+        setLogs(parsed.logs ?? []);
+        setStep("HUB");
+      } catch (e) {
+        console.error("Load error", e);
+      }
+    }
   };
 
   const nextProfile = () => setProfileIndex((i) => (i + 1) % PLAYER_PROFILES.length);
@@ -91,9 +149,13 @@ function App() {
           <button className="btn-primary large" onClick={startNewGame}>
             ⚓ Yeni Oyun
           </button>
-          <button className="btn-secondary large disabled" title="Çok Yakında">
+          <button 
+            className={`btn-secondary large ${!hasSave ? "disabled" : ""}`} 
+            onClick={hasSave ? loadGame : undefined}
+          >
             📖 Devam Et
           </button>
+          {hasSave && <p style={{fontSize: "13px", color: "#8aafcc", marginTop: "8px", fontWeight: 600}}>Kayıt bulundu: {saveBoatName}</p>}
         </div>
       </div>
     </div>

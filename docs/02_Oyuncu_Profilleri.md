@@ -4,18 +4,11 @@
 
 \## Belge Durumu
 
-
-
-\- Durum: Taslak
-
-\- Sürüm: V1.0 Taslak
-
-\- İlgili ana belge: docs/01\_Oyun\_Anayasasi.md
-
-\- Amaç: Oyuncunun başlangıçta seçeceği karakter/profil sistemini netleştirmek
-
-\- Not: Bu belge son kontrolden sonra “Kilitlendi” durumuna alınacaktır.
-
+- Durum: Kilitlendi
+- Sürüm: V1.0
+- İlgili ana belge: docs/01_Oyun_Anayasasi.md
+- Amaç: Oyuncunun başlangıçta seçeceği karakter/profil sistemini netleştirmek
+- Kilit kararı: Bu belge Oyuncu Profilleri V1.0 olarak kabul edilmiştir.
 
 
 \---
@@ -1366,27 +1359,35 @@ Bu belge kilitlenmeden önce şu sorular cevaplanmalıdır:
 
 
 
-\# 21. Geçici Karar
+\# 21. Kilit Kararı
 
+Bu belge Oyuncu Profilleri V1.0 olarak kabul edilmiş ve kilitlenmiştir.
 
+İlk sürümde 6 oyuncu profili kullanılacaktır:
 
-Bu belge V1.0 taslak olarak hazırlanmıştır.
+1. Eski Kaptan
+2. İçerik Üreticisi
+3. Teknik Usta
+4. Maceracı Gezgin
+5. Sosyal Girişimci
+6. Aile / Yaşam Kanalı
 
+Bu profiller oyunun başlangıç kimliğini, sosyal medya büyümesini, deniz modu risklerini, sponsor potansiyelini, bakım/tamir avantajlarını ve tekrar oynanabilirliğini etkileyecektir.
 
+Profil sistemi MVP’de şu kapsamla uygulanacaktır:
 
-Son kontrolden sonra şu şekilde güncellenecektir:
+- 6 profil
+- Profil hikayesi
+- Başlangıç skill değerleri
+- Avantaj / dezavantaj
+- Platform uyumu
+- Basit başlangıç bonusları
+- Basit başlangıç dezavantajları
+- Basit skill gelişim yönleri
 
+Tam dallı skill ağacı, profil özel görevleri, profil özel final sahneleri ve intro animasyonları MVP sonrası değerlendirilecektir.
 
-
-\- Durum: Kilitlendi
-
-\- Sürüm: V1.0
-
-
-
-Kilitlendikten sonra sıradaki ana bölüm:
-
-
+Bu belge kilitlendikten sonra sıradaki ana tasarım bölümü:
 
 > Başlangıç Marinaları V1.0
 

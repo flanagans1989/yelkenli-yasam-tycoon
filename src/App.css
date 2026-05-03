@@ -1,0 +1,320 @@
+:root {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #f7fbff;
+  background: #07111f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(25, 118, 210, 0.28), transparent 34%),
+    radial-gradient(circle at top right, rgba(0, 188, 212, 0.18), transparent 32%),
+    linear-gradient(135deg, #07111f 0%, #0b1f35 52%, #06131f 100%);
+}
+
+button {
+  font: inherit;
+}
+
+.app-shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px 0 48px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr);
+  gap: 24px;
+  align-items: stretch;
+  margin-bottom: 24px;
+}
+
+.hero-copy,
+.captain-card,
+.panel,
+.detail-card,
+.roadmap-panel {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(7, 17, 31, 0.72);
+  backdrop-filter: blur(18px);
+  border-radius: 28px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+}
+
+.hero-copy {
+  padding: 38px;
+}
+
+.eyebrow,
+.card-label {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  color: #7dd3fc;
+  background: rgba(125, 211, 252, 0.1);
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+h1 {
+  margin: 22px 0 16px;
+  font-size: clamp(42px, 7vw, 82px);
+  line-height: 0.95;
+  letter-spacing: -0.07em;
+}
+
+h2 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.03em;
+}
+
+p {
+  color: #bad0e2;
+  line-height: 1.65;
+}
+
+.hero-text {
+  max-width: 760px;
+  font-size: 18px;
+}
+
+.target-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.target-row div,
+.budget-box,
+.info-list div,
+.skills div,
+.mini-stats div,
+.next-route {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.055);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.target-row span,
+.budget-box span,
+.info-list span,
+.skills span,
+.mini-stats span,
+.next-route span {
+  display: block;
+  color: #8ea9be;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.target-row strong,
+.budget-box strong,
+.info-list strong,
+.skills strong,
+.mini-stats strong,
+.next-route strong {
+  color: #ffffff;
+  font-size: 18px;
+}
+
+.captain-card {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 300px;
+}
+
+.captain-card h2 {
+  margin-top: 18px;
+  font-size: 32px;
+}
+
+.selection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.panel {
+  padding: 20px;
+  min-height: 440px;
+}
+
+.panel-header {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.panel-header > span {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  color: white;
+  font-weight: 900;
+}
+
+.panel-header p {
+  margin: 6px 0 0;
+}
+
+.button-list {
+  display: grid;
+  gap: 10px;
+  max-height: 530px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.choice {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.045);
+  color: white;
+  border-radius: 16px;
+  padding: 13px 14px;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.choice:hover {
+  transform: translateY(-1px);
+  border-color: rgba(125, 211, 252, 0.35);
+  background: rgba(125, 211, 252, 0.08);
+}
+
+.choice.active {
+  border-color: rgba(56, 189, 248, 0.9);
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(37, 99, 235, 0.2));
+}
+
+.choice strong,
+.choice small {
+  display: block;
+}
+
+.choice small {
+  color: #9fb6c9;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.detail-card {
+  padding: 24px;
+}
+
+.detail-card h2 {
+  margin-top: 16px;
+}
+
+.skills,
+.info-list,
+.mini-stats {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.skills {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.roadmap-panel {
+  padding: 26px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.8fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.roadmap-panel h2 {
+  margin-top: 16px;
+}
+
+.mini-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.next-route {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.next-route small {
+  color: #9fb6c9;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+@media (max-width: 980px) {
+  .hero,
+  .selection-grid,
+  .detail-grid,
+  .roadmap-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .target-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-shell {
+    width: min(100% - 20px, 1180px);
+    padding-top: 18px;
+  }
+
+  .hero-copy,
+  .captain-card,
+  .panel,
+  .detail-card,
+  .roadmap-panel {
+    border-radius: 20px;
+  }
+
+  .hero-copy {
+    padding: 24px;
+  }
+
+  h1 {
+    font-size: 44px;
+  }
+
+  .skills,
+  .mini-stats {
+    grid-template-columns: 1fr;
+  }
+}

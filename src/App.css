@@ -1302,3 +1302,52 @@ h2 {
   font-weight: 700;
   text-transform: capitalize;
 }
+
+/* Sub-tabs & Sponsor UI */
+.sub-tab-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  background: rgba(0,0,0,0.2);
+  padding: 4px;
+  border-radius: 12px;
+}
+.sub-tab {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  color: #8aafcc;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: 0.2s;
+  font-size: 14px;
+}
+.sub-tab.active {
+  background: rgba(30, 159, 212, 0.2);
+  color: #1e9fd4;
+}
+
+.brand-trust-card {
+  background: rgba(46, 196, 160, 0.1);
+  border: 1px solid rgba(46, 196, 160, 0.3);
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+.brand-trust-card span { display: block; font-size: 13px; color: #8aafcc; margin-bottom: 4px; }
+.brand-trust-card strong { font-size: 20px; color: #2ec4a0; }
+
+.section-title { font-size: 16px; margin: 0 0 12px 0; color: #f0f8ff; }
+.empty-text { font-size: 13px; color: #8aafcc; text-align: center; font-style: italic; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; }
+
+.sponsor-offers-list { display: flex; flex-direction: column; gap: 12px; }
+.sponsor-card { background: #0d2035; border: 1px solid rgba(245, 166, 35, 0.3); padding: 16px; border-radius: 16px; }
+.spo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.spo-header strong { font-size: 16px; color: #f5a623; }
+.spo-tier { font-size: 11px; background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 6px; }
+.sponsor-card p { margin: 0; font-size: 13px; color: #8aafcc; }
+.mb-20 { margin-bottom: 20px; }
+
+.accepted-sponsors-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.spo-badge { background: rgba(46, 196, 160, 0.15); color: #2ec4a0; border: 1px solid rgba(46, 196, 160, 0.3); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; }

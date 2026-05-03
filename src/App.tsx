@@ -12,6 +12,7 @@ import type { RouteId } from "../game-data/routes";
 import { SOCIAL_PLATFORMS } from "../game-data/socialPlatforms";
 import { BOAT_UPGRADES, UPGRADE_CATEGORIES } from "../game-data/upgrades";
 import type { UpgradeCategoryId } from "../game-data/upgrades";
+import { getSponsorTierByFollowers } from "../game-data/economy";
 
 type Step =
   | "MAIN_MENU"
@@ -97,6 +98,13 @@ function App() {
   // Upgrade V2 State
   const [selectedUpgradeCategory, setSelectedUpgradeCategory] = useState<UpgradeCategoryId>("energy");
 
+  // Sponsor MVP States
+  const [brandTrust, setBrandTrust] = useState(10);
+  const [sponsorOffers, setSponsorOffers] = useState<any[]>([]);
+  const [acceptedSponsors, setAcceptedSponsors] = useState<string[]>([]);
+  const [sponsoredContentCount, setSponsoredContentCount] = useState(0);
+  const [icerikSubTab, setIcerikSubTab] = useState<"produce" | "sponsor">("produce");
+
   const [hasSave, setHasSave] = useState(false);
   const [saveBoatName, setSaveBoatName] = useState("");
 
@@ -168,6 +176,12 @@ function App() {
         selectedContentType,
         contentResult,
         selectedUpgradeCategory,
+
+        brandTrust,
+        sponsorOffers,
+        acceptedSponsors,
+        sponsoredContentCount,
+        icerikSubTab,
         
         hasSave: true,
       };
@@ -179,7 +193,8 @@ function App() {
     step, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone, 
     logs, purchasedUpgradeIds, activeTab, currentLocationName, worldProgress, energy, water, 
     fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining, 
-    currentSeaEvent, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory
+    currentSeaEvent, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
+    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab
   ]);
 
   // Flow handlers
@@ -211,6 +226,12 @@ function App() {
     setSelectedPlatformId(null);
     setSelectedContentType(null);
     setSelectedUpgradeCategory("energy");
+
+    setBrandTrust(10);
+    setSponsorOffers([]);
+    setAcceptedSponsors([]);
+    setSponsoredContentCount(0);
+    setIcerikSubTab("produce");
     
     setStep("HUB");
     setActiveTab("liman");
@@ -247,6 +268,12 @@ function App() {
         setSelectedContentType(parsed.selectedContentType ?? null);
         setContentResult(parsed.contentResult ?? null);
         setSelectedUpgradeCategory(parsed.selectedUpgradeCategory ?? "energy");
+
+        setBrandTrust(parsed.brandTrust ?? 10);
+        setSponsorOffers(parsed.sponsorOffers ?? []);
+        setAcceptedSponsors(parsed.acceptedSponsors ?? []);
+        setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
+        setIcerikSubTab(parsed.icerikSubTab ?? "produce");
 
         setStep(parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB");
         setActiveTab(parsed.activeTab ?? "liman");
@@ -636,6 +663,52 @@ function App() {
     setLogs(prev => [logMsg, ...prev.slice(0, 4)]);
   };
 
+  const handleCheckSponsorOffers = () => {
+    const tier = getSponsorTierByFollowers(followers, brandTrust);
+    if (!tier) {
+      alert("Şu an kriterlerinize uygun yeni sponsor teklifi yok. Takipçi ve marka güveninizi artırın.");
+      return;
+    }
+    
+    const sponsorBrands = ["BlueWave Kamera", "Marina Plus", "OceanSafe Güvenlik", "SolarDeck Enerji", "SailWear Outdoor", "DeepRoute Navigasyon"];
+    const randomBrand = sponsorBrands[Math.floor(Math.random() * sponsorBrands.length)];
+    
+    const newOffer = {
+      id: "spo_" + Date.now(),
+      brandName: randomBrand,
+      tierName: tier.name,
+      tierId: tier.tier,
+      minReward: tier.rewardRange.min,
+      maxReward: tier.rewardRange.max,
+    };
+    
+    setSponsorOffers(prev => [...prev, newOffer]);
+  };
+
+  const handleAcceptSponsor = (offerId: string) => {
+    const offer = sponsorOffers.find(o => o.id === offerId);
+    if (!offer) return;
+    
+    let baseReward = Math.floor(Math.random() * (offer.maxReward - offer.minReward + 1)) + offer.minReward;
+    if (selectedProfile.id === "social_entrepreneur") {
+      baseReward = Math.floor(baseReward * 1.1); 
+    }
+    
+    setCredits(prev => prev + baseReward);
+    setAcceptedSponsors(prev => [...prev, offer.brandName]);
+    setSponsorOffers(prev => prev.filter(o => o.id !== offerId));
+    
+    const newCount = sponsoredContentCount + 1;
+    setSponsoredContentCount(newCount);
+    
+    if (newCount % 3 === 0) {
+      setLogs(prev => [`${offer.brandName} teklifi kabul edildi (+${baseReward} TL). Ancak takipçiler sürekli sponsorlu içeriklerden sıkılmaya başladı.`, ...prev.slice(0, 4)]);
+    } else {
+      setBrandTrust(prev => prev + 2);
+      setLogs(prev => [`${offer.brandName} teklifi kabul edildi (+${baseReward} TL). Marka güveni arttı.`, ...prev.slice(0, 4)]);
+    }
+  };
+
   const renderLimanTab = () => (
     <div className="tab-content fade-in">
       <div className="hub-center-visual">
@@ -727,69 +800,118 @@ function App() {
            <div className="stat-box"><span>Takipçi</span><strong>{followers.toLocaleString("tr-TR")}</strong></div>
            <div className="stat-box"><span>Bütçe</span><strong>{credits.toLocaleString("tr-TR")} TL</strong></div>
         </div>
+
+        <div className="sub-tab-bar">
+           <button className={`sub-tab ${icerikSubTab === "produce" ? "active" : ""}`} onClick={() => setIcerikSubTab("produce")}>İçerik Üret</button>
+           <button className={`sub-tab ${icerikSubTab === "sponsor" ? "active" : ""}`} onClick={() => setIcerikSubTab("sponsor")}>Sponsorluklar</button>
+        </div>
         
-        {!contentResult ? (
-          <>
-            <span className="card-label">1. Platform Seç</span>
-            <div className="platform-grid">
-              {SOCIAL_PLATFORMS.filter(p => p.mvpStatus === "active").map(platform => (
+        {icerikSubTab === "produce" && (
+          <div className="fade-in">
+            {!contentResult ? (
+              <>
+                <span className="card-label">1. Platform Seç</span>
+                <div className="platform-grid">
+                  {SOCIAL_PLATFORMS.filter(p => p.mvpStatus === "active").map(platform => (
+                    <button 
+                      key={platform.id} 
+                      className={`platform-card ${selectedPlatformId === platform.id ? "active" : ""}`} 
+                      onClick={() => setSelectedPlatformId(platform.id)}
+                    >
+                      <div className="platform-header">
+                        <strong>{platform.name}</strong>
+                      </div>
+                      <small>{platform.tagline}</small>
+                    </button>
+                  ))}
+                </div>
+      
+                <span className="card-label mt-20">2. İçerik Türü Seç</span>
+                <div className="type-pills">
+                  {CONTENT_TYPES.map(type => (
+                    <button 
+                      key={type.id} 
+                      className={`type-pill ${selectedContentType === type.id ? "active" : ""}`}
+                      onClick={() => setSelectedContentType(type.id)}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
+                </div>
+      
                 <button 
-                  key={platform.id} 
-                  className={`platform-card ${selectedPlatformId === platform.id ? "active" : ""}`} 
-                  onClick={() => setSelectedPlatformId(platform.id)}
+                  className={`btn-primary large mt-20 ${(!selectedPlatformId || !selectedContentType) ? "disabled" : ""}`} 
+                  onClick={handleProduceContentV2}
                 >
-                  <div className="platform-header">
-                    <strong>{platform.name}</strong>
-                  </div>
-                  <small>{platform.tagline}</small>
+                  🎬 İçerik Üret
                 </button>
-              ))}
+              </>
+            ) : (
+              <div className="content-result-card fade-in">
+                 <div className="result-header">
+                    <h2>Yayınlandı!</h2>
+                    {contentResult.viral && <span className="viral-badge">🔥 VİRAL</span>}
+                 </div>
+                 
+                 <div className="result-details">
+                   <div className="res-row"><span>Platform:</span> <strong>{contentResult.platform}</strong></div>
+                   <div className="res-row"><span>Kalite Skoru:</span> <strong>{contentResult.quality} / 100</strong></div>
+                 </div>
+                 
+                 <div className="result-gains">
+                   <div className="gain-box followers"><span>+{contentResult.followersGained.toLocaleString("tr-TR")}</span><small>Takipçi</small></div>
+                   <div className="gain-box credits"><span>+{contentResult.creditsGained.toLocaleString("tr-TR")} TL</span><small>Kredi</small></div>
+                 </div>
+                 
+                 <p className="result-comment">"{contentResult.comment}"</p>
+                 
+                 <button className="btn-secondary full-width mt-20" onClick={() => {
+                   setContentResult(null);
+                   setSelectedPlatformId(null);
+                   setSelectedContentType(null);
+                 }}>Yeni İçerik Üret</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {icerikSubTab === "sponsor" && (
+          <div className="sponsor-section fade-in">
+            <div className="brand-trust-card">
+               <span>Marka Güveni (Brand Trust)</span>
+               <strong>{brandTrust} / 100</strong>
             </div>
-  
-            <span className="card-label mt-20">2. İçerik Türü Seç</span>
-            <div className="type-pills">
-              {CONTENT_TYPES.map(type => (
-                <button 
-                  key={type.id} 
-                  className={`type-pill ${selectedContentType === type.id ? "active" : ""}`}
-                  onClick={() => setSelectedContentType(type.id)}
-                >
-                  {type.label}
-                </button>
-              ))}
-            </div>
-  
-            <button 
-              className={`btn-primary large mt-20 ${(!selectedPlatformId || !selectedContentType) ? "disabled" : ""}`} 
-              onClick={handleProduceContentV2}
-            >
-              🎬 İçerik Üret
+
+            <button className="btn-primary full-width mb-20" onClick={handleCheckSponsorOffers}>
+               Teklifleri Kontrol Et
             </button>
-          </>
-        ) : (
-          <div className="content-result-card fade-in">
-             <div className="result-header">
-                <h2>Yayınlandı!</h2>
-                {contentResult.viral && <span className="viral-badge">🔥 VİRAL</span>}
-             </div>
-             
-             <div className="result-details">
-               <div className="res-row"><span>Platform:</span> <strong>{contentResult.platform}</strong></div>
-               <div className="res-row"><span>Kalite Skoru:</span> <strong>{contentResult.quality} / 100</strong></div>
-             </div>
-             
-             <div className="result-gains">
-               <div className="gain-box followers"><span>+{contentResult.followersGained.toLocaleString("tr-TR")}</span><small>Takipçi</small></div>
-               <div className="gain-box credits"><span>+{contentResult.creditsGained.toLocaleString("tr-TR")} TL</span><small>Kredi</small></div>
-             </div>
-             
-             <p className="result-comment">"{contentResult.comment}"</p>
-             
-             <button className="btn-secondary full-width mt-20" onClick={() => {
-               setContentResult(null);
-               setSelectedPlatformId(null);
-               setSelectedContentType(null);
-             }}>Yeni İçerik Üret</button>
+
+            <h3 className="section-title">Gelen Teklifler</h3>
+            {sponsorOffers.length === 0 ? (
+               <p className="empty-text">Henüz yeni bir sponsor teklifi yok. Daha fazla takipçi kazan veya içerik kaliteni artır.</p>
+            ) : (
+               <div className="sponsor-offers-list">
+                  {sponsorOffers.map(offer => (
+                     <div key={offer.id} className="sponsor-card fade-in">
+                        <div className="spo-header">
+                           <strong>{offer.brandName}</strong>
+                           <span className="spo-tier">{offer.tierName}</span>
+                        </div>
+                        <p>Beklenen Ödül: {offer.minReward.toLocaleString("tr-TR")} - {offer.maxReward.toLocaleString("tr-TR")} TL</p>
+                        <button className="btn-buy mt-10 full-width" onClick={() => handleAcceptSponsor(offer.id)}>Kabul Et</button>
+                     </div>
+                  ))}
+               </div>
+            )}
+
+            {acceptedSponsors.length > 0 && (
+               <>
+                  <h3 className="section-title mt-20">Aktif Sponsorlar</h3>
+                  <div className="accepted-sponsors-list">
+                     {acceptedSponsors.map((name, i) => <span key={i} className="spo-badge">{name}</span>)}
+                  </div>
+               </>
+            )}
           </div>
         )}
       </div>

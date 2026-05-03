@@ -4,18 +4,11 @@
 
 \## Belge Durumu
 
-
-
-\- Durum: Taslak
-
-\- Sürüm: V1.0 Taslak
-
-\- İlgili ana belge: docs/01\_Oyun\_Anayasasi.md
-
-\- Amaç: Oyuncunun başlangıçta seçeceği tekne sınıflarını oyun sistemi olarak netleştirmek
-
-\- Not: Bu belge son kontrolden sonra “Kilitlendi” durumuna alınacaktır.
-
+- Durum: Kilitlendi
+- Sürüm: V1.0
+- İlgili ana belge: docs/01_Oyun_Anayasasi.md
+- Amaç: Oyuncunun başlangıçta seçeceği tekne sınıflarını oyun sistemi olarak netleştirmek
+- Kilit kararı: Bu belge Başlangıç Tekneleri V1.0 olarak kabul edilmiştir.
 
 
 \---
@@ -1136,27 +1129,38 @@ Bu belge kilitlenmeden önce şu sorular cevaplanmalıdır:
 
 
 
-\# 23. Geçici Karar
+\# 23. Kilit Kararı
 
+Bu belge Başlangıç Tekneleri V1.0 olarak kabul edilmiş ve kilitlenmiştir.
 
+İlk MVP’de 3 başlangıç teknesi kullanılacaktır:
 
-Bu belge V1.0 taslak olarak hazırlanmıştır.
+1. Kırlangıç 28
+2. Denizkuşu 34
+3. Atlas 40
 
+Bu tekneler gerçek marka/model isimleri kullanılmadan, gerçek tekne sınıflarından ve yelkenli boylarından ilham alınarak tasarlanmıştır.
 
+Tekne seçimi oyuncunun başlangıç ekonomisini, rota riskini, sosyal medya algısını, upgrade potansiyelini, bakım maliyetlerini, konfor seviyesini ve okyanus hazırlık sürecini etkileyecektir.
 
-Son kontrolden sonra şu şekilde güncellenecektir:
+MVP’de tekne sistemi şu kapsamla uygulanacaktır:
 
+- 3 başlangıç teknesi
+- Kurgusal tekne isimleri
+- Tekne sınıfı / boyu
+- Satın alma maliyeti seviyesi
+- Avantaj / dezavantaj
+- Başlangıç değerleri
+- Upgrade potansiyeli
+- Okyanus hazırlık etkisi
+- Sosyal medya algısı
+- Profil ve tekne uyum matrisi
+- Marina ve tekne kombinasyon hissi
 
+Tekneye özel isim verme özelliği mümkünse MVP’ye dahil edilecektir. Süre kısıtı olursa sonraki sürüme bırakılabilir.
 
-\- Durum: Kilitlendi
+Detaylı 3D tekne modeli, gerçek marka/model kullanımı, tam fiziksel yelken simülasyonu, ikinci tekne satın alma, tekne takas sistemi ve katamaran sınıfı MVP dışıdır.
 
-\- Sürüm: V1.0
-
-
-
-Kilitlendikten sonra sıradaki ana bölüm:
-
-
+Bu belge kilitlendikten sonra sıradaki ana tasarım bölümü:
 
 > Dünya Rotası V1.0
-

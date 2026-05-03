@@ -150,14 +150,15 @@ button {
 /* TEKNE SİLÜETİ */
 .menu-boat-silhouette {
   position: absolute;
-  top: 22%;
+  top: 18%;
   left: 50%;
   transform: translateX(-50%);
-  width: 80px;
-  height: 70px;
+  width: 120px;
+  height: 110px;
   color: #1e9fd4;
   animation: boat-float 4s ease-in-out infinite;
-  filter: drop-shadow(0 4px 12px rgba(30,159,212,0.3));
+  filter: drop-shadow(0 0 20px rgba(30,159,212,0.8))
+          drop-shadow(0 8px 16px rgba(30,159,212,0.4));
 }
 
 @keyframes boat-float {
@@ -167,7 +168,7 @@ button {
 
 .menu-top-teaser {
   position: absolute;
-  top: 12%;
+  top: 6%;
   left: 0;
   right: 0;
   display: flex;
@@ -177,10 +178,10 @@ button {
   color: #2ec4a0;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   z-index: 2;
-  opacity: 0.8;
+  opacity: 1;
 }
 
 .menu-top-teaser span {

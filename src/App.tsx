@@ -17,6 +17,7 @@ import { getSponsorTierByFollowers } from "../game-data/economy";
 import { skillLabels, profileIcons } from "./data/labels";
 import { Onboarding, getBoatSvg } from "./components/Onboarding";
 import { HubScreen } from "./components/HubScreen";
+import { LimanTab } from "./components/LimanTab";
 import { SeaModeTab } from "./components/SeaModeTab";
 
 
@@ -503,50 +504,18 @@ function App() {
   };
 
   const renderLimanTab = () => (
-    <div className="tab-content fade-in">
-      <div className="hub-center-visual">
-        <div className="hub-scene">
-          <div className="hub-boat-display">{getBoatSvg(selectedBoat.id)}</div>
-          <div className="hub-water-line"></div>
-        </div>
-        <h3>{currentLocationName}</h3>
-      </div>
-
-      <div className="hub-progress-cards">
-        <div className="prog-card">
-          <span>Dünya Turu</span>
-          <strong>%{worldProgress}</strong>
-        </div>
-        <div className="prog-card">
-          <span>Okyanus Hazırlığı</span>
-          <strong>{currentOceanReadiness}%</strong>
-        </div>
-      </div>
-
-      {!firstContentDone ? (
-        <button className="quest-card pulse" onClick={() => setActiveTab("icerik")}>
-          <div className="quest-icon">🎬</div>
-          <div className="quest-texts">
-            <h3>İlk içeriğini üret</h3>
-            <p>İçerik Stüdyosuna Git</p>
-          </div>
-        </button>
-      ) : (
-        <button className="quest-card done" onClick={() => setActiveTab("rota")}>
-          <div className="quest-icon">✅</div>
-          <div className="quest-texts">
-            <h3>{completedRouteIds.length > 0 ? "Yeni limana ulaştın" : "Sıradaki rotaya hazırlan"}</h3>
-            <p>Sıradaki Rota: {currentRoute?.name || "Bilinmiyor"}</p>
-          </div>
-          <span className="quest-card-arrow">›</span>
-        </button>
-      )}
-
-      <div className="event-log-compact">
-        <span className="card-label">Son Olaylar</span>
-        {logs.map((log, i) => <div key={i} className="log-entry">{log}</div>)}
-      </div>
-    </div>
+    <LimanTab
+      selectedBoatId={selectedBoat.id}
+      currentLocationName={currentLocationName}
+      worldProgress={worldProgress}
+      currentOceanReadiness={currentOceanReadiness}
+      firstContentDone={firstContentDone}
+      completedRouteIds={completedRouteIds}
+      currentRouteName={currentRoute?.name}
+      logs={logs}
+      onGoContent={() => setActiveTab("icerik")}
+      onGoRoute={() => setActiveTab("rota")}
+    />
   );
 
   const renderSeaModeTab = () => (

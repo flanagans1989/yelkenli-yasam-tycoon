@@ -30,6 +30,32 @@ const getBaseOceanReadiness = (boatId: string) => {
   return 0;
 };
 
+const getRouteCompletionRewards = (route: (typeof WORLD_ROUTES)[number]) => {
+  const contentPotentialMultipliers: Record<string, number> = {
+    low: 0.75,
+    low_medium: 0.9,
+    medium: 1,
+    medium_high: 1.25,
+    high: 1.5,
+    very_high: 2,
+  };
+
+  const riskLevelMultipliers: Record<string, number> = {
+    low: 0.8,
+    low_medium: 0.9,
+    medium: 1,
+    medium_high: 1.25,
+    high: 1.5,
+    very_high: 2,
+    final: 2.5,
+  };
+
+  const credits = Math.floor(500 * (riskLevelMultipliers[route.riskLevel] ?? 1));
+  const followers = Math.floor(250 * (contentPotentialMultipliers[route.contentPotential] ?? 1));
+
+  return { credits, followers };
+};
+
 function App() {
   const [step, setStep] = useState<Step>("MAIN_MENU");
   const [activeTab, setActiveTab] = useState<Tab>("liman");
@@ -353,17 +379,23 @@ function App() {
 
   const handleArrival = () => {
     if (!currentRoute) return;
-    
+
+    const reward = getRouteCompletionRewards(currentRoute);
+
     setWorldProgress(currentRoute.worldProgressPercent);
     setCompletedRouteIds(prev => [...prev, currentRoute.id]);
     setCurrentLocationName(currentRoute.to);
-    
+    setCredits(prev => prev + reward.credits);
+    setFollowers(prev => prev + reward.followers);
+    triggerFlash("credits");
+    triggerFlash("followers");
+
     const nextR = getNextRoute(currentRoute.id as RouteId);
     if (nextR) {
        setCurrentRouteId(nextR.id);
     }
-    
-    setLogs(prev => [`${currentRoute.name} rotası tamamlandı. ${currentRoute.to} limanına varıldı.`, ...prev.slice(0, 4)]);
+
+    setLogs(prev => [`${currentRoute.name} rotası tamamlandı. ${currentRoute.to} limanına varıldı. +${reward.credits} TL, +${reward.followers} takipçi ödül alındı.`, ...prev.slice(0, 4)]);
     setStep("HUB");
     setActiveTab("liman");
   };
@@ -843,17 +875,28 @@ function App() {
     />
   );
 
-  const renderArrivalScreen = () => (
-    <div className="selection-screen fade-in cinematic-bg" style={{justifyContent: 'center'}}>
-      <div className="transparent-card centered">
-        <h2>Varış!</h2>
-        <p>{currentRoute?.to} limanına ulaştın.</p>
-        <div style={{fontSize: "64px", margin: "24px 0"}}>⚓</div>
-        <p>Dünya turu ilerlemesi: %{currentRoute?.worldProgressPercent}</p>
-        <button className="btn-primary large mt-20" onClick={handleArrival}>Limana Dön</button>
+  const renderArrivalScreen = () => {
+    const arrivalReward = currentRoute ? getRouteCompletionRewards(currentRoute) : null;
+
+    return (
+      <div className="selection-screen fade-in cinematic-bg" style={{justifyContent: 'center'}}>
+        <div className="transparent-card centered">
+          <h2>Varış!</h2>
+          <p>{currentRoute?.to} limanına ulaştın.</p>
+          <div style={{fontSize: "64px", margin: "24px 0"}}>⚓</div>
+          <p>Dünya turu ilerlemesi: %{currentRoute?.worldProgressPercent}</p>
+          {arrivalReward && (
+            <div className="event-log-compact mt-20">
+              <span className="card-label">Rota Ödülü</span>
+              <div className="log-entry">+{arrivalReward.credits.toLocaleString("tr-TR")} TL</div>
+              <div className="log-entry">+{arrivalReward.followers.toLocaleString("tr-TR")} takipçi</div>
+            </div>
+          )}
+          <button className="btn-primary large mt-20" onClick={handleArrival}>Limana Dön</button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="game-wrapper">

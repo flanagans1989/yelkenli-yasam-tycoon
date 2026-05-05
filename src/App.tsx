@@ -136,6 +136,7 @@ function App() {
   const upgradeWaterBonus = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.water || 0), 0);
   const upgradeSafetyBonus = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.safety || 0), 0);
   const upgradeNavigationBonus = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.navigation || 0), 0);
+  const upgradeMaintenanceBonus = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.maintenance || 0), 0);
   const upgradeRiskReduction = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.riskReduction || 0), 0);
 
   // Load save on mount
@@ -707,6 +708,32 @@ function App() {
   const renderRotaTab = () => (
     <RotaTab
       currentRoute={currentRoute}
+      routeReadiness={{
+        oceanReadiness: {
+          current: currentOceanReadiness,
+          required: currentRoute?.requirements.minOceanReadiness ?? 0,
+        },
+        energy: {
+          current: upgradeEnergyBonus,
+          required: currentRoute?.requirements.minEnergy ?? 0,
+        },
+        water: {
+          current: upgradeWaterBonus,
+          required: currentRoute?.requirements.minWater ?? 0,
+        },
+        safety: {
+          current: upgradeSafetyBonus,
+          required: currentRoute?.requirements.minSafety ?? 0,
+        },
+        navigation: {
+          current: upgradeNavigationBonus,
+          required: currentRoute?.requirements.minNavigation ?? 0,
+        },
+        maintenance: {
+          current: upgradeMaintenanceBonus,
+          required: currentRoute?.requirements.minMaintenance ?? 0,
+        },
+      }}
       isSeaMode={step === "SEA_MODE"}
       onStartVoyage={handleStartVoyage}
     />

@@ -16,6 +16,7 @@ import type { UpgradeCategoryId } from "../game-data/upgrades";
 import { getSponsorTierByFollowers } from "../game-data/economy";
 import { skillLabels, profileIcons } from "./data/labels";
 import { Onboarding, getBoatSvg } from "./components/Onboarding";
+import { HubScreen } from "./components/HubScreen";
 
 
 
@@ -891,56 +892,28 @@ function App() {
     </div>
   );
 
-  const renderMainGame = () => {
-    return (
-      <div className={step === "SEA_MODE" ? "sea-mode-wrapper fade-in" : "hub-wrapper fade-in"}>
-        {step === "SEA_MODE" ? (
-          <header className="sea-topbar">
-            <h2>{boatName}</h2>
-            <p>{currentRoute?.name}: {currentRoute?.from} ➔ {currentRoute?.to}</p>
-          </header>
-        ) : (
-          <header className="hub-topbar">
-            <div className="hub-boat-info">
-              <h2>{boatName}</h2>
-              <small>{selectedBoat.name}</small>
-            </div>
-            <div className="hub-stats">
-              <div className={`stat${flashCredits ? " flash-green" : ""}`}><span>💰</span> {credits.toLocaleString("tr-TR")}</div>
-              <div className={`stat${flashFollowers ? " flash-green" : ""}`}><span>👥</span> {followers.toLocaleString("tr-TR")}</div>
-            </div>
-          </header>
-        )}
-
-        <main className={step === "SEA_MODE" ? "sea-content" : "hub-content"}>
-          {activeTab === "liman" && step === "HUB" && renderLimanTab()}
-          {activeTab === "liman" && step === "SEA_MODE" && renderSeaModeTab()}
-          {activeTab === "icerik" && renderIcerikTab()}
-          {activeTab === "rota" && renderRotaTab()}
-          {activeTab === "tekne" && renderTekneTab()}
-          {activeTab === "kaptan" && renderKaptanTab()}
-        </main>
-
-        <nav className="bottom-tab-bar">
-          <button className={`tab ${activeTab === "liman" ? "active" : ""}`} onClick={() => setActiveTab("liman")}>
-            <span>{step === "SEA_MODE" ? "🌊" : "🏠"}</span> {step === "SEA_MODE" ? "Deniz" : "Liman"}
-          </button>
-          <button className={`tab ${activeTab === "icerik" ? "active" : ""}${!firstContentDone ? " tab-notif" : ""}`} onClick={() => setActiveTab("icerik")}>
-            <span>📹</span> İçerik
-          </button>
-          <button className={`tab ${activeTab === "rota" ? "active" : ""}${firstContentDone && step === "HUB" && completedRouteIds.length === 0 ? " tab-notif" : ""}`} onClick={() => setActiveTab("rota")}>
-            <span>🗺️</span> Rota
-          </button>
-          <button className={`tab ${activeTab === "tekne" ? "active" : ""}`} onClick={() => setActiveTab("tekne")}>
-            <span>🔧</span> Tekne
-          </button>
-          <button className={`tab ${activeTab === "kaptan" ? "active" : ""}`} onClick={() => setActiveTab("kaptan")}>
-            <span>👤</span> Kaptan
-          </button>
-        </nav>
-      </div>
-    );
-  };
+  const renderMainGame = () => (
+    <HubScreen
+      step={step}
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      boatName={boatName}
+      selectedBoatName={selectedBoat.name}
+      currentRoute={currentRoute}
+      credits={credits}
+      followers={followers}
+      flashCredits={flashCredits}
+      flashFollowers={flashFollowers}
+      firstContentDone={firstContentDone}
+      completedRouteIds={completedRouteIds}
+      renderLimanTab={renderLimanTab}
+      renderSeaModeTab={renderSeaModeTab}
+      renderIcerikTab={renderIcerikTab}
+      renderRotaTab={renderRotaTab}
+      renderTekneTab={renderTekneTab}
+      renderKaptanTab={renderKaptanTab}
+    />
+  );
 
   const renderArrivalScreen = () => (
     <div className="selection-screen fade-in cinematic-bg" style={{justifyContent: 'center'}}>

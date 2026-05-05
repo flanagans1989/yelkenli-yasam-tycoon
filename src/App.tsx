@@ -365,7 +365,9 @@ function App() {
         setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
         setIcerikSubTab(parsed.icerikSubTab ?? "produce");
 
-        setStep(parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB");
+        const safeStep = parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB";
+        const routeValid = WORLD_ROUTES.some(r => r.id === parsed.currentRouteId);
+        setStep(safeStep === "SEA_MODE" && !routeValid ? "HUB" : safeStep);
         setActiveTab(parsed.activeTab ?? "liman");
       } catch (e) {
         console.error("Load error", e);

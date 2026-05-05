@@ -77,7 +77,7 @@ export function HubScreen({
 
       <nav className="bottom-tab-bar">
         <button className={`tab ${activeTab === "liman" ? "active" : ""}`} onClick={() => setActiveTab("liman")}>
-          <span>{step === "SEA_MODE" ? "🌊" : "⚓"}</span> {step === "SEA_MODE" ? "Deniz" : "Liman"}
+          <span>{step === "SEA_MODE" ? "🌊" : "🏠"}</span> {step === "SEA_MODE" ? "Deniz" : "Liman"}
         </button>
         <button className={`tab ${activeTab === "icerik" ? "active" : ""}${!firstContentDone ? " tab-notif" : ""}`} onClick={() => setActiveTab("icerik")}>
           <span>📹</span> İçerik

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "./App.css";
 
+import type { Step, Tab, ContentResult, MarinaFilter } from "./types/game";
 import { PLAYER_PROFILES } from "../game-data/playerProfiles";
 import type { PlayerProfile } from "../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../game-data/marinas";
@@ -13,28 +14,6 @@ import { SOCIAL_PLATFORMS } from "../game-data/socialPlatforms";
 import { BOAT_UPGRADES, UPGRADE_CATEGORIES } from "../game-data/upgrades";
 import type { UpgradeCategoryId } from "../game-data/upgrades";
 import { getSponsorTierByFollowers } from "../game-data/economy";
-
-type Step =
-  | "MAIN_MENU"
-  | "PICK_PROFILE"
-  | "PICK_MARINA"
-  | "PICK_BOAT"
-  | "NAME_BOAT"
-  | "HUB"
-  | "SEA_MODE"
-  | "ARRIVAL_SCREEN";
-
-type Tab = "liman" | "icerik" | "rota" | "tekne" | "kaptan";
-
-interface ContentResult {
-  platform: string;
-  type: string;
-  quality: number;
-  viral: boolean;
-  followersGained: number;
-  creditsGained: number;
-  comment: string;
-}
 
 const skillLabels: Record<string, string> = {
   seamanship: "Denizcilik",
@@ -66,8 +45,6 @@ const marinaIcons: Record<string, string> = {
   istanbul: "\uD83C\uDF09",
   yalova: "\uD83D\uDD27",
 };
-
-type MarinaFilter = "all" | "ege" | "akdeniz" | "marmara";
 
 const getMarinaFilterCategory = (region: string): MarinaFilter => {
   const normalized = region.toLocaleLowerCase("tr-TR");

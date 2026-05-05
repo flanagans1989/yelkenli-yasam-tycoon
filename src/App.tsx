@@ -184,6 +184,20 @@ function App() {
   const [hasSave, setHasSave] = useState(false);
   const [saveBoatName, setSaveBoatName] = useState("");
 
+  // Flash animation states
+  const [flashCredits, setFlashCredits] = useState(false);
+  const [flashFollowers, setFlashFollowers] = useState(false);
+
+  const triggerFlash = (type: "credits" | "followers") => {
+    if (type === "credits") {
+      setFlashCredits(true);
+      setTimeout(() => setFlashCredits(false), 600);
+    } else {
+      setFlashFollowers(true);
+      setTimeout(() => setFlashFollowers(false), 600);
+    }
+  };
+
   const selectedProfile: PlayerProfile = PLAYER_PROFILES[profileIndex];
   const selectedMarina: StartingMarina = STARTING_MARINAS[marinaIndex];
   const selectedBoat: StartingBoat = STARTING_BOATS[boatIndex];
@@ -742,6 +756,7 @@ function App() {
 
     setCredits(prev => prev - upgrade.cost);
     setPurchasedUpgradeIds(prev => [...prev, upgradeId]);
+    triggerFlash("credits");
     
     let effectText = "";
     if (upgrade.effects.oceanReadiness) effectText = "Okyanus hazırlığı arttı.";
@@ -780,12 +795,12 @@ function App() {
       
       const events = [
         { text: "Uygun rüzgar yakalandı. Harika bir seyir.", effect: () => {} },
-        { text: "Harika görüntü fırsatı! +100 takipçi.", effect: () => setFollowers(f => f + 100) },
+        { text: "Harika görüntü fırsatı! +100 takipçi.", effect: () => { setFollowers(f => f + 100); triggerFlash("followers"); } },
         { text: "Hafif teknik sorun.", effect: () => setBoatCondition(c => Math.max(0, c - 3)) },
         { text: "Değişken hava. Enerji üretimi azaldı.", effect: () => setEnergy(e => Math.max(0, e - 3)) },
         { text: "Sakin seyir.", effect: () => {} },
-        { text: "Kısa video fırsatı. +150 takipçi.", effect: () => setFollowers(f => f + 150) },
-        { text: "Küçük sponsor ilgisi. +100 TL.", effect: () => setCredits(cr => cr + 100) },
+        { text: "Kısa video fırsatı. +150 takipçi.", effect: () => { setFollowers(f => f + 150); triggerFlash("followers"); } },
+        { text: "Küçük sponsor ilgisi. +100 TL.", effect: () => { setCredits(cr => cr + 100); triggerFlash("credits"); } },
       ];
       
       const evt = events[Math.floor(Math.random() * events.length)];
@@ -899,6 +914,8 @@ function App() {
     setCredits(prev => prev + gainCredits);
     setFollowers(prev => prev + gainFollowers);
     setFirstContentDone(true);
+    triggerFlash("credits");
+    triggerFlash("followers");
 
     const logMsg = `${platform?.name} platformunda içerik yayınlandı: +${gainFollowers} Takipçi, +${gainCredits} TL.`;
     setLogs(prev => [logMsg, ...prev.slice(0, 4)]);
@@ -938,6 +955,7 @@ function App() {
     setCredits(prev => prev + baseReward);
     setAcceptedSponsors(prev => [...prev, offer.brandName]);
     setSponsorOffers(prev => prev.filter(o => o.id !== offerId));
+    triggerFlash("credits");
     
     const newCount = sponsoredContentCount + 1;
     setSponsoredContentCount(newCount);
@@ -980,13 +998,14 @@ function App() {
           </div>
         </button>
       ) : (
-        <div className="quest-card done">
+        <button className="quest-card done" onClick={() => setActiveTab("rota")}>
           <div className="quest-icon">✅</div>
           <div className="quest-texts">
             <h3>{completedRouteIds.length > 0 ? "Yeni limana ulaştın" : "Sıradaki rotaya hazırlan"}</h3>
             <p>Sıradaki Rota: {currentRoute?.name || "Bilinmiyor"}</p>
           </div>
-        </div>
+          <span className="quest-card-arrow">›</span>
+        </button>
       )}
 
       <div className="event-log-compact">
@@ -1011,10 +1030,22 @@ function App() {
       </div>
       
       <div className="resource-grid">
-        <div className="res-card"><span>⚡ Enerji</span><strong>{energy}%</strong></div>
-        <div className="res-card"><span>💧 Su</span><strong>{water}%</strong></div>
-        <div className="res-card"><span>⛽ Yakıt</span><strong>{fuel}%</strong></div>
-        <div className="res-card"><span>🔧 Durum</span><strong>{boatCondition}%</strong></div>
+        <div className="res-card">
+          <div className="res-card-top"><span>⚡ Enerji</span><strong className={energy < 25 ? "critical" : ""}>{energy}%</strong></div>
+          <div className="res-bar-track"><div className="res-bar-fill" style={{width:`${energy}%`, background: energy < 25 ? "#e05252" : energy < 50 ? "#f5a623" : "#2ec4a0"}}></div></div>
+        </div>
+        <div className="res-card">
+          <div className="res-card-top"><span>💧 Su</span><strong className={water < 25 ? "critical" : ""}>{water}%</strong></div>
+          <div className="res-bar-track"><div className="res-bar-fill" style={{width:`${water}%`, background: water < 25 ? "#e05252" : water < 50 ? "#f5a623" : "#1e9fd4"}}></div></div>
+        </div>
+        <div className="res-card">
+          <div className="res-card-top"><span>⛽ Yakıt</span><strong className={fuel < 25 ? "critical" : ""}>{fuel}%</strong></div>
+          <div className="res-bar-track"><div className="res-bar-fill" style={{width:`${fuel}%`, background: fuel < 25 ? "#e05252" : fuel < 50 ? "#f5a623" : "#8aafcc"}}></div></div>
+        </div>
+        <div className="res-card">
+          <div className="res-card-top"><span>🔧 Durum</span><strong className={boatCondition < 25 ? "critical" : ""}>{boatCondition}%</strong></div>
+          <div className="res-bar-track"><div className="res-bar-fill" style={{width:`${boatCondition}%`, background: boatCondition < 25 ? "#e05252" : boatCondition < 50 ? "#f5a623" : "#2ec4a0"}}></div></div>
+        </div>
       </div>
       
       <button className="btn-primary large mt-20 pulse-btn" onClick={advanceDay}>Bir Gün İlerle</button>
@@ -1302,6 +1333,9 @@ function App() {
           <div key={key} className="skill-box">
             <span>{skillLabels[key] ?? key}</span>
             <strong>{value}/5</strong>
+            <div className="skill-mini-bar">
+              <div className="skill-mini-fill" style={{width: `${value * 20}%`}}></div>
+            </div>
           </div>
         ))}
       </div>
@@ -1340,8 +1374,8 @@ function App() {
               <small>{selectedBoat.name}</small>
             </div>
             <div className="hub-stats">
-              <div className="stat"><span>💰</span> {credits.toLocaleString("tr-TR")}</div>
-              <div className="stat"><span>👥</span> {followers.toLocaleString("tr-TR")}</div>
+              <div className={`stat${flashCredits ? " flash-green" : ""}`}><span>💰</span> {credits.toLocaleString("tr-TR")}</div>
+              <div className={`stat${flashFollowers ? " flash-green" : ""}`}><span>👥</span> {followers.toLocaleString("tr-TR")}</div>
             </div>
           </header>
         )}
@@ -1359,10 +1393,10 @@ function App() {
           <button className={`tab ${activeTab === "liman" ? "active" : ""}`} onClick={() => setActiveTab("liman")}>
             <span>{step === "SEA_MODE" ? "🌊" : "🏠"}</span> {step === "SEA_MODE" ? "Deniz" : "Liman"}
           </button>
-          <button className={`tab ${activeTab === "icerik" ? "active" : ""}`} onClick={() => setActiveTab("icerik")}>
+          <button className={`tab ${activeTab === "icerik" ? "active" : ""}${!firstContentDone ? " tab-notif" : ""}`} onClick={() => setActiveTab("icerik")}>
             <span>📹</span> İçerik
           </button>
-          <button className={`tab ${activeTab === "rota" ? "active" : ""}`} onClick={() => setActiveTab("rota")}>
+          <button className={`tab ${activeTab === "rota" ? "active" : ""}${firstContentDone && step === "HUB" && completedRouteIds.length === 0 ? " tab-notif" : ""}`} onClick={() => setActiveTab("rota")}>
             <span>🗺️</span> Rota
           </button>
           <button className={`tab ${activeTab === "tekne" ? "active" : ""}`} onClick={() => setActiveTab("tekne")}>

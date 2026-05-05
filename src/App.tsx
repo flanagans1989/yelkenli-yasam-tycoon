@@ -18,6 +18,7 @@ import { skillLabels, profileIcons } from "./data/labels";
 import { Onboarding, getBoatSvg } from "./components/Onboarding";
 import { HubScreen } from "./components/HubScreen";
 import { LimanTab } from "./components/LimanTab";
+import { RotaTab } from "./components/RotaTab";
 import { SeaModeTab } from "./components/SeaModeTab";
 
 
@@ -672,31 +673,11 @@ function App() {
   };
 
   const renderRotaTab = () => (
-    <div className="tab-content fade-in">
-      <span className="card-label">Navigasyon Masası</span>
-      <h2>Sıradaki Rotalar</h2>
-      
-      {currentRoute ? (
-        <article className="route-card">
-          <div className="route-header">
-            <h3>{currentRoute.name}</h3>
-            <span className="risk-badge" data-risk={currentRoute.riskLevel}>{currentRoute.riskLevel.toUpperCase()}</span>
-          </div>
-          <p>{currentRoute.description}</p>
-          
-          <div className="route-stats">
-            <div><span>Süre:</span> <strong>{currentRoute.baseDurationDays.min}-{currentRoute.baseDurationDays.max} Gün</strong></div>
-            <div><span>İçerik:</span> <strong>{currentRoute.contentPotential.toUpperCase()}</strong></div>
-          </div>
-
-          <button className="btn-primary full-width mt-20" onClick={handleStartVoyage} disabled={step === "SEA_MODE"}>
-            {step === "SEA_MODE" ? "Zaten Denizdesin" : "Rotaya Çık"}
-          </button>
-        </article>
-      ) : (
-        <p>Tüm rotalar tamamlandı!</p>
-      )}
-    </div>
+    <RotaTab
+      currentRoute={currentRoute}
+      isSeaMode={step === "SEA_MODE"}
+      onStartVoyage={handleStartVoyage}
+    />
   );
 
   const renderTekneTab = () => {

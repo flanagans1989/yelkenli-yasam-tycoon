@@ -334,12 +334,27 @@ function App() {
     setCredits(prev => prev - upgrade.cost);
     setPurchasedUpgradeIds(prev => [...prev, upgradeId]);
     triggerFlash("credits");
-    
+
+    const energyBoost = upgrade.effects.energy ?? 0;
+    const waterBoost = upgrade.effects.water ?? 0;
+    const conditionBoost =
+      (upgrade.effects.maintenance ?? 0) +
+      Math.floor((upgrade.effects.safety ?? 0) / 2) +
+      Math.floor((upgrade.effects.riskReduction ?? 0) / 2) +
+      Math.floor((upgrade.effects.oceanReadiness ?? 0) / 2);
+
+    if (energyBoost > 0) setEnergy(prev => Math.min(100, prev + energyBoost));
+    if (waterBoost > 0) setWater(prev => Math.min(100, prev + waterBoost));
+    if (conditionBoost > 0) setBoatCondition(prev => Math.min(100, prev + conditionBoost));
+
     let effectText = "";
-    if (upgrade.effects.oceanReadiness) effectText = "Okyanus hazırlığı arttı.";
+    if (energyBoost > 0) effectText = `Enerji ${energyBoost} puan toparlandı.`;
+    else if (waterBoost > 0) effectText = `Su ${waterBoost} puan toparlandı.`;
+    else if (conditionBoost > 0) effectText = `Tekne durumu ${conditionBoost} puan toparlandı.`;
+    else if (upgrade.effects.oceanReadiness) effectText = "Okyanus hazırlığı arttı.";
     else if (upgrade.effects.contentQuality) effectText = "İçerik kalitesi arttı.";
     else effectText = "Tekne donanımı güçlendi.";
-    
+
     setLogs(prev => [`${upgrade.name} satın alındı. ${effectText}`, ...prev.slice(0, 4)]);
   };
 

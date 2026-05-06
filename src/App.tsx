@@ -30,6 +30,19 @@ const getBaseOceanReadiness = (boatId: string) => {
   return 0;
 };
 
+const upgradeEffectLabels: Record<string, string> = {
+  energy: "Enerji",
+  water: "Su",
+  safety: "Güvenlik",
+  navigation: "Navigasyon",
+  maintenance: "Bakım",
+  oceanReadiness: "Okyanus Hazırlığı",
+  riskReduction: "Risk Azaltma",
+  contentQuality: "İçerik Kalitesi",
+  speed: "Hız",
+  engine: "Motor",
+};
+
 const getRouteCompletionRewards = (route: (typeof WORLD_ROUTES)[number]) => {
   const contentPotentialMultipliers: Record<string, number> = {
     low: 0.75,
@@ -859,7 +872,7 @@ function App() {
                 <div className="upg-effects">
                   {Object.entries(upgrade.effects).map(([key, val]) => {
                      if (!val) return null;
-                     return <span key={key} className="effect-badge">{key}: +{val}</span>;
+                     return <span key={key} className="effect-badge">{upgradeEffectLabels[key] ?? key}: +{val}</span>;
                   })}
                 </div>
                 

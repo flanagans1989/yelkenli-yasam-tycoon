@@ -139,6 +139,18 @@ function App() {
   const upgradeMaintenanceBonus = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.maintenance || 0), 0);
   const upgradeRiskReduction = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.riskReduction || 0), 0);
 
+  const currentRouteReadinessItems = currentRoute ? [
+    { current: currentOceanReadiness, required: currentRoute.requirements.minOceanReadiness ?? 0 },
+    { current: upgradeEnergyBonus, required: currentRoute.requirements.minEnergy },
+    { current: upgradeWaterBonus, required: currentRoute.requirements.minWater },
+    { current: upgradeSafetyBonus, required: currentRoute.requirements.minSafety },
+    { current: upgradeNavigationBonus, required: currentRoute.requirements.minNavigation },
+    { current: upgradeMaintenanceBonus, required: currentRoute.requirements.minMaintenance },
+  ] : [];
+
+  const currentRouteReadinessGapCount = currentRouteReadinessItems.filter(item => item.current < item.required).length;
+  const hasRouteReadinessGap = currentRouteReadinessGapCount > 0;
+
   // Load save on mount
   useEffect(() => {
     const saved = localStorage.getItem("yelkenli_save");
@@ -300,10 +312,12 @@ function App() {
     const maxD = currentRoute.baseDurationDays.max;
     const days = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
     
+    const readinessRiskText = hasRouteReadinessGap ? " Hazırlık eksikleri bu rotada riski artırıyor." : "";
+
     setVoyageTotalDays(days);
     setVoyageDaysRemaining(days);
-    setCurrentSeaEvent("Rotaya çıkıldı. Rüzgar kolayına.");
-    setLogs(prev => [`${currentRoute.name} rotasına çıkıldı.`, ...prev.slice(0, 4)]);
+    setCurrentSeaEvent(`Rotaya çıkıldı. Rüzgar kolayına.${readinessRiskText}`);
+    setLogs(prev => [`${currentRoute.name} rotasına çıkıldı.${readinessRiskText}`, ...prev.slice(0, 4)]);
     setStep("SEA_MODE");
     setActiveTab("liman"); // Switch back to sea mode view
   };
@@ -332,30 +346,32 @@ function App() {
   const advanceDay = () => {
     setVoyageDaysRemaining(prev => {
       const newDays = prev - 1;
-      
-      let energyDrop = 5;
-      if (upgradeEnergyBonus > 20) energyDrop = 3;
-      else if (upgradeEnergyBonus > 10) energyDrop = 4;
-      
-      let waterDrop = 4;
-      if (upgradeWaterBonus > 20) waterDrop = 2;
-      else if (upgradeWaterBonus > 10) waterDrop = 3;
+      const readinessPenalty = Math.min(currentRouteReadinessGapCount, 3);
 
-      let fuelDrop = 3;
-      
+      let energyDrop = 5 + (readinessPenalty > 0 ? 1 : 0);
+      if (upgradeEnergyBonus > 20) energyDrop = 3 + (readinessPenalty > 0 ? 1 : 0);
+      else if (upgradeEnergyBonus > 10) energyDrop = 4 + (readinessPenalty > 0 ? 1 : 0);
+
+      let waterDrop = 4 + (readinessPenalty > 1 ? 1 : 0);
+      if (upgradeWaterBonus > 20) waterDrop = 2 + (readinessPenalty > 1 ? 1 : 0);
+      else if (upgradeWaterBonus > 10) waterDrop = 3 + (readinessPenalty > 1 ? 1 : 0);
+
+      let fuelDrop = 3 + (readinessPenalty > 2 ? 1 : 0);
+
       setEnergy(e => Math.max(0, e - energyDrop));
       setWater(w => Math.max(0, w - waterDrop));
       setFuel(f => Math.max(0, f - fuelDrop));
-      
+
       let conditionDropChance = 0.7;
-      if (upgradeNavigationBonus > 15 || upgradeSafetyBonus > 15) conditionDropChance = 0.85; 
-      
+      if (upgradeNavigationBonus > 15 || upgradeSafetyBonus > 15) conditionDropChance = 0.85;
+      if (readinessPenalty > 0) conditionDropChance = Math.max(0.45, conditionDropChance - readinessPenalty * 0.08);
+
       if (Math.random() > conditionDropChance) {
         let dmg = Math.floor(Math.random() * 3) + 1;
         if (upgradeRiskReduction > 10) dmg = Math.max(1, dmg - 1);
         setBoatCondition(c => Math.max(0, c - dmg));
       }
-      
+
       const events = [
         { text: "Uygun rüzgar yakalandı. Harika bir seyir.", effect: () => {} },
         { text: "Harika görüntü fırsatı! +100 takipçi.", effect: () => { setFollowers(f => f + 100); triggerFlash("followers"); } },
@@ -365,12 +381,23 @@ function App() {
         { text: "Kısa video fırsatı. +150 takipçi.", effect: () => { setFollowers(f => f + 150); triggerFlash("followers"); } },
         { text: "Küçük sponsor ilgisi. +100 TL.", effect: () => { setCredits(cr => cr + 100); triggerFlash("credits"); } },
       ];
-      
+
+      if (hasRouteReadinessGap) {
+        events.push({
+          text: "Hazırlık eksikleri seyri zorlaştırdı. Kaynak tüketimi arttı.",
+          effect: () => {
+            setEnergy(e => Math.max(0, e - 2));
+            setWater(w => Math.max(0, w - 2));
+            setBoatCondition(c => Math.max(0, c - 2));
+          },
+        });
+      }
+
       const evt = events[Math.floor(Math.random() * events.length)];
       evt.effect();
       setCurrentSeaEvent(evt.text);
       setLogs(logsPrev => [evt.text, ...logsPrev.slice(0, 4)]);
-      
+
       if (newDays <= 0) {
         setStep("ARRIVAL_SCREEN");
       }

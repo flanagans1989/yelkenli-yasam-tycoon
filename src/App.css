@@ -1782,8 +1782,9 @@ button {
   display: flex;
   flex-direction: column;
   position: relative;
-  min-height: 100%;
-  overflow-y: auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .hub-topbar {
@@ -1833,9 +1834,11 @@ button {
 
 .hub-content {
   flex: 1;
+  min-height: 0;
   padding: 24px;
   overflow-y: auto;
-  padding-bottom: 100px;
+  padding-bottom: 132px;
+  scrollbar-gutter: stable;
 }
 
 .tab-content {
@@ -2000,11 +2003,12 @@ button {
 
 /* Bottom Tab Bar */
 .bottom-tab-bar {
-  position: absolute;
+  position: sticky;
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(4, 13, 22, 0.92);
+  flex-shrink: 0;
+  background: rgba(4, 13, 22, 0.96);
   backdrop-filter: blur(20px);
   display: flex;
   padding: 10px 16px 24px 16px;
@@ -2413,8 +2417,9 @@ button {
   flex-direction: column;
   background: radial-gradient(circle at top, #0d2a4a 0%, #040d16 100%);
   position: relative;
-  min-height: 100%;
-  overflow-y: auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* pulse-btn for sea mode advance */
@@ -2577,10 +2582,13 @@ button {
 
 .sea-content {
   flex: 1;
+  min-height: 0;
   padding: 24px;
   display: flex;
   flex-direction: column;
-  padding-bottom: 100px;
+  overflow-y: auto;
+  padding-bottom: 132px;
+  scrollbar-gutter: stable;
 }
 
 .sea-visual {

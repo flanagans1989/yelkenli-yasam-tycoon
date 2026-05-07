@@ -2713,6 +2713,158 @@ button {
   animation: criticalCardPulse 1.8s ease-in-out infinite;
 }
 
+@keyframes arrivalFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes arrivalRewardPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.arrival-screen-card {
+  animation: arrivalFadeIn 0.45s ease-out;
+}
+
+.arrival-screen-icon {
+  font-size: 64px;
+  margin: 4px 0 20px;
+}
+
+.arrival-screen-subtitle {
+  margin-bottom: 14px;
+}
+
+.arrival-screen-highlight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(46, 196, 160, 0.12);
+  border: 1px solid rgba(46, 196, 160, 0.3);
+  color: #8ff0c8;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.arrival-screen-progress {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.arrival-screen-progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.arrival-screen-progress-row span {
+  color: #8aafcc;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.arrival-screen-progress-row strong {
+  color: #f7fbff;
+  font-size: 14px;
+}
+
+.arrival-rewards {
+  text-align: left;
+}
+
+.arrival-reward-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.arrival-reward-box {
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(13, 32, 53, 0.72);
+  border: 1px solid rgba(30, 159, 212, 0.2);
+  animation: arrivalRewardPop 0.4s ease-out both;
+}
+
+.arrival-reward-box:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.arrival-reward-box small {
+  display: block;
+  margin-bottom: 8px;
+  color: #8aafcc;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.arrival-reward-box strong {
+  color: #f7fbff;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.arrival-screen-next-route {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+}
+
+.arrival-screen-next-route span {
+  display: block;
+  margin-bottom: 6px;
+  color: #8aafcc;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.arrival-screen-next-route strong {
+  color: #f7fbff;
+  font-size: 16px;
+}
+
+@media (max-width: 390px) {
+  .arrival-reward-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .arrival-screen-progress-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 .sea-decision-card {
   margin-top: 20px;
   padding: 20px;

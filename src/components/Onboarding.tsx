@@ -52,6 +52,7 @@ interface OnboardingProps {
   setBoatIndex: (i: number) => void;
   boatName: string;
   setBoatName: (name: string) => void;
+  onboardingMessage?: string;
   hasSave: boolean;
   saveBoatName: string;
   onLoadGame: () => void;
@@ -65,6 +66,7 @@ export function Onboarding({
   marinaFilter, setMarinaFilter,
   boatIndex, setBoatIndex,
   boatName, setBoatName,
+  onboardingMessage,
   hasSave, saveBoatName,
   onLoadGame, onFinalizeGame,
 }: OnboardingProps) {
@@ -414,6 +416,8 @@ export function Onboarding({
             autoFocus
           />
         </div>
+
+        {onboardingMessage && <p>{onboardingMessage}</p>}
 
         <div className={`name-live-preview ${boatName.trim() ? 'visible' : ''}`}>
           « {boatName || '...'} »

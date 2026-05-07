@@ -77,6 +77,7 @@ function App() {
   const [marinaFilter, setMarinaFilter] = useState<MarinaFilter>("all");
   const [boatIndex, setBoatIndex] = useState(0);
   const [boatName, setBoatName] = useState("");
+  const [onboardingMessage, setOnboardingMessage] = useState("");
   
   const [credits, setCredits] = useState(0);
   const [followers, setFollowers] = useState(0);
@@ -236,9 +237,10 @@ function App() {
   // Flow handlers
   const finalizeGame = () => {
     if (boatName.trim() === "") {
-      alert("Lütfen teknenize bir isim verin.");
+      setOnboardingMessage("Lütfen teknenize bir isim verin.");
       return;
     }
+    setOnboardingMessage("");
     setCredits(STARTING_BUDGET - selectedBoat.purchaseCost);
     setFollowers(0);
     setPurchasedUpgradeIds([]);
@@ -340,7 +342,7 @@ function App() {
     if (!upgrade) return;
 
     if (credits < upgrade.cost) {
-      alert("Yetersiz bütçe!");
+      setLogs(prev => ["Yetersiz bütçe. Bu upgrade için daha fazla kredi gerekiyor.", ...prev.slice(0, 4)]);
       return;
     }
 
@@ -573,7 +575,7 @@ function App() {
   const handleCheckSponsorOffers = () => {
     const tier = getSponsorTierByFollowers(followers, brandTrust);
     if (!tier) {
-      alert("Şu an kriterlerinize uygun yeni sponsor teklifi yok. Takipçi ve marka güveninizi artırın.");
+      setLogs(prev => ["Şu an uygun sponsor teklifi yok. Takipçi ve marka güvenini artır.", ...prev.slice(0, 4)]);
       return;
     }
     
@@ -1027,7 +1029,11 @@ function App() {
           boatIndex={boatIndex}
           setBoatIndex={setBoatIndex}
           boatName={boatName}
-          setBoatName={setBoatName}
+          setBoatName={(name) => {
+            setBoatName(name);
+            if (onboardingMessage) setOnboardingMessage("");
+          }}
+          onboardingMessage={onboardingMessage}
           hasSave={hasSave}
           saveBoatName={saveBoatName}
           onLoadGame={loadGame}

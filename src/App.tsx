@@ -28,6 +28,15 @@ const OFFLINE_CREDITS_PER_MINUTE = 15;
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
 const CONTENT_COOLDOWN_MS = 30 * 60 * 1000;
 
+const CAPTAIN_LEVEL_THRESHOLDS = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 6000];
+
+const getCaptainLevel = (xp: number): number => {
+  for (let i = CAPTAIN_LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (xp >= CAPTAIN_LEVEL_THRESHOLDS[i]) return i + 1;
+  }
+  return 1;
+};
+
 type UpgradeInProgress = {
   upgradeId: string;
   completesAt: number;
@@ -239,6 +248,9 @@ function App() {
   const [flashCredits, setFlashCredits] = useState(false);
   const [flashFollowers, setFlashFollowers] = useState(false);
 
+  const [captainXp, setCaptainXp] = useState(0);
+  const [captainLevel, setCaptainLevel] = useState(1);
+
   const triggerFlash = (type: "credits" | "followers") => {
     if (type === "credits") {
       setFlashCredits(true);
@@ -323,6 +335,22 @@ function App() {
   }, [lastContentAt]);
 
   useEffect(() => {
+    setCaptainLevel(prev => {
+      const newLevel = getCaptainLevel(captainXp);
+      if (newLevel > prev) {
+        const bonus = newLevel * 500;
+        setCredits(c => c + bonus);
+        setLogs(logs => [
+          `Kaptan seviyesi yükseldi: Lv.${newLevel} (+${bonus.toLocaleString("tr-TR")} TL bonus)`,
+          ...logs.slice(0, 4)
+        ]);
+        return newLevel;
+      }
+      return prev;
+    });
+  }, [captainXp]);
+
+  useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
       const saveObj = {
         profileIndex,
@@ -359,6 +387,8 @@ function App() {
         sponsoredContentCount,
         icerikSubTab,
         lastContentAt,
+        captainXp,
+        captainLevel,
         lastSavedAt: Date.now(),
         saveVersion: SAVE_VERSION,
         hasSave: true,
@@ -372,7 +402,8 @@ function App() {
     logs, purchasedUpgradeIds, upgradeInProgress, activeTab, currentLocationName, worldProgress, energy, water,
     fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining,
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
-    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt
+    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt,
+    captainXp, captainLevel
   ]);
 
   const finalizeGame = () => {
@@ -406,6 +437,8 @@ function App() {
     setSponsoredContentCount(0);
     setIcerikSubTab("produce");
     setLastContentAt(null);
+    setCaptainXp(0);
+    setCaptainLevel(1);
     setStep("HUB");
     setActiveTab("liman");
   };
@@ -499,6 +532,8 @@ function App() {
       setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
       setIcerikSubTab(parsed.icerikSubTab ?? "produce");
       setLastContentAt(parsed.lastContentAt ?? null);
+      setCaptainXp(parsed.captainXp ?? 0);
+      setCaptainLevel(parsed.captainLevel ?? 1);
 
       const safeStep = parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB";
       const routeValid = WORLD_ROUTES.some(r => r.id === parsed.currentRouteId);
@@ -679,6 +714,7 @@ function App() {
 
     setCurrentSeaEvent(choice.resultText);
     setLogs(prev => [`${decision.title}: ${choice.resultText}`, ...prev.slice(0, 4)]);
+    setCaptainXp(prev => prev + 25);
     setPendingDecisionId(null);
   };
 
@@ -701,6 +737,7 @@ function App() {
     }
 
     setLogs(prev => [`${currentRoute.name} rotası tamamlandı. ${currentRoute.to} limanına varıldı. +${reward.credits} TL, +${reward.followers} takipçi ödül alındı.`, ...prev.slice(0, 4)]);
+    setCaptainXp(prev => prev + 60);
     setPendingDecisionId(null);
     setStep("HUB");
     setActiveTab("liman");
@@ -801,6 +838,7 @@ function App() {
     const logMsg = `${platform?.name} platformunda içerik yayınlandı: +${gainFollowers} Takipçi, +${gainCredits} TL.`;
     setLogs(prev => [logMsg, ...prev.slice(0, 4)]);
     setLastContentAt(Date.now());
+    setCaptainXp(prev => prev + 15);
   };
 
   const handleCheckSponsorOffers = () => {
@@ -1336,7 +1374,7 @@ function App() {
 
   const renderProgressStrip = () => (
     <div className="progress-strip">
-      <span className="progress-strip-item">Kpt. Lv.1</span>
+      <span className="progress-strip-item">Kpt. Lv.{captainLevel}</span>
       <span className="progress-strip-sep">|</span>
       <span className="progress-strip-item">{followers.toLocaleString("tr-TR")} takipçi</span>
       <span className="progress-strip-sep">|</span>

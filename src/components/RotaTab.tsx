@@ -82,6 +82,7 @@ export function RotaTab({
                 </div>
               );
             })}
+            <p className="empty-text">Eksikler varsa yolculuk daha riskli olur. Tekne sekmesinden upgrade alarak hazırlığını artırabilirsin.</p>
             {weakReadinessItems.length > 0 && (
               <p className="empty-text">Hazırlığın düşük. Yine de çıkabilirsin ama risk artar.</p>
             )}

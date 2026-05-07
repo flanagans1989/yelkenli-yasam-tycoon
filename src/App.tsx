@@ -25,6 +25,12 @@ const SAVE_KEY = "yelkenli_save";
 const SAVE_VERSION = 1;
 const MAX_OFFLINE_MINUTES = 480;
 const OFFLINE_CREDITS_PER_MINUTE = 15;
+const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
+
+type UpgradeInProgress = {
+  upgradeId: string;
+  completesAt: number;
+};
 
 type SeaDecisionEffect = {
   credits?: number;
@@ -190,6 +196,7 @@ function App() {
   const [logs, setLogs] = useState<string[]>([]);
   const [firstContentDone, setFirstContentDone] = useState(false);
   const [purchasedUpgradeIds, setPurchasedUpgradeIds] = useState<string[]>([]);
+  const [upgradeInProgress, setUpgradeInProgress] = useState<UpgradeInProgress | null>(null);
 
   // Sea Mode MVP states
   const [currentLocationName, setCurrentLocationName] = useState("");
@@ -272,7 +279,6 @@ function App() {
   const currentRouteReadinessGapCount = currentRouteReadinessItems.filter(item => item.current < item.required).length;
   const hasRouteReadinessGap = currentRouteReadinessGapCount > 0;
 
-  // Load save on mount
   useEffect(() => {
     const saved = localStorage.getItem(SAVE_KEY);
     if (saved) {
@@ -288,7 +294,25 @@ function App() {
     }
   }, []);
 
-  // Save game when hub/sea states change
+  useEffect(() => {
+    if (!upgradeInProgress) return;
+
+    if (purchasedUpgradeIds.includes(upgradeInProgress.upgradeId)) {
+      setUpgradeInProgress(null);
+      return;
+    }
+
+    const checkInstallation = () => {
+      if (upgradeInProgress.completesAt <= Date.now()) {
+        completeUpgradeInstallation(upgradeInProgress.upgradeId);
+      }
+    };
+
+    checkInstallation();
+    const intervalId = window.setInterval(checkInstallation, UPGRADE_INSTALL_CHECK_INTERVAL_MS);
+    return () => window.clearInterval(intervalId);
+  }, [upgradeInProgress, purchasedUpgradeIds]);
+
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
       const saveObj = {
@@ -301,9 +325,9 @@ function App() {
         firstContentDone,
         logs,
         purchasedUpgradeIds,
+        upgradeInProgress,
         step,
         activeTab,
-        
         currentLocationName,
         worldProgress,
         energy,
@@ -316,12 +340,10 @@ function App() {
         voyageDaysRemaining,
         currentSeaEvent,
         pendingDecisionId,
-        
         selectedPlatformId,
         selectedContentType,
         contentResult,
         selectedUpgradeCategory,
-
         brandTrust,
         sponsorOffers,
         acceptedSponsors,
@@ -329,7 +351,6 @@ function App() {
         icerikSubTab,
         lastSavedAt: Date.now(),
         saveVersion: SAVE_VERSION,
-        
         hasSave: true,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveObj));
@@ -337,26 +358,25 @@ function App() {
       setSaveBoatName(boatName);
     }
   }, [
-    step, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone, 
-    logs, purchasedUpgradeIds, activeTab, currentLocationName, worldProgress, energy, water, 
-    fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining, 
+    step, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone,
+    logs, purchasedUpgradeIds, upgradeInProgress, activeTab, currentLocationName, worldProgress, energy, water,
+    fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining,
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
     brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab
   ]);
 
-  // Flow handlers
   const finalizeGame = () => {
     if (boatName.trim() === "") {
       setOnboardingMessage("Lütfen teknenize bir isim verin.");
       return;
     }
+
     setOnboardingMessage("");
     setCredits(STARTING_BUDGET - selectedBoat.purchaseCost);
     setFollowers(0);
     setPurchasedUpgradeIds([]);
+    setUpgradeInProgress(null);
     setLogs(["Kariyer başladı. Limana giriş yapıldı."]);
-    
-    // Init Game State
     setCurrentLocationName(selectedMarina.name);
     setWorldProgress(0);
     setEnergy(100);
@@ -366,126 +386,122 @@ function App() {
     setCompletedRouteIds([]);
     setCurrentRouteId("greek_islands");
     setPendingDecisionId(null);
-    
     setContentResult(null);
     setSelectedPlatformId(null);
     setSelectedContentType(null);
     setSelectedUpgradeCategory("energy");
-
     setBrandTrust(10);
     setSponsorOffers([]);
     setAcceptedSponsors([]);
     setSponsoredContentCount(0);
     setIcerikSubTab("produce");
-
     setStep("HUB");
     setActiveTab("liman");
   };
 
   const loadGame = () => {
     const saved = localStorage.getItem(SAVE_KEY);
-    if (saved) {
-      try {
-        const parsed = migrateSave(JSON.parse(saved));
-        if (!parsed) return;
-        const savedCredits = parsed.credits ?? 0;
-        const savedLogs = parsed.logs ?? [];
-        const savedLastSavedAt = parsed.lastSavedAt;
+    if (!saved) return;
 
-        let offlineMinutes = 0;
-        let offlineCredits = 0;
+    try {
+      const parsed = migrateSave(JSON.parse(saved));
+      if (!parsed) return;
 
-        if (typeof savedLastSavedAt === "number" && Number.isFinite(savedLastSavedAt)) {
-          const offlineMs = Math.max(0, Date.now() - savedLastSavedAt);
-          offlineMinutes = Math.min(Math.floor(offlineMs / 60000), MAX_OFFLINE_MINUTES);
-          offlineCredits = Math.max(0, offlineMinutes * OFFLINE_CREDITS_PER_MINUTE);
-        }
+      const savedPurchasedUpgradeIds = parsed.purchasedUpgradeIds ?? [];
+      const savedUpgradeInProgress = parsed.upgradeInProgress ?? null;
+      const savedCredits = parsed.credits ?? 0;
+      const savedLogs = parsed.logs ?? [];
+      const savedLastSavedAt = parsed.lastSavedAt;
 
-        const passiveIncomeMessage =
-          offlineCredits > 0
-            ? `Pasif gelir: ${offlineMinutes} dakika içinde +${offlineCredits.toLocaleString("tr-TR")} TL birikti.`
-            : "";
+      let offlineMinutes = 0;
+      let offlineCredits = 0;
+      let nextPurchasedUpgradeIds = savedPurchasedUpgradeIds;
+      let nextUpgradeInProgress =
+        savedUpgradeInProgress &&
+        typeof savedUpgradeInProgress.upgradeId === "string" &&
+        typeof savedUpgradeInProgress.completesAt === "number" &&
+        Number.isFinite(savedUpgradeInProgress.completesAt)
+          ? savedUpgradeInProgress
+          : null;
+      let installationCompleteUpgrade: (typeof BOAT_UPGRADES)[number] | null = null;
 
-        setProfileIndex(parsed.profileIndex ?? 0);
-        setMarinaIndex(parsed.marinaIndex ?? 0);
-        setBoatIndex(parsed.boatIndex ?? 0);
-        setBoatName(parsed.boatName ?? "");
-        setCredits(savedCredits + offlineCredits);
-        setFollowers(parsed.followers ?? 0);
-        setFirstContentDone(parsed.firstContentDone ?? false);
-        setLogs(
-          passiveIncomeMessage
-            ? [passiveIncomeMessage, ...savedLogs.slice(0, 4)]
-            : savedLogs
-        );
-        setPurchasedUpgradeIds(parsed.purchasedUpgradeIds ?? []);
-        
-        setCurrentLocationName(parsed.currentLocationName ?? "");
-        setWorldProgress(parsed.worldProgress ?? 0);
-        setEnergy(parsed.energy ?? 100);
-        setWater(parsed.water ?? 100);
-        setFuel(parsed.fuel ?? 100);
-        setBoatCondition(parsed.boatCondition ?? 100);
-        setCurrentRouteId(parsed.currentRouteId ?? "greek_islands");
-        setCompletedRouteIds(parsed.completedRouteIds ?? []);
-        setVoyageTotalDays(parsed.voyageTotalDays ?? 0);
-        setVoyageDaysRemaining(parsed.voyageDaysRemaining ?? 0);
-        setCurrentSeaEvent(passiveIncomeMessage || (parsed.currentSeaEvent ?? ""));
-        setPendingDecisionId(parsed.pendingDecisionId ?? null);
-
-        setSelectedPlatformId(parsed.selectedPlatformId ?? null);
-        setSelectedContentType(parsed.selectedContentType ?? null);
-        setContentResult(parsed.contentResult ?? null);
-        setSelectedUpgradeCategory(parsed.selectedUpgradeCategory ?? "energy");
-
-        setBrandTrust(parsed.brandTrust ?? 10);
-        setSponsorOffers(parsed.sponsorOffers ?? []);
-        setAcceptedSponsors(parsed.acceptedSponsors ?? []);
-        setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
-        setIcerikSubTab(parsed.icerikSubTab ?? "produce");
-
-        const safeStep = parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB";
-        const routeValid = WORLD_ROUTES.some(r => r.id === parsed.currentRouteId);
-        setStep(safeStep === "SEA_MODE" && !routeValid ? "HUB" : safeStep);
-        setActiveTab(parsed.activeTab ?? "liman");
-      } catch (e) {
-        console.error("Load error", e);
+      if (typeof savedLastSavedAt === "number" && Number.isFinite(savedLastSavedAt)) {
+        const offlineMs = Math.max(0, Date.now() - savedLastSavedAt);
+        offlineMinutes = Math.min(Math.floor(offlineMs / 60000), MAX_OFFLINE_MINUTES);
+        offlineCredits = Math.max(0, offlineMinutes * OFFLINE_CREDITS_PER_MINUTE);
       }
+
+      if (nextUpgradeInProgress) {
+        const installingUpgrade = BOAT_UPGRADES.find(u => u.id === nextUpgradeInProgress.upgradeId);
+
+        if (!installingUpgrade || nextPurchasedUpgradeIds.includes(nextUpgradeInProgress.upgradeId)) {
+          nextUpgradeInProgress = null;
+        } else if (nextUpgradeInProgress.completesAt <= Date.now()) {
+          nextPurchasedUpgradeIds = [...nextPurchasedUpgradeIds, nextUpgradeInProgress.upgradeId];
+          installationCompleteUpgrade = installingUpgrade;
+          nextUpgradeInProgress = null;
+        }
+      }
+
+      const passiveIncomeMessage =
+        offlineCredits > 0
+          ? `Pasif gelir: ${offlineMinutes} dakika içinde +${offlineCredits.toLocaleString("tr-TR")} TL birikti.`
+          : "";
+      const installationCompleteMessage = installationCompleteUpgrade
+        ? `Kurulum tamamlandı: ${installationCompleteUpgrade.name} aktif edildi.`
+        : "";
+      const nextLogs = [installationCompleteMessage, passiveIncomeMessage, ...savedLogs]
+        .filter(Boolean)
+        .slice(0, 5) as string[];
+      const nextSeaEvent =
+        installationCompleteMessage || passiveIncomeMessage || (parsed.currentSeaEvent ?? "");
+
+      setProfileIndex(parsed.profileIndex ?? 0);
+      setMarinaIndex(parsed.marinaIndex ?? 0);
+      setBoatIndex(parsed.boatIndex ?? 0);
+      setBoatName(parsed.boatName ?? "");
+      setCredits(savedCredits + offlineCredits);
+      setFollowers(parsed.followers ?? 0);
+      setFirstContentDone(parsed.firstContentDone ?? false);
+      setLogs(nextLogs);
+      setPurchasedUpgradeIds(nextPurchasedUpgradeIds);
+      setUpgradeInProgress(nextUpgradeInProgress);
+      setCurrentLocationName(parsed.currentLocationName ?? "");
+      setWorldProgress(parsed.worldProgress ?? 0);
+      setEnergy(parsed.energy ?? 100);
+      setWater(parsed.water ?? 100);
+      setFuel(parsed.fuel ?? 100);
+      setBoatCondition(parsed.boatCondition ?? 100);
+      setCurrentRouteId(parsed.currentRouteId ?? "greek_islands");
+      setCompletedRouteIds(parsed.completedRouteIds ?? []);
+      setVoyageTotalDays(parsed.voyageTotalDays ?? 0);
+      setVoyageDaysRemaining(parsed.voyageDaysRemaining ?? 0);
+      setCurrentSeaEvent(nextSeaEvent);
+      setPendingDecisionId(parsed.pendingDecisionId ?? null);
+      setSelectedPlatformId(parsed.selectedPlatformId ?? null);
+      setSelectedContentType(parsed.selectedContentType ?? null);
+      setContentResult(parsed.contentResult ?? null);
+      setSelectedUpgradeCategory(parsed.selectedUpgradeCategory ?? "energy");
+      setBrandTrust(parsed.brandTrust ?? 10);
+      setSponsorOffers(parsed.sponsorOffers ?? []);
+      setAcceptedSponsors(parsed.acceptedSponsors ?? []);
+      setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
+      setIcerikSubTab(parsed.icerikSubTab ?? "produce");
+
+      const safeStep = parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB";
+      const routeValid = WORLD_ROUTES.some(r => r.id === parsed.currentRouteId);
+      setStep(safeStep === "SEA_MODE" && !routeValid ? "HUB" : safeStep);
+      setActiveTab(parsed.activeTab ?? "liman");
+
+      if (installationCompleteUpgrade) {
+        applyUpgradeEffects(installationCompleteUpgrade);
+      }
+    } catch (e) {
+      console.error("Load error", e);
     }
   };
 
-
-  const handleStartVoyage = () => {
-    if (!currentRoute) return;
-    
-    const minD = currentRoute.baseDurationDays.min;
-    const maxD = currentRoute.baseDurationDays.max;
-    const days = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
-    
-    const readinessRiskText = hasRouteReadinessGap ? " Hazırlık eksikleri bu rotada riski artırıyor." : "";
-
-    setVoyageTotalDays(days);
-    setVoyageDaysRemaining(days);
-    setPendingDecisionId(null);
-    setCurrentSeaEvent(`Rotaya çıkıldı. Rüzgar kolayına.${readinessRiskText}`);
-    setLogs(prev => [`${currentRoute.name} rotasına çıkıldı.${readinessRiskText}`, ...prev.slice(0, 4)]);
-    setStep("SEA_MODE");
-    setActiveTab("liman"); // Switch back to sea mode view
-  };
-
-  const handleBuyUpgrade = (upgradeId: string) => {
-    const upgrade = BOAT_UPGRADES.find(u => u.id === upgradeId);
-    if (!upgrade) return;
-
-    if (credits < upgrade.cost) {
-      setLogs(prev => ["Yetersiz bütçe. Bu upgrade için daha fazla kredi gerekiyor.", ...prev.slice(0, 4)]);
-      return;
-    }
-
-    setCredits(prev => prev - upgrade.cost);
-    setPurchasedUpgradeIds(prev => [...prev, upgradeId]);
-    triggerFlash("credits");
-
+  const applyUpgradeEffects = (upgrade: (typeof BOAT_UPGRADES)[number]) => {
     const energyBoost = upgrade.effects.energy ?? 0;
     const waterBoost = upgrade.effects.water ?? 0;
     const conditionBoost =
@@ -497,16 +513,6 @@ function App() {
     if (energyBoost > 0) setEnergy(prev => Math.min(100, prev + energyBoost));
     if (waterBoost > 0) setWater(prev => Math.min(100, prev + waterBoost));
     if (conditionBoost > 0) setBoatCondition(prev => Math.min(100, prev + conditionBoost));
-
-    let effectText = "";
-    if (energyBoost > 0) effectText = `Enerji ${energyBoost} puan toparlandı.`;
-    else if (waterBoost > 0) effectText = `Su ${waterBoost} puan toparlandı.`;
-    else if (conditionBoost > 0) effectText = `Tekne durumu ${conditionBoost} puan toparlandı.`;
-    else if (upgrade.effects.oceanReadiness) effectText = "Okyanus hazırlığı arttı.";
-    else if (upgrade.effects.contentQuality) effectText = "İçerik kalitesi arttı.";
-    else effectText = "Tekne donanımı güçlendi.";
-
-    setLogs(prev => [`${upgrade.name} satın alındı. ${effectText}`, ...prev.slice(0, 4)]);
   };
 
   const handleMarinaRest = () => {
@@ -815,6 +821,105 @@ function App() {
     }
   };
 
+  const getUpgradeInstallMs = (upgrade: (typeof BOAT_UPGRADES)[number]) => {
+    if (typeof upgrade.installDays === "number" && upgrade.installDays > 0) {
+      return upgrade.installDays * 60 * 60 * 1000;
+    }
+
+    if (upgrade.cost >= 15000 || upgrade.size === "large" || upgrade.size === "ocean") {
+      return 120 * 60 * 1000;
+    }
+    if (upgrade.cost >= 7000 || upgrade.size === "medium") {
+      return 60 * 60 * 1000;
+    }
+    return 30 * 60 * 1000;
+  };
+
+  const formatRemainingInstallTime = (targetTime: number) => {
+    const remainingMs = Math.max(0, targetTime - Date.now());
+    const totalMinutes = Math.ceil(remainingMs / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (totalMinutes < 60) {
+      return `${Math.max(1, totalMinutes)} dakika kaldı`;
+    }
+
+    if (minutes === 0) {
+      return `${hours} saat kaldı`;
+    }
+
+    return `${hours} saat ${minutes} dakika kaldı`;
+  };
+
+  const completeUpgradeInstallation = (
+    upgradeId: string,
+    existingPurchasedIds?: string[]
+  ) => {
+    const upgrade = BOAT_UPGRADES.find(u => u.id === upgradeId);
+    if (!upgrade) {
+      setUpgradeInProgress(null);
+      return;
+    }
+
+    const purchasedIds = existingPurchasedIds ?? purchasedUpgradeIds;
+    if (purchasedIds.includes(upgradeId)) {
+      setUpgradeInProgress(null);
+      return;
+    }
+
+    setPurchasedUpgradeIds(prev => [...prev, upgradeId]);
+    applyUpgradeEffects(upgrade);
+    setUpgradeInProgress(null);
+    setLogs(prev => [`Kurulum tamamlandı: ${upgrade.name} aktif edildi.`, ...prev.slice(0, 4)]);
+  };
+
+  const handleStartVoyage = () => {
+    if (!currentRoute) return;
+
+    const minD = currentRoute.baseDurationDays.min;
+    const maxD = currentRoute.baseDurationDays.max;
+    const days = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
+
+    const readinessRiskText = hasRouteReadinessGap ? " Hazırlık eksikleri bu rotada riski artırıyor." : "";
+
+    setVoyageTotalDays(days);
+    setVoyageDaysRemaining(days);
+    setPendingDecisionId(null);
+    setCurrentSeaEvent(`Rotaya çıkıldı. Rüzgar kolayına.${readinessRiskText}`);
+    setLogs(prev => [`${currentRoute.name} rotasına çıkıldı.${readinessRiskText}`, ...prev.slice(0, 4)]);
+    setStep("SEA_MODE");
+    setActiveTab("liman");
+  };
+
+  const handleBuyUpgrade = (upgradeId: string) => {
+    const upgrade = BOAT_UPGRADES.find(u => u.id === upgradeId);
+    if (!upgrade) return;
+
+    if (upgradeInProgress) {
+      setLogs(prev => ["Kurulum devam ediyor. Yeni upgrade için mevcut kurulumun bitmesini bekle.", ...prev.slice(0, 4)]);
+      return;
+    }
+
+    if (purchasedUpgradeIds.includes(upgradeId)) {
+      return;
+    }
+
+    if (credits < upgrade.cost) {
+      setLogs(prev => ["Yetersiz bütçe. Bu upgrade için daha fazla kredi gerekiyor.", ...prev.slice(0, 4)]);
+      return;
+    }
+
+    const installMs = getUpgradeInstallMs(upgrade);
+    const completesAt = Date.now() + installMs;
+    const installMinutes = Math.max(1, Math.ceil(installMs / 60000));
+
+    setCredits(prev => prev - upgrade.cost);
+    setUpgradeInProgress({ upgradeId, completesAt });
+    triggerFlash("credits");
+    setLogs(prev => [`Kurulum başladı: ${upgrade.name}. Tahmini tamamlanma: ${installMinutes} dakika.`, ...prev.slice(0, 4)]);
+  };
+
   const renderLimanTab = () => (
     <LimanTab
       selectedBoatId={selectedBoat.id}
@@ -1032,6 +1137,12 @@ function App() {
 
   const renderTekneTab = () => {
     const filteredUpgrades = BOAT_UPGRADES.filter(u => u.categoryId === selectedUpgradeCategory);
+    const currentInstallingUpgrade = upgradeInProgress
+      ? BOAT_UPGRADES.find(u => u.id === upgradeInProgress.upgradeId) ?? null
+      : null;
+    const currentInstallLabel = upgradeInProgress
+      ? formatRemainingInstallTime(upgradeInProgress.completesAt)
+      : "";
 
     return (
       <div className="tab-content fade-in">
@@ -1078,9 +1189,17 @@ function App() {
            ))}
         </div>
 
+        {currentInstallingUpgrade && (
+          <div className="detail-box">
+            <strong>Kurulum devam ediyor: {currentInstallingUpgrade.name}</strong>
+            <div>{currentInstallLabel}</div>
+          </div>
+        )}
+
         <div className="upgrade-list-v2">
           {filteredUpgrades.map(upgrade => {
             const isPurchased = purchasedUpgradeIds.includes(upgrade.id);
+            const isInstalling = upgradeInProgress?.upgradeId === upgrade.id;
             const comp = upgrade.compatibility.find(c => c.boatId === selectedBoat.id);
             const isCompatible = comp ? comp.compatible : false;
             const hasWarning = comp && (comp.efficiency === "poor" || comp.efficiency === "limited");
@@ -1114,10 +1233,17 @@ function App() {
                 
                 {!isPurchased && isCompatible && (
                   <button 
-                    className={`btn-primary full-width mt-10 ${credits < upgrade.cost ? "disabled" : ""}`}
+                    className={`btn-primary full-width mt-10 ${credits < upgrade.cost || !!upgradeInProgress ? "disabled" : ""}`}
                     onClick={() => handleBuyUpgrade(upgrade.id)}
+                    disabled={credits < upgrade.cost || !!upgradeInProgress}
                   >
-                    {credits < upgrade.cost ? "Yetersiz Bütçe" : `${upgrade.cost.toLocaleString("tr-TR")} TL - Satın Al`}
+                    {isInstalling
+                      ? "Kurulumda"
+                      : upgradeInProgress
+                        ? "Kurulum Bekleniyor"
+                        : credits < upgrade.cost
+                          ? "Yetersiz Bütçe"
+                          : `${upgrade.cost.toLocaleString("tr-TR")} TL - Satın Al`}
                   </button>
                 )}
               </div>

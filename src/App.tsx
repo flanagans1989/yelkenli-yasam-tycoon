@@ -151,8 +151,8 @@ const getRouteCompletionRewards = (route: (typeof WORLD_ROUTES)[number]) => {
     final: 2.5,
   };
 
-  const credits = Math.floor(500 * (riskLevelMultipliers[route.riskLevel] ?? 1));
-  const followers = Math.floor(250 * (contentPotentialMultipliers[route.contentPotential] ?? 1));
+  const credits = Math.floor(5000 * (riskLevelMultipliers[route.riskLevel] ?? 1));
+  const followers = Math.floor(2500 * (contentPotentialMultipliers[route.contentPotential] ?? 1));
 
   return { credits, followers };
 };

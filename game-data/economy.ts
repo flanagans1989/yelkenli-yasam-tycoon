@@ -127,7 +127,7 @@ export const CURRENCIES: CurrencyDefinition[] = [
 ];
 
 export const STARTING_ECONOMY: StartingEconomy = {
-  startingCredits: 100000,
+  startingCredits: 150000,
   startingTokens: 25,
   followerGoal: 1000000,
   oceanReadinessGoal: 80,

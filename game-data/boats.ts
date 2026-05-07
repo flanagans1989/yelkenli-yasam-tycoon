@@ -268,7 +268,7 @@ export function getStartingBoatById(id: BoatId): StartingBoat | undefined {
   return STARTING_BOATS.find((boat) => boat.id === id);
 }
 
-export const STARTING_BUDGET = 100000;
+export const STARTING_BUDGET = 150000;
 
 export function getRemainingBudgetAfterBoatPurchase(boatId: BoatId): number {
   const boat = getStartingBoatById(boatId);

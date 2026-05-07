@@ -220,7 +220,7 @@ export const SPONSOR_TIERS: SponsorTierDefinition[] = [
   {
     tier: "micro",
     name: "Mikro Sponsor",
-    minFollowers: 5000,
+    minFollowers: 800,
     minBrandTrust: 10,
     rewardRange: {
       min: 2000,
@@ -232,7 +232,7 @@ export const SPONSOR_TIERS: SponsorTierDefinition[] = [
   {
     tier: "small",
     name: "Küçük Sponsor",
-    minFollowers: 25000,
+    minFollowers: 8000,
     minBrandTrust: 20,
     rewardRange: {
       min: 8000,

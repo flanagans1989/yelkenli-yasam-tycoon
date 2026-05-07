@@ -42,6 +42,7 @@ export function SeaModeTab({
 }: SeaModeTabProps) {
   const progressPercent =
     voyageTotalDays > 0 ? (1 - voyageDaysRemaining / voyageTotalDays) * 100 : 0;
+  const hasDepletedResources = energy <= 0 || water <= 0 || fuel <= 0;
   const criticalResources = [
     energy < 25 ? "Enerji" : null,
     water < 25 ? "Su" : null,
@@ -66,7 +67,7 @@ export function SeaModeTab({
 
       {hasCriticalResources && (
         <div className="sea-critical-banner" role="alert" aria-live="polite">
-          <strong>⚠️ Kritik Kaynak! Limana ulaşmadan önce kaynaklarını yönet.</strong>
+          <strong>{hasDepletedResources ? "Kaynak Tükendi! Tekne yıpranıyor." : "Kritik Kaynak! Limana ulaşmadan önce kaynaklarını yönet."}</strong>
           <span>Kritik seviyede: {criticalResources.join(", ")}</span>
         </div>
       )}

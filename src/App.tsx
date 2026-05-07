@@ -568,6 +568,15 @@ function App() {
       setWater(w => Math.max(0, w - waterDrop));
       setFuel(f => Math.max(0, f - fuelDrop));
 
+      const willDepleteResource =
+        energy - energyDrop <= 0 ||
+        water - waterDrop <= 0 ||
+        fuel - fuelDrop <= 0;
+
+      if (willDepleteResource) {
+        setBoatCondition(c => Math.max(0, c - 4));
+      }
+
       let conditionDropChance = 0.7;
       if (upgradeNavigationBonus > 15 || upgradeSafetyBonus > 15) conditionDropChance = 0.85;
       if (readinessPenalty > 0) conditionDropChance = Math.max(0.45, conditionDropChance - readinessPenalty * 0.08);
@@ -823,16 +832,16 @@ function App() {
 
   const getUpgradeInstallMs = (upgrade: (typeof BOAT_UPGRADES)[number]) => {
     if (typeof upgrade.installDays === "number" && upgrade.installDays > 0) {
-      return upgrade.installDays * 60 * 60 * 1000;
+      return upgrade.installDays * 30 * 60 * 1000;
     }
 
     if (upgrade.cost >= 15000 || upgrade.size === "large" || upgrade.size === "ocean") {
-      return 120 * 60 * 1000;
+      return 30 * 60 * 1000;
     }
     if (upgrade.cost >= 7000 || upgrade.size === "medium") {
-      return 60 * 60 * 1000;
+      return 15 * 60 * 1000;
     }
-    return 30 * 60 * 1000;
+    return 5 * 60 * 1000;
   };
 
   const formatRemainingInstallTime = (targetTime: number) => {

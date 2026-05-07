@@ -96,7 +96,13 @@ export function LimanTab({
 
       <div className="event-log-compact">
         <span className="card-label">Marina Servisi</span>
-        <div className="log-entry">Enerji: %{energy} · Su: %{water} · Yakıt: %{fuel} · Durum: %{boatCondition}</div>
+        <div className="event-log-compact mt-10">
+          <span className="card-label">Kaynak Durumu</span>
+          <div className="log-entry">Enerji: %{energy}</div>
+          <div className="log-entry">Su: %{water}</div>
+          <div className="log-entry">Yakıt: %{fuel}</div>
+          <div className="log-entry">Tekne Durumu: %{boatCondition}</div>
+        </div>
         <button className="btn-secondary full-width mt-10" onClick={onMarinaRest}>
           Marina’da Dinlen
         </button>

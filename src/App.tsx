@@ -23,6 +23,8 @@ import { SeaModeTab } from "./components/SeaModeTab";
 
 const SAVE_KEY = "yelkenli_save";
 const SAVE_VERSION = 1;
+const MAX_OFFLINE_MINUTES = 480;
+const OFFLINE_CREDITS_PER_MINUTE = 15;
 
 type SeaDecisionEffect = {
   credits?: number;
@@ -325,6 +327,7 @@ function App() {
         acceptedSponsors,
         sponsoredContentCount,
         icerikSubTab,
+        lastSavedAt: Date.now(),
         saveVersion: SAVE_VERSION,
         
         hasSave: true,
@@ -385,14 +388,36 @@ function App() {
       try {
         const parsed = migrateSave(JSON.parse(saved));
         if (!parsed) return;
+        const savedCredits = parsed.credits ?? 0;
+        const savedLogs = parsed.logs ?? [];
+        const savedLastSavedAt = parsed.lastSavedAt;
+
+        let offlineMinutes = 0;
+        let offlineCredits = 0;
+
+        if (typeof savedLastSavedAt === "number" && Number.isFinite(savedLastSavedAt)) {
+          const offlineMs = Math.max(0, Date.now() - savedLastSavedAt);
+          offlineMinutes = Math.min(Math.floor(offlineMs / 60000), MAX_OFFLINE_MINUTES);
+          offlineCredits = Math.max(0, offlineMinutes * OFFLINE_CREDITS_PER_MINUTE);
+        }
+
+        const passiveIncomeMessage =
+          offlineCredits > 0
+            ? `Pasif gelir: ${offlineMinutes} dakika içinde +${offlineCredits.toLocaleString("tr-TR")} TL birikti.`
+            : "";
+
         setProfileIndex(parsed.profileIndex ?? 0);
         setMarinaIndex(parsed.marinaIndex ?? 0);
         setBoatIndex(parsed.boatIndex ?? 0);
         setBoatName(parsed.boatName ?? "");
-        setCredits(parsed.credits ?? 0);
+        setCredits(savedCredits + offlineCredits);
         setFollowers(parsed.followers ?? 0);
         setFirstContentDone(parsed.firstContentDone ?? false);
-        setLogs(parsed.logs ?? []);
+        setLogs(
+          passiveIncomeMessage
+            ? [passiveIncomeMessage, ...savedLogs.slice(0, 4)]
+            : savedLogs
+        );
         setPurchasedUpgradeIds(parsed.purchasedUpgradeIds ?? []);
         
         setCurrentLocationName(parsed.currentLocationName ?? "");
@@ -405,7 +430,7 @@ function App() {
         setCompletedRouteIds(parsed.completedRouteIds ?? []);
         setVoyageTotalDays(parsed.voyageTotalDays ?? 0);
         setVoyageDaysRemaining(parsed.voyageDaysRemaining ?? 0);
-        setCurrentSeaEvent(parsed.currentSeaEvent ?? "");
+        setCurrentSeaEvent(passiveIncomeMessage || (parsed.currentSeaEvent ?? ""));
         setPendingDecisionId(parsed.pendingDecisionId ?? null);
 
         setSelectedPlatformId(parsed.selectedPlatformId ?? null);

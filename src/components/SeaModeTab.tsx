@@ -42,6 +42,13 @@ export function SeaModeTab({
 }: SeaModeTabProps) {
   const progressPercent =
     voyageTotalDays > 0 ? (1 - voyageDaysRemaining / voyageTotalDays) * 100 : 0;
+  const criticalResources = [
+    energy < 25 ? "Enerji" : null,
+    water < 25 ? "Su" : null,
+    fuel < 25 ? "Yakıt" : null,
+    boatCondition < 25 ? "Tekne Durumu" : null,
+  ].filter(Boolean) as string[];
+  const hasCriticalResources = criticalResources.length > 0;
 
   return (
     <div className="sea-mode-content fade-in">
@@ -57,8 +64,15 @@ export function SeaModeTab({
         <p className="sea-event-text">{currentSeaEvent}</p>
       </div>
 
+      {hasCriticalResources && (
+        <div className="sea-critical-banner" role="alert" aria-live="polite">
+          <strong>⚠️ Kritik Kaynak! Limana ulaşmadan önce kaynaklarını yönet.</strong>
+          <span>Kritik seviyede: {criticalResources.join(", ")}</span>
+        </div>
+      )}
+
       <div className="resource-grid">
-        <div className="res-card">
+        <div className={`res-card ${energy < 25 ? "critical-pulse" : ""}`}>
           <div className="res-card-top">
             <span>Enerji</span>
             <strong className={energy < 25 ? "critical" : ""}>{energy}%</strong>
@@ -73,7 +87,7 @@ export function SeaModeTab({
             ></div>
           </div>
         </div>
-        <div className="res-card">
+        <div className={`res-card ${water < 25 ? "critical-pulse" : ""}`}>
           <div className="res-card-top">
             <span>Su</span>
             <strong className={water < 25 ? "critical" : ""}>{water}%</strong>
@@ -88,7 +102,7 @@ export function SeaModeTab({
             ></div>
           </div>
         </div>
-        <div className="res-card">
+        <div className={`res-card ${fuel < 25 ? "critical-pulse" : ""}`}>
           <div className="res-card-top">
             <span>Yakıt</span>
             <strong className={fuel < 25 ? "critical" : ""}>{fuel}%</strong>
@@ -103,9 +117,9 @@ export function SeaModeTab({
             ></div>
           </div>
         </div>
-        <div className="res-card">
+        <div className={`res-card ${boatCondition < 25 ? "critical-pulse" : ""}`}>
           <div className="res-card-top">
-            <span>Durum</span>
+            <span>Tekne Durumu</span>
             <strong className={boatCondition < 25 ? "critical" : ""}>{boatCondition}%</strong>
           </div>
           <div className="res-bar-track">

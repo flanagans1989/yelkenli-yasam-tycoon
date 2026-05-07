@@ -39,6 +39,13 @@ export function LimanTab({
   onGoContent,
   onGoRoute,
 }: LimanTabProps) {
+  const hasCompletedFirstRoute = completedRouteIds.length > 0;
+  const guideMessage = !firstContentDone
+    ? "Önce kısa bir içerik üret. Takipçi kazan, sonra ilk rotaya çık."
+    : !hasCompletedFirstRoute
+      ? "İlk içerik tamam. Şimdi Rota sekmesinden ilk yolculuğa hazırlan."
+      : "İlk rota tamamlandı. Artık yeni limanlara açılabilirsin.";
+
   return (
     <div className="tab-content fade-in">
       <div className="hub-center-visual">
@@ -58,6 +65,14 @@ export function LimanTab({
           <span>Okyanus Hazırlığı</span>
           <strong>{currentOceanReadiness}%</strong>
         </div>
+      </div>
+
+      <div className="event-log-compact">
+        <span className="card-label">Başlangıç Rehberi</span>
+        <div className="log-entry">{firstContentDone ? "✓" : "•"} 1) İlk içeriğini üret</div>
+        <div className="log-entry">{hasCompletedFirstRoute ? "✓" : firstContentDone ? "•" : "…"} 2) İlk rotaya hazırlan</div>
+        <div className="log-entry">{hasCompletedFirstRoute ? "✓" : "…"} 3) İlk rotanı tamamla</div>
+        <div className="log-entry">{guideMessage}</div>
       </div>
 
       {!firstContentDone ? (

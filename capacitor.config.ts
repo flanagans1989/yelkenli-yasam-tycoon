@@ -2,7 +2,7 @@
 
 const config: CapacitorConfig = {
   appId: 'com.deraks.yelkenliyasamtycoon',
-  appName: 'Yelkenli Yasam Tycoon',
+  appName: 'Yelkenli Yaşam Tycoon',
   webDir: 'dist'
 };
 

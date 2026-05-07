@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Yelkenli Yasam Tycoon</string>
-    <string name="title_activity_main">Yelkenli Yasam Tycoon</string>
+    <string name="app_name">Yelkenli Yaşam Tycoon</string>
+    <string name="title_activity_main">Yelkenli Yaşam Tycoon</string>
     <string name="package_name">com.deraks.yelkenliyasamtycoon</string>
     <string name="custom_url_scheme">com.deraks.yelkenliyasamtycoon</string>
 </resources>

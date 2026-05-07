@@ -2672,3 +2672,43 @@ button {
 }
 .res-card span { font-size: 13px; color: #8aafcc; font-weight: 700; text-transform: uppercase;}
 .res-card strong { font-size: 18px; color: #f7fbff;}
+
+.sea-decision-card {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 20px;
+  background: rgba(13, 32, 53, 0.88);
+  border: 1px solid rgba(245, 166, 35, 0.35);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.sea-decision-card h3 {
+  margin: 10px 0 8px;
+  color: #f7fbff;
+}
+
+.sea-decision-card p {
+  margin: 0;
+  color: #8aafcc;
+  line-height: 1.5;
+}
+
+.sea-decision-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(245, 166, 35, 0.14);
+  color: #f5a623;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sea-decision-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}

@@ -24,6 +24,93 @@ import { SeaModeTab } from "./components/SeaModeTab";
 const SAVE_KEY = "yelkenli_save";
 const SAVE_VERSION = 1;
 
+type SeaDecisionEffect = {
+  credits?: number;
+  followers?: number;
+  energy?: number;
+  water?: number;
+  fuel?: number;
+  boatCondition?: number;
+  remainingDays?: number;
+};
+
+type SeaDecisionChoice = {
+  label: string;
+  resultText: string;
+  effect: SeaDecisionEffect;
+};
+
+type SeaDecisionEvent = {
+  id: string;
+  title: string;
+  description: string;
+  choiceA: SeaDecisionChoice;
+  choiceB: SeaDecisionChoice;
+};
+
+const SEA_DECISION_EVENTS: SeaDecisionEvent[] = [
+  {
+    id: "fuel_running_low",
+    title: "Yakıt Azalıyor",
+    description: "Depodaki tüketim beklenenden hızlı gidiyor. Hızı düşürmek süreyi uzatır ama motoru rahatlatır.",
+    choiceA: {
+      label: "Hızı düşür",
+      resultText: "Hız azaltıldı. Tüketim dengelendi ama rota bir gün uzadı.",
+      effect: { fuel: 4, remainingDays: 1 },
+    },
+    choiceB: {
+      label: "Aynı hızda devam et",
+      resultText: "Program korundu ama depodan daha fazla yakıt çekildi.",
+      effect: { fuel: -9 },
+    },
+  },
+  {
+    id: "mild_storm_signs",
+    title: "Hafif Fırtına İşaretleri",
+    description: "Ufukta hava bozuyor. Güvenli rota enerji ister, direkt devam etmek tekneyi zorlayabilir.",
+    choiceA: {
+      label: "Rotayı güvene al",
+      resultText: "Daha güvenli hatta geçildi. Enerji düştü ama tekne korunmuş oldu.",
+      effect: { energy: -8 },
+    },
+    choiceB: {
+      label: "Devam et",
+      resultText: "Fırtına kenarından geçildi. Tekne biraz hırpalandı.",
+      effect: { boatCondition: -7 },
+    },
+  },
+  {
+    id: "technical_noise",
+    title: "Teknik Arıza Sesi",
+    description: "Motor bölümünden alışılmadık bir ses geliyor. Hemen bakmak zaman ve enerji ister.",
+    choiceA: {
+      label: "Hemen kontrol et",
+      resultText: "Sorun erken fark edildi. Biraz enerji gitti ama hasar sınırlı kaldı.",
+      effect: { energy: -7, boatCondition: -2 },
+    },
+    choiceB: {
+      label: "Görmezden gel",
+      resultText: "Ses büyüdü ve sistem biraz daha yıprandı.",
+      effect: { boatCondition: -9 },
+    },
+  },
+  {
+    id: "content_opportunity",
+    title: "İçerik Fırsatı",
+    description: "Işık ve deniz tam kıvamında. Kamera açılırsa güzel içerik ve gelir çıkabilir.",
+    choiceA: {
+      label: "Video çek",
+      resultText: "Kısa bir çekim iyi performans verdi. Takipçi ve kredi geldi.",
+      effect: { energy: -10, followers: 120, credits: 180 },
+    },
+    choiceB: {
+      label: "Dinlen",
+      resultText: "Kamera kapalı kaldı. Enerji korundu, sakin seyir sürdü.",
+      effect: {},
+    },
+  },
+];
+
 const getBaseOceanReadiness = (boatId: string) => {
   if (boatId === "kirlangic_28") return 15;
   if (boatId === "denizkusu_34") return 30;
@@ -116,6 +203,7 @@ function App() {
   const [voyageTotalDays, setVoyageTotalDays] = useState(0);
   const [voyageDaysRemaining, setVoyageDaysRemaining] = useState(0);
   const [currentSeaEvent, setCurrentSeaEvent] = useState("");
+  const [pendingDecisionId, setPendingDecisionId] = useState<string | null>(null);
 
   // Content V2 States
   const [selectedPlatformId, setSelectedPlatformId] = useState<string | null>(null);
@@ -225,6 +313,7 @@ function App() {
         voyageTotalDays,
         voyageDaysRemaining,
         currentSeaEvent,
+        pendingDecisionId,
         
         selectedPlatformId,
         selectedContentType,
@@ -248,7 +337,7 @@ function App() {
     step, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone, 
     logs, purchasedUpgradeIds, activeTab, currentLocationName, worldProgress, energy, water, 
     fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining, 
-    currentSeaEvent, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
+    currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
     brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab
   ]);
 
@@ -273,6 +362,7 @@ function App() {
     setBoatCondition(100);
     setCompletedRouteIds([]);
     setCurrentRouteId("greek_islands");
+    setPendingDecisionId(null);
     
     setContentResult(null);
     setSelectedPlatformId(null);
@@ -284,7 +374,7 @@ function App() {
     setAcceptedSponsors([]);
     setSponsoredContentCount(0);
     setIcerikSubTab("produce");
-    
+
     setStep("HUB");
     setActiveTab("liman");
   };
@@ -316,6 +406,7 @@ function App() {
         setVoyageTotalDays(parsed.voyageTotalDays ?? 0);
         setVoyageDaysRemaining(parsed.voyageDaysRemaining ?? 0);
         setCurrentSeaEvent(parsed.currentSeaEvent ?? "");
+        setPendingDecisionId(parsed.pendingDecisionId ?? null);
 
         setSelectedPlatformId(parsed.selectedPlatformId ?? null);
         setSelectedContentType(parsed.selectedContentType ?? null);
@@ -350,6 +441,7 @@ function App() {
 
     setVoyageTotalDays(days);
     setVoyageDaysRemaining(days);
+    setPendingDecisionId(null);
     setCurrentSeaEvent(`Rotaya çıkıldı. Rüzgar kolayına.${readinessRiskText}`);
     setLogs(prev => [`${currentRoute.name} rotasına çıkıldı.${readinessRiskText}`, ...prev.slice(0, 4)]);
     setStep("SEA_MODE");
@@ -418,6 +510,15 @@ function App() {
   };
 
   const advanceDay = () => {
+    if (step !== "SEA_MODE" || !currentRoute || pendingDecisionId) return;
+
+    if (Math.random() < 0.3) {
+      const nextDecision = SEA_DECISION_EVENTS[Math.floor(Math.random() * SEA_DECISION_EVENTS.length)];
+      setPendingDecisionId(nextDecision.id);
+      setCurrentSeaEvent(nextDecision.description);
+      return;
+    }
+
     setVoyageDaysRemaining(prev => {
       const newDays = prev - 1;
       const readinessPenalty = Math.min(currentRouteReadinessGapCount, 3);
@@ -479,6 +580,56 @@ function App() {
     });
   };
 
+  const handleResolveSeaDecision = (choiceKey: "choiceA" | "choiceB") => {
+    if (!pendingDecisionId) return;
+
+    const decision = SEA_DECISION_EVENTS.find(event => event.id === pendingDecisionId);
+    if (!decision) {
+      setPendingDecisionId(null);
+      return;
+    }
+
+    const choice = decision[choiceKey];
+    const effect = choice.effect;
+    const creditsDelta = effect.credits;
+    const followersDelta = effect.followers;
+    const energyDelta = effect.energy;
+    const waterDelta = effect.water;
+    const fuelDelta = effect.fuel;
+    const boatConditionDelta = effect.boatCondition;
+    const remainingDaysDelta = effect.remainingDays;
+
+    if (typeof creditsDelta === "number") {
+      setCredits(prev => Math.max(0, prev + creditsDelta));
+      triggerFlash("credits");
+    }
+
+    if (typeof followersDelta === "number") {
+      setFollowers(prev => Math.max(0, prev + followersDelta));
+      triggerFlash("followers");
+    }
+
+    if (typeof energyDelta === "number") {
+      setEnergy(prev => Math.max(0, Math.min(100, prev + energyDelta)));
+    }
+    if (typeof waterDelta === "number") {
+      setWater(prev => Math.max(0, Math.min(100, prev + waterDelta)));
+    }
+    if (typeof fuelDelta === "number") {
+      setFuel(prev => Math.max(0, Math.min(100, prev + fuelDelta)));
+    }
+    if (typeof boatConditionDelta === "number") {
+      setBoatCondition(prev => Math.max(0, Math.min(100, prev + boatConditionDelta)));
+    }
+    if (typeof remainingDaysDelta === "number") {
+      setVoyageDaysRemaining(prev => Math.max(0, prev + remainingDaysDelta));
+    }
+
+    setCurrentSeaEvent(choice.resultText);
+    setLogs(prev => [`${decision.title}: ${choice.resultText}`, ...prev.slice(0, 4)]);
+    setPendingDecisionId(null);
+  };
+
   const handleArrival = () => {
     if (!currentRoute) return;
 
@@ -498,6 +649,7 @@ function App() {
     }
 
     setLogs(prev => [`${currentRoute.name} rotası tamamlandı. ${currentRoute.to} limanına varıldı. +${reward.credits} TL, +${reward.followers} takipçi ödül alındı.`, ...prev.slice(0, 4)]);
+    setPendingDecisionId(null);
     setStep("HUB");
     setActiveTab("liman");
   };
@@ -671,6 +823,12 @@ function App() {
       fuel={fuel}
       boatCondition={boatCondition}
       onAdvanceDay={advanceDay}
+      pendingDecision={
+        pendingDecisionId
+          ? SEA_DECISION_EVENTS.find(event => event.id === pendingDecisionId) ?? null
+          : null
+      }
+      onResolveDecision={handleResolveSeaDecision}
     />
   );
 

@@ -21,7 +21,8 @@ import { LimanTab } from "./components/LimanTab";
 import { RotaTab } from "./components/RotaTab";
 import { SeaModeTab } from "./components/SeaModeTab";
 
-
+const SAVE_KEY = "yelkenli_save";
+const SAVE_VERSION = 1;
 
 const getBaseOceanReadiness = (boatId: string) => {
   if (boatId === "kirlangic_28") return 15;
@@ -68,6 +69,22 @@ const getRouteCompletionRewards = (route: (typeof WORLD_ROUTES)[number]) => {
 
   return { credits, followers };
 };
+
+function migrateSave(parsed: any) {
+  if (!parsed || typeof parsed !== "object") return null;
+
+  const version = parsed.saveVersion ?? 1;
+
+  if (version === 1) {
+    return {
+      ...parsed,
+      saveVersion: SAVE_VERSION,
+      hasSave: parsed.hasSave ?? true,
+    };
+  }
+
+  return null;
+}
 
 function App() {
   const [step, setStep] = useState<Step>("MAIN_MENU");
@@ -167,11 +184,11 @@ function App() {
 
   // Load save on mount
   useEffect(() => {
-    const saved = localStorage.getItem("yelkenli_save");
+    const saved = localStorage.getItem(SAVE_KEY);
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        if (parsed.hasSave) {
+        const parsed = migrateSave(JSON.parse(saved));
+        if (parsed?.hasSave) {
           setHasSave(true);
           setSaveBoatName(parsed.boatName || "Bilinmeyen Tekne");
         }
@@ -219,10 +236,11 @@ function App() {
         acceptedSponsors,
         sponsoredContentCount,
         icerikSubTab,
+        saveVersion: SAVE_VERSION,
         
         hasSave: true,
       };
-      localStorage.setItem("yelkenli_save", JSON.stringify(saveObj));
+      localStorage.setItem(SAVE_KEY, JSON.stringify(saveObj));
       setHasSave(true);
       setSaveBoatName(boatName);
     }
@@ -272,10 +290,11 @@ function App() {
   };
 
   const loadGame = () => {
-    const saved = localStorage.getItem("yelkenli_save");
+    const saved = localStorage.getItem(SAVE_KEY);
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
+        const parsed = migrateSave(JSON.parse(saved));
+        if (!parsed) return;
         setProfileIndex(parsed.profileIndex ?? 0);
         setMarinaIndex(parsed.marinaIndex ?? 0);
         setBoatIndex(parsed.boatIndex ?? 0);

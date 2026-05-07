@@ -37,6 +37,12 @@ const getCaptainLevel = (xp: number): number => {
   return 1;
 };
 
+const makeDailyGoals = (): DailyGoal[] => [
+  { id: "dg_content", title: "1 içerik üret", type: "produce_content", completed: false },
+  { id: "dg_route", title: "1 rota tamamla", type: "complete_route", completed: false },
+  { id: "dg_upgrade", title: "1 upgrade başlat", type: "buy_upgrade", completed: false },
+];
+
 type UpgradeInProgress = {
   upgradeId: string;
   completesAt: number;
@@ -64,6 +70,13 @@ type SeaDecisionEvent = {
   description: string;
   choiceA: SeaDecisionChoice;
   choiceB: SeaDecisionChoice;
+};
+
+type DailyGoal = {
+  id: string;
+  title: string;
+  type: "produce_content" | "complete_route" | "buy_upgrade";
+  completed: boolean;
 };
 
 const SEA_DECISION_EVENTS: SeaDecisionEvent[] = [
@@ -251,6 +264,10 @@ function App() {
   const [captainXp, setCaptainXp] = useState(0);
   const [captainLevel, setCaptainLevel] = useState(1);
 
+  const [dailyGoals, setDailyGoals] = useState<DailyGoal[]>(makeDailyGoals);
+  const [lastDailyReset, setLastDailyReset] = useState<string>("");
+  const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
+
   const triggerFlash = (type: "credits" | "followers") => {
     if (type === "credits") {
       setFlashCredits(true);
@@ -351,6 +368,29 @@ function App() {
   }, [captainXp]);
 
   useEffect(() => {
+    if (step === "HUB") {
+      const today = new Date().toISOString().slice(0, 10);
+      if (lastDailyReset !== today) {
+        setDailyGoals(makeDailyGoals());
+        setLastDailyReset(today);
+        setDailyRewardClaimed(false);
+      }
+    }
+  }, [step, lastDailyReset]);
+
+  useEffect(() => {
+    const allDone = dailyGoals.length > 0 && dailyGoals.every(g => g.completed);
+    if (allDone && !dailyRewardClaimed) {
+      setCredits(c => c + 2500);
+      setDailyRewardClaimed(true);
+      setLogs(prev => [
+        "Günlük görevler tamamlandı! +2.500 TL bonus.",
+        ...prev.slice(0, 4),
+      ]);
+    }
+  }, [dailyGoals, dailyRewardClaimed]);
+
+  useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
       const saveObj = {
         profileIndex,
@@ -389,6 +429,9 @@ function App() {
         lastContentAt,
         captainXp,
         captainLevel,
+        dailyGoals,
+        lastDailyReset,
+        dailyRewardClaimed,
         lastSavedAt: Date.now(),
         saveVersion: SAVE_VERSION,
         hasSave: true,
@@ -403,7 +446,7 @@ function App() {
     fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining,
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
     brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt,
-    captainXp, captainLevel
+    captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed
   ]);
 
   const finalizeGame = () => {
@@ -439,6 +482,9 @@ function App() {
     setLastContentAt(null);
     setCaptainXp(0);
     setCaptainLevel(1);
+    setDailyGoals(makeDailyGoals());
+    setLastDailyReset("");
+    setDailyRewardClaimed(false);
     setStep("HUB");
     setActiveTab("liman");
   };
@@ -534,6 +580,9 @@ function App() {
       setLastContentAt(parsed.lastContentAt ?? null);
       setCaptainXp(parsed.captainXp ?? 0);
       setCaptainLevel(parsed.captainLevel ?? 1);
+      setDailyGoals(Array.isArray(parsed.dailyGoals) ? parsed.dailyGoals : makeDailyGoals());
+      setLastDailyReset(parsed.lastDailyReset ?? "");
+      setDailyRewardClaimed(parsed.dailyRewardClaimed ?? false);
 
       const safeStep = parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB";
       const routeValid = WORLD_ROUTES.some(r => r.id === parsed.currentRouteId);
@@ -738,6 +787,7 @@ function App() {
 
     setLogs(prev => [`${currentRoute.name} rotası tamamlandı. ${currentRoute.to} limanına varıldı. +${reward.credits} TL, +${reward.followers} takipçi ödül alındı.`, ...prev.slice(0, 4)]);
     setCaptainXp(prev => prev + 60);
+    completeGoal("complete_route");
     setPendingDecisionId(null);
     setStep("HUB");
     setActiveTab("liman");
@@ -839,6 +889,7 @@ function App() {
     setLogs(prev => [logMsg, ...prev.slice(0, 4)]);
     setLastContentAt(Date.now());
     setCaptainXp(prev => prev + 15);
+    completeGoal("produce_content");
   };
 
   const handleCheckSponsorOffers = () => {
@@ -985,28 +1036,32 @@ function App() {
     setUpgradeInProgress({ upgradeId, completesAt });
     triggerFlash("credits");
     setLogs(prev => [`Kurulum başladı: ${upgrade.name}. Tahmini tamamlanma: ${installMinutes} dakika.`, ...prev.slice(0, 4)]);
+    completeGoal("buy_upgrade");
   };
 
   const renderLimanTab = () => (
-    <LimanTab
-      selectedBoatId={selectedBoat.id}
-      currentLocationName={currentLocationName}
-      worldProgress={worldProgress}
-      currentOceanReadiness={currentOceanReadiness}
-      credits={credits}
-      energy={energy}
-      water={water}
-      fuel={fuel}
-      boatCondition={boatCondition}
-      firstContentDone={firstContentDone}
-      completedRouteIds={completedRouteIds}
-      currentRouteName={currentRoute?.name}
-      logs={logs}
-      onMarinaRest={handleMarinaRest}
-      onRepairBoat={handleRepairBoat}
-      onGoContent={() => setActiveTab("icerik")}
-      onGoRoute={() => setActiveTab("rota")}
-    />
+    <>
+      {renderDailyGoalsCard()}
+      <LimanTab
+        selectedBoatId={selectedBoat.id}
+        currentLocationName={currentLocationName}
+        worldProgress={worldProgress}
+        currentOceanReadiness={currentOceanReadiness}
+        credits={credits}
+        energy={energy}
+        water={water}
+        fuel={fuel}
+        boatCondition={boatCondition}
+        firstContentDone={firstContentDone}
+        completedRouteIds={completedRouteIds}
+        currentRouteName={currentRoute?.name}
+        logs={logs}
+        onMarinaRest={handleMarinaRest}
+        onRepairBoat={handleRepairBoat}
+        onGoContent={() => setActiveTab("icerik")}
+        onGoRoute={() => setActiveTab("rota")}
+      />
+    </>
   );
 
   const renderSeaModeTab = () => (
@@ -1371,6 +1426,34 @@ function App() {
       </div>
     </div>
   );
+
+  const completeGoal = (type: DailyGoal["type"]) => {
+    setDailyGoals(prev => prev.map(g => g.type === type && !g.completed ? { ...g, completed: true } : g));
+  };
+
+  const renderDailyGoalsCard = () => {
+    const completedCount = dailyGoals.filter(g => g.completed).length;
+    const allDone = completedCount === dailyGoals.length;
+    return (
+      <div className={`daily-goals-card${allDone ? " daily-goals-done" : ""}`}>
+        <div className="daily-goals-header">
+          <span className="daily-goals-title">Günlük Görevler</span>
+          <span className="daily-goals-count">{completedCount}/{dailyGoals.length}</span>
+        </div>
+        <ul className="daily-goals-list">
+          {dailyGoals.map(g => (
+            <li key={g.id} className={`daily-goal-item${g.completed ? " completed" : ""}`}>
+              <span className="daily-goal-check">{g.completed ? "✓" : "○"}</span>
+              <span className="daily-goal-label">{g.title}</span>
+            </li>
+          ))}
+        </ul>
+        {allDone && dailyRewardClaimed && (
+          <div className="daily-goals-reward-claimed">Tüm görevler tamamlandı! +2.500 TL alındı.</div>
+        )}
+      </div>
+    );
+  };
 
   const renderProgressStrip = () => (
     <div className="progress-strip">

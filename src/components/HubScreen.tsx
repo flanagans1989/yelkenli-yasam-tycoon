@@ -18,6 +18,7 @@ interface HubScreenProps {
   flashFollowers: boolean;
   firstContentDone: boolean;
   completedRouteIds: string[];
+  renderProgressStrip?: () => ReactNode;
   renderLimanTab: () => ReactNode;
   renderSeaModeTab: () => ReactNode;
   renderIcerikTab: () => ReactNode;
@@ -39,6 +40,7 @@ export function HubScreen({
   flashFollowers,
   firstContentDone,
   completedRouteIds,
+  renderProgressStrip,
   renderLimanTab,
   renderSeaModeTab,
   renderIcerikTab,
@@ -65,6 +67,8 @@ export function HubScreen({
           </div>
         </header>
       )}
+
+      {step === "HUB" && renderProgressStrip && renderProgressStrip()}
 
       <main className={step === "SEA_MODE" ? "sea-content" : "hub-content"}>
         {activeTab === "liman" && step === "HUB" && renderLimanTab()}

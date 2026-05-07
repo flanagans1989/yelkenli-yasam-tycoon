@@ -1334,6 +1334,16 @@ function App() {
     </div>
   );
 
+  const renderProgressStrip = () => (
+    <div className="progress-strip">
+      <span className="progress-strip-item">Kpt. Lv.1</span>
+      <span className="progress-strip-sep">|</span>
+      <span className="progress-strip-item">{followers.toLocaleString("tr-TR")} takipçi</span>
+      <span className="progress-strip-sep">|</span>
+      <span className="progress-strip-item">Dünya Turu: {completedRouteIds.length}/{WORLD_ROUTES.length} Rota</span>
+    </div>
+  );
+
   const renderMainGame = () => (
     <HubScreen
       step={step}
@@ -1348,6 +1358,7 @@ function App() {
       flashFollowers={flashFollowers}
       firstContentDone={firstContentDone}
       completedRouteIds={completedRouteIds}
+      renderProgressStrip={renderProgressStrip}
       renderLimanTab={renderLimanTab}
       renderSeaModeTab={renderSeaModeTab}
       renderIcerikTab={renderIcerikTab}

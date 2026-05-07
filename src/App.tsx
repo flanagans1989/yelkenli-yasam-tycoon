@@ -26,6 +26,7 @@ const SAVE_VERSION = 1;
 const MAX_OFFLINE_MINUTES = 480;
 const OFFLINE_CREDITS_PER_MINUTE = 15;
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
+const CONTENT_COOLDOWN_MS = 30 * 60 * 1000;
 
 type UpgradeInProgress = {
   upgradeId: string;
@@ -218,6 +219,8 @@ function App() {
   const [selectedPlatformId, setSelectedPlatformId] = useState<string | null>(null);
   const [selectedContentType, setSelectedContentType] = useState<string | null>(null);
   const [contentResult, setContentResult] = useState<ContentResult | null>(null);
+  const [lastContentAt, setLastContentAt] = useState<number | null>(null);
+  const [, setContentCooldownTick] = useState(0);
 
   // Upgrade V2 State
   const [selectedUpgradeCategory, setSelectedUpgradeCategory] = useState<UpgradeCategoryId>("energy");
@@ -314,6 +317,12 @@ function App() {
   }, [upgradeInProgress, purchasedUpgradeIds]);
 
   useEffect(() => {
+    if (!lastContentAt) return;
+    const tickId = window.setInterval(() => setContentCooldownTick(t => t + 1), 30000);
+    return () => window.clearInterval(tickId);
+  }, [lastContentAt]);
+
+  useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
       const saveObj = {
         profileIndex,
@@ -349,6 +358,7 @@ function App() {
         acceptedSponsors,
         sponsoredContentCount,
         icerikSubTab,
+        lastContentAt,
         lastSavedAt: Date.now(),
         saveVersion: SAVE_VERSION,
         hasSave: true,
@@ -362,7 +372,7 @@ function App() {
     logs, purchasedUpgradeIds, upgradeInProgress, activeTab, currentLocationName, worldProgress, energy, water,
     fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining,
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
-    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab
+    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt
   ]);
 
   const finalizeGame = () => {
@@ -395,6 +405,7 @@ function App() {
     setAcceptedSponsors([]);
     setSponsoredContentCount(0);
     setIcerikSubTab("produce");
+    setLastContentAt(null);
     setStep("HUB");
     setActiveTab("liman");
   };
@@ -487,6 +498,7 @@ function App() {
       setAcceptedSponsors(parsed.acceptedSponsors ?? []);
       setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
       setIcerikSubTab(parsed.icerikSubTab ?? "produce");
+      setLastContentAt(parsed.lastContentAt ?? null);
 
       const safeStep = parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB";
       const routeValid = WORLD_ROUTES.some(r => r.id === parsed.currentRouteId);
@@ -697,6 +709,13 @@ function App() {
   const handleProduceContentV2 = () => {
     if (!selectedPlatformId || !selectedContentType) return;
 
+    if (lastContentAt && Date.now() - lastContentAt < CONTENT_COOLDOWN_MS) {
+      const remainingMs = CONTENT_COOLDOWN_MS - (Date.now() - lastContentAt);
+      const remainingMin = Math.ceil(remainingMs / 60000);
+      setLogs(prev => [`İçerik hazırlığı sürüyor. ${remainingMin} dakika sonra tekrar üret.`, ...prev.slice(0, 4)]);
+      return;
+    }
+
     let quality = 40;
     
     // Skill bonus
@@ -781,6 +800,7 @@ function App() {
 
     const logMsg = `${platform?.name} platformunda içerik yayınlandı: +${gainFollowers} Takipçi, +${gainCredits} TL.`;
     setLogs(prev => [logMsg, ...prev.slice(0, 4)]);
+    setLastContentAt(Date.now());
   };
 
   const handleCheckSponsorOffers = () => {
@@ -1031,12 +1051,21 @@ function App() {
                   ))}
                 </div>
       
-                <button 
-                  className={`btn-primary large mt-20 ${(!selectedPlatformId || !selectedContentType) ? "disabled" : ""}`} 
-                  onClick={handleProduceContentV2}
-                >
-                  🎬 İçerik Üret
-                </button>
+                {(() => {
+                  const cooldownRemaining = lastContentAt ? Math.max(0, CONTENT_COOLDOWN_MS - (Date.now() - lastContentAt)) : 0;
+                  const onContentCooldown = cooldownRemaining > 0;
+                  const cooldownMinutes = Math.ceil(cooldownRemaining / 60000);
+                  const isDisabled = !selectedPlatformId || !selectedContentType || onContentCooldown;
+                  return (
+                    <button
+                      className={`btn-primary large mt-20 ${isDisabled ? "disabled" : ""}`}
+                      onClick={handleProduceContentV2}
+                      disabled={isDisabled}
+                    >
+                      {onContentCooldown ? `${cooldownMinutes} dk sonra tekrar üret` : "🎬 İçerik Üret"}
+                    </button>
+                  );
+                })()}
               </>
             ) : (
               <div className="content-result-card fade-in">

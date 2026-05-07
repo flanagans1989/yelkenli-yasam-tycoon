@@ -379,6 +379,23 @@ function App() {
     setLogs(prev => ["Marina’da dinlenildi. Enerji, su, yakıt ve tekne durumu toparlandı.", ...prev.slice(0, 4)]);
   };
 
+  const handleRepairBoat = () => {
+    if (credits < 250) {
+      setLogs(prev => ["Tekneyi onarmak için yeterli bütçe yok.", ...prev.slice(0, 4)]);
+      return;
+    }
+
+    if (boatCondition >= 100) {
+      setLogs(prev => ["Tekne zaten tam durumda.", ...prev.slice(0, 4)]);
+      return;
+    }
+
+    setCredits(prev => prev - 250);
+    setBoatCondition(prev => Math.min(100, prev + 35));
+    triggerFlash("credits");
+    setLogs(prev => ["Tekne onarıldı. Durum 35 puan toparlandı.", ...prev.slice(0, 4)]);
+  };
+
   const advanceDay = () => {
     setVoyageDaysRemaining(prev => {
       const newDays = prev - 1;
@@ -606,6 +623,7 @@ function App() {
       currentLocationName={currentLocationName}
       worldProgress={worldProgress}
       currentOceanReadiness={currentOceanReadiness}
+      credits={credits}
       energy={energy}
       water={water}
       fuel={fuel}
@@ -615,6 +633,7 @@ function App() {
       currentRouteName={currentRoute?.name}
       logs={logs}
       onMarinaRest={handleMarinaRest}
+      onRepairBoat={handleRepairBoat}
       onGoContent={() => setActiveTab("icerik")}
       onGoRoute={() => setActiveTab("rota")}
     />

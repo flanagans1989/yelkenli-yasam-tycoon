@@ -5,6 +5,7 @@ interface LimanTabProps {
   currentLocationName: string;
   worldProgress: number;
   currentOceanReadiness: number;
+  credits: number;
   energy: number;
   water: number;
   fuel: number;
@@ -14,6 +15,7 @@ interface LimanTabProps {
   currentRouteName?: string;
   logs: string[];
   onMarinaRest: () => void;
+  onRepairBoat: () => void;
   onGoContent: () => void;
   onGoRoute: () => void;
 }
@@ -23,6 +25,7 @@ export function LimanTab({
   currentLocationName,
   worldProgress,
   currentOceanReadiness,
+  credits,
   energy,
   water,
   fuel,
@@ -32,6 +35,7 @@ export function LimanTab({
   currentRouteName,
   logs,
   onMarinaRest,
+  onRepairBoat,
   onGoContent,
   onGoRoute,
 }: LimanTabProps) {
@@ -80,6 +84,9 @@ export function LimanTab({
         <div className="log-entry">Enerji: %{energy} · Su: %{water} · Yakıt: %{fuel} · Durum: %{boatCondition}</div>
         <button className="btn-secondary full-width mt-10" onClick={onMarinaRest}>
           Marina’da Dinlen
+        </button>
+        <button className="btn-secondary full-width mt-10" onClick={onRepairBoat} disabled={credits < 250}>
+          Tekneyi Onar - 250 TL
         </button>
       </div>
 

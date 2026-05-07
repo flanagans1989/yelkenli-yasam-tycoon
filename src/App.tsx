@@ -371,6 +371,14 @@ function App() {
     setLogs(prev => [`${upgrade.name} satın alındı. ${effectText}`, ...prev.slice(0, 4)]);
   };
 
+  const handleMarinaRest = () => {
+    setEnergy(prev => Math.min(100, prev + 30));
+    setWater(prev => Math.min(100, prev + 30));
+    setFuel(prev => Math.min(100, prev + 20));
+    setBoatCondition(prev => Math.min(100, prev + 10));
+    setLogs(prev => ["Marina’da dinlenildi. Enerji, su, yakıt ve tekne durumu toparlandı.", ...prev.slice(0, 4)]);
+  };
+
   const advanceDay = () => {
     setVoyageDaysRemaining(prev => {
       const newDays = prev - 1;
@@ -598,10 +606,15 @@ function App() {
       currentLocationName={currentLocationName}
       worldProgress={worldProgress}
       currentOceanReadiness={currentOceanReadiness}
+      energy={energy}
+      water={water}
+      fuel={fuel}
+      boatCondition={boatCondition}
       firstContentDone={firstContentDone}
       completedRouteIds={completedRouteIds}
       currentRouteName={currentRoute?.name}
       logs={logs}
+      onMarinaRest={handleMarinaRest}
       onGoContent={() => setActiveTab("icerik")}
       onGoRoute={() => setActiveTab("rota")}
     />

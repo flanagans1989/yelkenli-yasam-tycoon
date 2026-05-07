@@ -5,10 +5,15 @@ interface LimanTabProps {
   currentLocationName: string;
   worldProgress: number;
   currentOceanReadiness: number;
+  energy: number;
+  water: number;
+  fuel: number;
+  boatCondition: number;
   firstContentDone: boolean;
   completedRouteIds: string[];
   currentRouteName?: string;
   logs: string[];
+  onMarinaRest: () => void;
   onGoContent: () => void;
   onGoRoute: () => void;
 }
@@ -18,10 +23,15 @@ export function LimanTab({
   currentLocationName,
   worldProgress,
   currentOceanReadiness,
+  energy,
+  water,
+  fuel,
+  boatCondition,
   firstContentDone,
   completedRouteIds,
   currentRouteName,
   logs,
+  onMarinaRest,
   onGoContent,
   onGoRoute,
 }: LimanTabProps) {
@@ -64,6 +74,14 @@ export function LimanTab({
           <span className="quest-card-arrow">›</span>
         </button>
       )}
+
+      <div className="event-log-compact">
+        <span className="card-label">Marina Servisi</span>
+        <div className="log-entry">Enerji: %{energy} · Su: %{water} · Yakıt: %{fuel} · Durum: %{boatCondition}</div>
+        <button className="btn-secondary full-width mt-10" onClick={onMarinaRest}>
+          Marina’da Dinlen
+        </button>
+      </div>
 
       <div className="event-log-compact">
         <span className="card-label">Son Olaylar</span>

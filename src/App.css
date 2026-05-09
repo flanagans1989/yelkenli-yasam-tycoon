@@ -2181,43 +2181,68 @@ button {
 
 .result-comment { font-style: italic; color: #8aafcc; text-align: center; font-size: 14px; }
 
-.content-career-card {
-  background: rgba(30, 159, 212, 0.08);
-  border: 1px solid rgba(30, 159, 212, 0.18);
-  padding: 16px;
+/* Career card base — shared structural properties across all 5 variants */
+.content-career-card,
+.sponsor-career-card,
+.captain-career-card,
+.achievements-showcase-card,
+.next-action-card {
   border-radius: 16px;
-  margin-bottom: 20px;
 }
 
-.content-career-eyebrow {
+.content-career-eyebrow,
+.sponsor-career-eyebrow,
+.captain-career-eyebrow,
+.achievements-showcase-eyebrow,
+.next-action-eyebrow {
   display: block;
   margin-bottom: 6px;
-  color: #8fdcff;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
-.content-career-title {
+.content-career-title,
+.sponsor-career-title,
+.captain-career-title,
+.achievements-showcase-title,
+.next-action-title {
   color: #f0f8ff;
   font-size: 16px;
   font-weight: 800;
   margin-bottom: 6px;
 }
 
-.content-career-text {
+.content-career-text,
+.sponsor-career-text,
+.captain-career-text,
+.achievements-showcase-text,
+.next-action-text {
   color: #a8d8f0;
   font-size: 13px;
   line-height: 1.5;
 }
 
-.content-career-meta {
+.content-career-meta,
+.sponsor-career-meta,
+.captain-career-meta,
+.achievements-showcase-meta,
+.next-action-meta {
   margin-top: 10px;
   color: #8aafcc;
   font-size: 12px;
   font-weight: 700;
 }
+
+.content-career-card {
+  background: rgba(30, 159, 212, 0.08);
+  border: 1px solid rgba(30, 159, 212, 0.18);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.content-career-eyebrow { color: #8fdcff; }
 
 .content-career-highlight {
   margin-top: 10px;
@@ -2242,39 +2267,10 @@ button {
   background: linear-gradient(180deg, rgba(245, 166, 35, 0.1), rgba(30, 159, 212, 0.08));
   border: 1px solid rgba(245, 166, 35, 0.18);
   padding: 16px;
-  border-radius: 16px;
   margin-bottom: 20px;
 }
 
-.sponsor-career-eyebrow {
-  display: block;
-  margin-bottom: 6px;
-  color: #f7c26b;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.sponsor-career-title {
-  color: #f0f8ff;
-  font-size: 16px;
-  font-weight: 800;
-  margin-bottom: 6px;
-}
-
-.sponsor-career-text {
-  color: #a8d8f0;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.sponsor-career-meta {
-  margin-top: 10px;
-  color: #8aafcc;
-  font-size: 12px;
-  font-weight: 700;
-}
+.sponsor-career-eyebrow { color: #f7c26b; }
 
 .sponsor-career-highlight {
   margin-top: 10px;
@@ -2553,46 +2549,18 @@ button {
 .captain-career-card {
   background: linear-gradient(180deg, rgba(30, 159, 212, 0.1), rgba(245, 166, 35, 0.08));
   border: 1px solid rgba(30, 159, 212, 0.18);
-  border-radius: 16px;
   padding: 16px;
   margin-bottom: 24px;
 }
 
-.captain-career-eyebrow {
-  display: block;
-  margin-bottom: 6px;
-  color: #8fdcff;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.captain-career-title {
-  color: #f0f8ff;
-  font-size: 15px;
-  font-weight: 800;
-  margin-bottom: 6px;
-}
+.captain-career-eyebrow { color: #8fdcff; }
+.captain-career-title { font-size: 15px; }
 
 .captain-career-rank {
   color: #f7c26b;
   font-size: 18px;
   font-weight: 800;
   margin-bottom: 8px;
-}
-
-.captain-career-text {
-  color: #a8d8f0;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.captain-career-meta {
-  margin-top: 10px;
-  color: #8aafcc;
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .career-goals h3 { font-size: 16px; margin: 0 0 16px 0; color: #f0f8ff; }
@@ -2604,39 +2572,10 @@ button {
 .achievements-showcase-card {
   background: linear-gradient(180deg, rgba(245, 166, 35, 0.08), rgba(30, 159, 212, 0.08));
   border: 1px solid rgba(245, 166, 35, 0.16);
-  border-radius: 16px;
   padding: 16px;
 }
 
-.achievements-showcase-eyebrow {
-  display: block;
-  margin-bottom: 6px;
-  color: #f7c26b;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.achievements-showcase-title {
-  color: #f0f8ff;
-  font-size: 16px;
-  font-weight: 800;
-  margin-bottom: 6px;
-}
-
-.achievements-showcase-text {
-  color: #a8d8f0;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.achievements-showcase-meta {
-  margin-top: 10px;
-  color: #8aafcc;
-  font-size: 12px;
-  font-weight: 700;
-}
+.achievements-showcase-eyebrow { color: #f7c26b; }
 
 .achievement-badge-list {
   display: flex;
@@ -3564,33 +3503,12 @@ button {
 .next-action-card {
   margin: 10px 16px 0;
   padding: 14px 16px;
-  border-radius: 16px;
   background: rgba(30, 159, 212, 0.08);
   border: 1px solid rgba(30, 159, 212, 0.18);
 }
 
-.next-action-eyebrow {
-  display: block;
-  margin-bottom: 6px;
-  color: #8fdcff;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.next-action-title {
-  color: #f0f8ff;
-  font-size: 15px;
-  font-weight: 800;
-  margin-bottom: 6px;
-}
-
-.next-action-text {
-  color: #a8d8f0;
-  font-size: 13px;
-  line-height: 1.5;
-}
+.next-action-eyebrow { color: #8fdcff; }
+.next-action-title { font-size: 15px; }
 
 .daily-goals-card {
   margin: 12px 16px 0;

@@ -480,6 +480,7 @@ function App() {
   const [sponsorOfferBannerText, setSponsorOfferBannerText] = useState("");
   const [contentPublishedBannerText, setContentPublishedBannerText] = useState("");
   const [voyageStartBannerText, setVoyageStartBannerText] = useState("");
+  const [seaDecisionResultBannerText, setSeaDecisionResultBannerText] = useState("");
   const previousUnlockedAchievementIdsRef = useRef<string[]>([]);
   const hasInitializedAchievementBannerRef = useRef(false);
   const previousSponsorOfferIdsRef = useRef<string[]>([]);
@@ -717,6 +718,16 @@ function App() {
 
     return () => window.clearTimeout(timeoutId);
   }, [voyageStartBannerText]);
+
+  useEffect(() => {
+    if (!seaDecisionResultBannerText) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setSeaDecisionResultBannerText("");
+    }, 3500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [seaDecisionResultBannerText]);
 
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
@@ -1097,8 +1108,25 @@ function App() {
       setVoyageDaysRemaining(prev => Math.max(0, prev + remainingDaysDelta));
     }
 
+    const effectSummary = [
+      typeof followersDelta === "number" ? `${followersDelta > 0 ? "+" : ""}${followersDelta} takipçi` : null,
+      typeof creditsDelta === "number" ? `${creditsDelta > 0 ? "+" : ""}${creditsDelta} TL` : null,
+      typeof energyDelta === "number" ? `${energyDelta > 0 ? "+" : ""}${energyDelta} enerji` : null,
+      typeof waterDelta === "number" ? `${waterDelta > 0 ? "+" : ""}${waterDelta} su` : null,
+      typeof fuelDelta === "number" ? `${fuelDelta > 0 ? "+" : ""}${fuelDelta} yakıt` : null,
+      typeof boatConditionDelta === "number" ? `${boatConditionDelta > 0 ? "+" : ""}${boatConditionDelta} tekne durumu` : null,
+      typeof remainingDaysDelta === "number" ? `${remainingDaysDelta > 0 ? "+" : ""}${remainingDaysDelta} gün` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
     setCurrentSeaEvent(choice.resultText);
     setLogs(prev => [`${decision.title}: ${choice.resultText}`, ...prev.slice(0, 4)]);
+    setSeaDecisionResultBannerText(
+      effectSummary
+        ? `${choice.label}. ${effectSummary}`
+        : choice.label || "Seçimin denizdeki yolculuğun gidişatını etkiledi.",
+    );
     setCaptainXp(prev => prev + 25);
     setPendingDecisionId(null);
   };
@@ -2285,6 +2313,12 @@ function App() {
         <div className="voyage-start-banner" role="status" aria-live="polite">
           <div className="voyage-start-title">Seyir Başladı!</div>
           <div className="voyage-start-text">{voyageStartBannerText}</div>
+        </div>
+      )}
+      {seaDecisionResultBannerText && (
+        <div className="sea-decision-result-banner" role="status" aria-live="polite">
+          <div className="sea-decision-result-title">Karar Uygulandı</div>
+          <div className="sea-decision-result-text">{seaDecisionResultBannerText}</div>
         </div>
       )}
       {["MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT"].includes(step) && (

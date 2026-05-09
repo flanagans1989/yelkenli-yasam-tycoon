@@ -1762,57 +1762,94 @@ function App() {
             )
           )
         : 100;
+    const contentGoalDoneToday = dailyGoals.find((goal) => goal.type === "produce_content")?.completed ?? false;
+    const hasAnyCompatibleUpgrade = BOAT_UPGRADES.some((upgrade) => {
+      if (purchasedUpgradeIds.includes(upgrade.id)) return false;
+      const compatibility = upgrade.compatibility.find((item) => item.boatId === selectedBoat.id);
+      return compatibility?.compatible ?? false;
+    });
+    const canStartAnyUpgrade = !upgradeInProgress && BOAT_UPGRADES.some((upgrade) => {
+      if (purchasedUpgradeIds.includes(upgrade.id)) return false;
+      const compatibility = upgrade.compatibility.find((item) => item.boatId === selectedBoat.id);
+      return (compatibility?.compatible ?? false) && credits >= upgrade.cost;
+    });
+    const isSponsorProgressClose = Boolean(nextSponsorTier && followers >= nextSponsorTier.minFollowers * 0.75);
+
+    let nextActionTitle = "Dünya turuna devam";
+    let nextActionText = "İçerik üret, tekneni geliştir ve sıradaki rotaya hazırlan.";
+
+    if (!contentGoalDoneToday || followers < 800) {
+      nextActionTitle = "İlk içerik zamanı";
+      nextActionText = "Önce 1 içerik üret. Takipçi kazan, günlük görevi başlat ve sponsor yolunu aç.";
+    } else if (firstContentDone && currentRoute && completedRouteIds.length < 2) {
+      nextActionTitle = "İlk rotanı başlat";
+      nextActionText = "Artık denize çıkabilirsin. Rota tamamladıkça dünya turunda ilerleyeceksin.";
+    } else if (canStartAnyUpgrade || hasAnyCompatibleUpgrade) {
+      nextActionTitle = "Tekneyi güçlendir";
+      nextActionText = "Bir upgrade başlat. Kurulum tamamlandığında yolculukların daha güvenli ve verimli olur.";
+    } else if (isSponsorProgressClose) {
+      nextActionTitle = "Sponsor hedefini kovala";
+      nextActionText = "Takipçi büyütmeye devam et. Yeni sponsor seviyesi gelirini güçlendirecek.";
+    }
 
     return (
-      <div className="progress-strip">
-        <div className="progress-strip-summary">
-          <span className="progress-strip-item">Kpt. Lv.{captainLevel} · {captainXp} XP</span>
-          <span className="progress-strip-sep">|</span>
-          <span className="progress-strip-item">{followers.toLocaleString("tr-TR")} takipçi</span>
-          <span className="progress-strip-sep">|</span>
-          <span className="progress-strip-item">Dünya Turu: {completedRouteIds.length}/{WORLD_ROUTES.length} Rota</span>
+      <>
+        <div className="progress-strip">
+          <div className="progress-strip-summary">
+            <span className="progress-strip-item">Kpt. Lv.{captainLevel} · {captainXp} XP</span>
+            <span className="progress-strip-sep">|</span>
+            <span className="progress-strip-item">{followers.toLocaleString("tr-TR")} takipçi</span>
+            <span className="progress-strip-sep">|</span>
+            <span className="progress-strip-item">Dünya Turu: {completedRouteIds.length}/{WORLD_ROUTES.length} Rota</span>
+          </div>
+
+          <div className="progress-strip-bars">
+            <div className="progress-mini-bar">
+              <div className="progress-mini-bar-label">
+                <span>Seviye</span>
+                <span className="progress-mini-bar-meta">
+                  {nextLevelMinXp > currentLevelMinXp
+                    ? `${captainXp - currentLevelMinXp} / ${nextLevelMinXp - currentLevelMinXp} XP`
+                    : "Maks. seviye"}
+                </span>
+              </div>
+              <div className="progress-mini-bar-track">
+                <div className="progress-mini-bar-fill" style={{ width: `${captainXpProgressPercent}%` }}></div>
+              </div>
+            </div>
+
+            <div className="progress-mini-bar">
+              <div className="progress-mini-bar-label">
+                <span>Sponsor</span>
+                <span className="progress-mini-bar-meta">
+                  {nextSponsorTier
+                    ? `${followers.toLocaleString("tr-TR")} / ${nextSponsorTier.minFollowers.toLocaleString("tr-TR")}`
+                    : "En üst seviye"}
+                </span>
+              </div>
+              <div className="progress-mini-bar-track">
+                <div className="progress-mini-bar-fill" style={{ width: `${sponsorProgressPercent}%` }}></div>
+              </div>
+            </div>
+
+            <div className="progress-mini-bar">
+              <div className="progress-mini-bar-label">
+                <span>Dünya Turu</span>
+                <span className="progress-mini-bar-meta">{completedRouteIds.length}/{WORLD_ROUTES.length} rota</span>
+              </div>
+              <div className="progress-mini-bar-track">
+                <div className="progress-mini-bar-fill" style={{ width: `${worldTourProgressPercent}%` }}></div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="progress-strip-bars">
-          <div className="progress-mini-bar">
-            <div className="progress-mini-bar-label">
-              <span>Seviye</span>
-              <span className="progress-mini-bar-meta">
-                {nextLevelMinXp > currentLevelMinXp
-                  ? `${captainXp - currentLevelMinXp} / ${nextLevelMinXp - currentLevelMinXp} XP`
-                  : "Maks. seviye"}
-              </span>
-            </div>
-            <div className="progress-mini-bar-track">
-              <div className="progress-mini-bar-fill" style={{ width: `${captainXpProgressPercent}%` }}></div>
-            </div>
-          </div>
-
-          <div className="progress-mini-bar">
-            <div className="progress-mini-bar-label">
-              <span>Sponsor</span>
-              <span className="progress-mini-bar-meta">
-                {nextSponsorTier
-                  ? `${followers.toLocaleString("tr-TR")} / ${nextSponsorTier.minFollowers.toLocaleString("tr-TR")}`
-                  : "En üst seviye"}
-              </span>
-            </div>
-            <div className="progress-mini-bar-track">
-              <div className="progress-mini-bar-fill" style={{ width: `${sponsorProgressPercent}%` }}></div>
-            </div>
-          </div>
-
-          <div className="progress-mini-bar">
-            <div className="progress-mini-bar-label">
-              <span>Dünya Turu</span>
-              <span className="progress-mini-bar-meta">{completedRouteIds.length}/{WORLD_ROUTES.length} rota</span>
-            </div>
-            <div className="progress-mini-bar-track">
-              <div className="progress-mini-bar-fill" style={{ width: `${worldTourProgressPercent}%` }}></div>
-            </div>
-          </div>
+        <div className="next-action-card">
+          <span className="next-action-eyebrow">Kaptan Tavsiyesi</span>
+          <div className="next-action-title">{nextActionTitle}</div>
+          <div className="next-action-text">{nextActionText}</div>
         </div>
-      </div>
+      </>
     );
   };
 

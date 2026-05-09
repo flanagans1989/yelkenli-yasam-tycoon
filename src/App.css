@@ -2508,7 +2508,8 @@ button {
   border: 1px solid rgba(46, 196, 160, 0.4);
 }
 
-.upg-desc { font-size: 13px; color: #8aafcc; line-height: 1.5; margin: 0 0 16px 0; }
+.upg-desc { font-size: 13px; color: #8aafcc; line-height: 1.5; margin: 0 0 8px 0; }
+.upg-strategy-hint { font-size: 11px; color: rgba(138, 175, 204, 0.55); font-style: italic; margin: 0 0 12px 0; line-height: 1.4; }
 
 .upg-details-grid {
   display: grid;

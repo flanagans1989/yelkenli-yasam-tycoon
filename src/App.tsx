@@ -1778,6 +1778,17 @@ function App() {
     </>
   );
 
+  const upgradeCategoryHints: Record<string, string> = {
+    energy: "Uzun rotalarda güç üretimini ve dayanıklılığı artırır.",
+    navigation: "Daha zorlu rotalarda yön bulma ve seyir güvenliğini güçlendirir.",
+    safety: "Açık denizde beklenmedik koşullarda hayatta kalmayı destekler.",
+    sail_speed: "Rota sürelerini kısaltır, seyir verimliliğini artırır.",
+    engine_mechanical: "Motor güvenilirliğini ve yakıt verimliliğini iyileştirir.",
+    water_life: "Uzun geçişlerde su ve yaşam sistemlerini güçlendirir.",
+    comfort: "Mürettebat enerjisini korur, seyir boyunca tükenmeyi yavaşlatır.",
+    content_equipment: "İçerik kalitesini ve takipçi büyümesini doğrudan destekler.",
+  };
+
   const renderTekneTab = () => {
     const filteredUpgrades = BOAT_UPGRADES.filter(u => u.categoryId === selectedUpgradeCategory);
     const currentInstallingUpgrade = upgradeInProgress
@@ -1855,7 +1866,10 @@ function App() {
                   {isPurchased && <span className="badge-purchased">ALINDI</span>}
                 </div>
                 <p className="upg-desc">{upgrade.description}</p>
-                
+                {upgradeCategoryHints[upgrade.categoryId] && (
+                  <p className="upg-strategy-hint">{upgradeCategoryHints[upgrade.categoryId]}</p>
+                )}
+
                 <div className="upg-details-grid">
                    <div><small>Süre:</small> {upgrade.installDays} Gün</div>
                    <div><small>Marina:</small> {upgrade.marinaRequirement.toUpperCase()}</div>

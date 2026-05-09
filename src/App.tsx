@@ -1738,7 +1738,13 @@ function App() {
   const renderRotaTab = () => (
     <>
       <RotaTab
-        currentRoute={currentRoute}
+        currentRoute={currentRoute
+          ? {
+              ...currentRoute,
+              feeling: currentRoute.feeling,
+              difficulty: currentRoute.difficulty,
+            }
+          : undefined}
         routeReadiness={{
           oceanReadiness: {
             current: currentOceanReadiness,
@@ -1768,7 +1774,6 @@ function App() {
         isSeaMode={step === "SEA_MODE"}
         onStartVoyage={handleStartVoyage}
       />
-      {currentRoute && <p className="route-feeling-text">{currentRoute.description}</p>}
       <p className="helper-hint">Rotalar dünya turu ilerlemeni artırır. Her varış yeni bir hikaye adımıdır.</p>
     </>
   );

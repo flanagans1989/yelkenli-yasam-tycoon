@@ -16,6 +16,8 @@ interface RotaTabProps {
   currentRoute?: {
     name: string;
     description: string;
+    feeling?: string;
+    difficulty?: string;
     riskLevel: string;
     baseDurationDays: {
       min: number;
@@ -64,7 +66,22 @@ export function RotaTab({
             <h3>{currentRoute.name}</h3>
             <span className="risk-badge" data-risk={currentRoute.riskLevel}>{currentRoute.riskLevel.toUpperCase()}</span>
           </div>
-          <p>{currentRoute.description}</p>
+
+          {currentRoute.difficulty && (
+            <div className="route-difficulty-label">Zorluk: {currentRoute.difficulty.replace(/_/g, " ").toUpperCase()}</div>
+          )}
+
+          <div className="route-adventure-section">
+            <span className="route-adventure-eyebrow">Yolculuk Notu</span>
+            <p className="route-adventure-desc">{currentRoute.description}</p>
+          </div>
+
+          {currentRoute.feeling && (
+            <div className="route-adventure-section">
+              <span className="route-adventure-eyebrow">Rota Hissi</span>
+              <p className="route-adventure-feeling">"{currentRoute.feeling}"</p>
+            </div>
+          )}
 
           <div className="route-stats">
             <div><span>Süre:</span> <strong>{currentRoute.baseDurationDays.min}-{currentRoute.baseDurationDays.max} Gün</strong></div>

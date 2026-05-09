@@ -53,10 +53,10 @@ export function KaptanTab({
   const unlockedCount = unlockedAchievements.length;
   const totalCount = achievementStatuses.length;
 
-  const showcasedBadges =
-    unlockedCount > 0
-      ? unlockedAchievements.slice(0, 3)
-      : achievementStatuses.slice(0, 3);
+  const allBadgesSorted = [
+    ...achievementStatuses.filter((a) => a.unlocked),
+    ...achievementStatuses.filter((a) => !a.unlocked),
+  ];
 
   return (
     <div className="tab-content fade-in">
@@ -119,37 +119,13 @@ export function KaptanTab({
           {unlockedCount}/{totalCount} rozet açıldı
         </div>
         <div className="achievement-badge-list">
-          {showcasedBadges.map((achievement) => (
+          {allBadgesSorted.map((achievement) => (
             <div
               key={achievement.id}
               className={`achievement-badge-chip${achievement.unlocked ? "" : " locked"}`}
+              title={achievement.description}
             >
               {achievement.unlocked ? "🏅" : "○"} {achievement.title}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="achievements-card mt-20">
-        <div className="achievements-header">
-          <div>
-            <span className="card-label">Başarımlar</span>
-            <strong>{unlockedCount}/{totalCount} açıldı</strong>
-          </div>
-          <span className="achievements-summary">{captainLevel >= 3 ? "İlerleme iyi" : "Yolda devam"}</span>
-        </div>
-        <div className="achievements-list">
-          {achievementStatuses.map((achievement) => (
-            <div
-              key={achievement.id}
-              className={`achievement-row${achievement.unlocked ? " unlocked" : ""}`}
-            >
-              <span className="achievement-icon">{achievement.unlocked ? "✅" : "○"}</span>
-              <div className="achievement-copy">
-                <strong>{achievement.title}</strong>
-                <small>{achievement.description}</small>
-              </div>
-              <span className="achievement-state">{achievement.unlocked ? "Açıldı" : "Kilitli"}</span>
             </div>
           ))}
         </div>

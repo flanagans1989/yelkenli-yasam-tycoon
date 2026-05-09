@@ -30,6 +30,41 @@ const CONTENT_COOLDOWN_MS = 30 * 60 * 1000;
 
 const CAPTAIN_LEVEL_THRESHOLDS = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 6000];
 
+const DAILY_GOAL_THEMES = [
+  {
+    title: "Büyüme Günü",
+    goals: {
+      produce_content: "1 içerik üret",
+      complete_route: "1 rota tamamla",
+      buy_upgrade: "1 upgrade başlat",
+    },
+  },
+  {
+    title: "Tekne Hazırlığı",
+    goals: {
+      produce_content: "Kamerayı aç ve 1 içerik üret",
+      complete_route: "Denize çıkıp 1 rota tamamla",
+      buy_upgrade: "Teknen için 1 geliştirme başlat",
+    },
+  },
+  {
+    title: "Sponsor Yolculuğu",
+    goals: {
+      produce_content: "Takipçileri büyütmek için 1 içerik üret",
+      complete_route: "Dünya turunda 1 rota ilerle",
+      buy_upgrade: "Markalara hazırlanmak için 1 upgrade başlat",
+    },
+  },
+];
+
+const getDailyGoalTheme = (dateKey: string) => {
+  const fallbackTheme = DAILY_GOAL_THEMES[0];
+  if (!dateKey) return fallbackTheme;
+
+  const seed = dateKey.split("-").reduce((sum, part) => sum + Number(part || 0), 0);
+  return DAILY_GOAL_THEMES[seed % DAILY_GOAL_THEMES.length] ?? fallbackTheme;
+};
+
 const getCaptainLevel = (xp: number): number => {
   for (let i = CAPTAIN_LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
     if (xp >= CAPTAIN_LEVEL_THRESHOLDS[i]) return i + 1;
@@ -37,11 +72,15 @@ const getCaptainLevel = (xp: number): number => {
   return 1;
 };
 
-const makeDailyGoals = (): DailyGoal[] => [
-  { id: "dg_content", title: "1 içerik üret", type: "produce_content", completed: false },
-  { id: "dg_route", title: "1 rota tamamla", type: "complete_route", completed: false },
-  { id: "dg_upgrade", title: "1 upgrade başlat", type: "buy_upgrade", completed: false },
-];
+const makeDailyGoals = (dateKey: string = new Date().toISOString().slice(0, 10)): DailyGoal[] => {
+  const theme = getDailyGoalTheme(dateKey);
+
+  return [
+    { id: "dg_content", title: theme.goals.produce_content, type: "produce_content", completed: false },
+    { id: "dg_route", title: theme.goals.complete_route, type: "complete_route", completed: false },
+    { id: "dg_upgrade", title: theme.goals.buy_upgrade, type: "buy_upgrade", completed: false },
+  ];
+};
 
 type UpgradeInProgress = {
   upgradeId: string;
@@ -1711,12 +1750,14 @@ function App() {
   const renderDailyGoalsCard = () => {
     const completedCount = dailyGoals.filter(g => g.completed).length;
     const allDone = completedCount === dailyGoals.length;
+    const dailyGoalTheme = getDailyGoalTheme(lastDailyReset || new Date().toISOString().slice(0, 10));
     return (
       <div className={`daily-goals-card${allDone ? " daily-goals-done" : ""}`}>
         <div className="daily-goals-header">
           <span className="daily-goals-title">Günlük Görevler</span>
           <span className="daily-goals-count">{completedCount}/{dailyGoals.length}</span>
         </div>
+        <div className="daily-goals-focus">Bugünün Odağı: {dailyGoalTheme.title}</div>
         <ul className="daily-goals-list">
           {dailyGoals.map(g => (
             <li key={g.id} className={`daily-goal-item${g.completed ? " completed" : ""}`}>

@@ -22,7 +22,7 @@ import { RotaTab } from "./components/RotaTab";
 import { SeaModeTab } from "./components/SeaModeTab";
 
 const SAVE_KEY = "yelkenli_save";
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 const MAX_OFFLINE_MINUTES = 480;
 const OFFLINE_CREDITS_PER_MINUTE = 15;
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
@@ -78,6 +78,66 @@ type DailyGoal = {
   type: "produce_content" | "complete_route" | "buy_upgrade";
   completed: boolean;
 };
+
+type AchievementProgress = {
+  totalContentProduced: number;
+  totalRoutesCompleted: number;
+  totalUpgradesStarted: number;
+  captainLevel: number;
+  hasCompletedDailyGoalsOnce: boolean;
+};
+
+type AchievementDefinition = {
+  id: string;
+  title: string;
+  description: string;
+  isUnlocked: (progress: AchievementProgress) => boolean;
+};
+
+const ACHIEVEMENTS: AchievementDefinition[] = [
+  {
+    id: "first_content",
+    title: "İlk İçerik",
+    description: "1 içerik üret.",
+    isUnlocked: (progress) => progress.totalContentProduced >= 1,
+  },
+  {
+    id: "first_route",
+    title: "İlk Rota",
+    description: "1 rota tamamla.",
+    isUnlocked: (progress) => progress.totalRoutesCompleted >= 1,
+  },
+  {
+    id: "first_upgrade",
+    title: "İlk Upgrade",
+    description: "1 upgrade başlat.",
+    isUnlocked: (progress) => progress.totalUpgradesStarted >= 1,
+  },
+  {
+    id: "sea_dog",
+    title: "Deniz Kurdu",
+    description: "5 rota tamamla.",
+    isUnlocked: (progress) => progress.totalRoutesCompleted >= 5,
+  },
+  {
+    id: "rising_captain",
+    title: "Yükselen Kaptan",
+    description: "Kaptan seviyesi 3'e ulaş.",
+    isUnlocked: (progress) => progress.captainLevel >= 3,
+  },
+  {
+    id: "steady_creator",
+    title: "İstikrarlı Üretici",
+    description: "10 içerik üret.",
+    isUnlocked: (progress) => progress.totalContentProduced >= 10,
+  },
+  {
+    id: "locked_in",
+    title: "Hedefe Kilitlen",
+    description: "Günlük görevleri 3/3 en az 1 kez tamamla.",
+    isUnlocked: (progress) => progress.hasCompletedDailyGoalsOnce,
+  },
+];
 
 const SEA_DECISION_EVENTS: SeaDecisionEvent[] = [
   {
@@ -194,10 +254,27 @@ function migrateSave(parsed: any) {
   const version = parsed.saveVersion ?? 1;
 
   if (version === 1) {
+    const dailyGoalsCompleted =
+      Array.isArray(parsed.dailyGoals) &&
+      parsed.dailyGoals.length > 0 &&
+      parsed.dailyGoals.every((goal: any) => goal?.completed);
+
     return {
       ...parsed,
       saveVersion: SAVE_VERSION,
       hasSave: parsed.hasSave ?? true,
+      totalContentProduced: parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0),
+      hasCompletedDailyGoalsOnce:
+        parsed.hasCompletedDailyGoalsOnce ?? Boolean(dailyGoalsCompleted && parsed.dailyRewardClaimed),
+    };
+  }
+
+  if (version === SAVE_VERSION) {
+    return {
+      ...parsed,
+      hasSave: parsed.hasSave ?? true,
+      totalContentProduced: parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0),
+      hasCompletedDailyGoalsOnce: parsed.hasCompletedDailyGoalsOnce ?? false,
     };
   }
 
@@ -267,6 +344,8 @@ function App() {
   const [dailyGoals, setDailyGoals] = useState<DailyGoal[]>(makeDailyGoals);
   const [lastDailyReset, setLastDailyReset] = useState<string>("");
   const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
+  const [totalContentProduced, setTotalContentProduced] = useState(0);
+  const [hasCompletedDailyGoalsOnce, setHasCompletedDailyGoalsOnce] = useState(false);
 
   const triggerFlash = (type: "credits" | "followers") => {
     if (type === "credits") {
@@ -310,6 +389,19 @@ function App() {
 
   const currentRouteReadinessGapCount = currentRouteReadinessItems.filter(item => item.current < item.required).length;
   const hasRouteReadinessGap = currentRouteReadinessGapCount > 0;
+  const totalRoutesCompleted = completedRouteIds.length;
+  const totalUpgradesStarted = purchasedUpgradeIds.length + (upgradeInProgress ? 1 : 0);
+  const achievementStatuses = ACHIEVEMENTS.map((achievement) => ({
+    ...achievement,
+    unlocked: achievement.isUnlocked({
+      totalContentProduced,
+      totalRoutesCompleted,
+      totalUpgradesStarted,
+      captainLevel,
+      hasCompletedDailyGoalsOnce,
+    }),
+  }));
+  const unlockedAchievementCount = achievementStatuses.filter((achievement) => achievement.unlocked).length;
 
   useEffect(() => {
     const saved = localStorage.getItem(SAVE_KEY);
@@ -381,6 +473,7 @@ function App() {
   useEffect(() => {
     const allDone = dailyGoals.length > 0 && dailyGoals.every(g => g.completed);
     if (allDone && !dailyRewardClaimed) {
+      setHasCompletedDailyGoalsOnce(true);
       setCredits(c => c + 2500);
       setDailyRewardClaimed(true);
       setLogs(prev => [
@@ -432,6 +525,8 @@ function App() {
         dailyGoals,
         lastDailyReset,
         dailyRewardClaimed,
+        totalContentProduced,
+        hasCompletedDailyGoalsOnce,
         lastSavedAt: Date.now(),
         saveVersion: SAVE_VERSION,
         hasSave: true,
@@ -446,7 +541,8 @@ function App() {
     fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining,
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
     brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt,
-    captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed
+    captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
+    hasCompletedDailyGoalsOnce
   ]);
 
   const finalizeGame = () => {
@@ -485,6 +581,8 @@ function App() {
     setDailyGoals(makeDailyGoals());
     setLastDailyReset("");
     setDailyRewardClaimed(false);
+    setTotalContentProduced(0);
+    setHasCompletedDailyGoalsOnce(false);
     setStep("HUB");
     setActiveTab("liman");
   };
@@ -583,6 +681,8 @@ function App() {
       setDailyGoals(Array.isArray(parsed.dailyGoals) ? parsed.dailyGoals : makeDailyGoals());
       setLastDailyReset(parsed.lastDailyReset ?? "");
       setDailyRewardClaimed(parsed.dailyRewardClaimed ?? false);
+      setTotalContentProduced(parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0));
+      setHasCompletedDailyGoalsOnce(parsed.hasCompletedDailyGoalsOnce ?? false);
 
       const safeStep = parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB";
       const routeValid = WORLD_ROUTES.some(r => r.id === parsed.currentRouteId);
@@ -882,6 +982,7 @@ function App() {
     setCredits(prev => prev + gainCredits);
     setFollowers(prev => prev + gainFollowers);
     setFirstContentDone(true);
+    setTotalContentProduced(prev => prev + 1);
     triggerFlash("credits");
     triggerFlash("followers");
 
@@ -1233,37 +1334,40 @@ function App() {
   };
 
   const renderRotaTab = () => (
-    <RotaTab
-      currentRoute={currentRoute}
-      routeReadiness={{
-        oceanReadiness: {
-          current: currentOceanReadiness,
-          required: currentRoute?.requirements.minOceanReadiness ?? 0,
-        },
-        energy: {
-          current: upgradeEnergyBonus,
-          required: currentRoute?.requirements.minEnergy ?? 0,
-        },
-        water: {
-          current: upgradeWaterBonus,
-          required: currentRoute?.requirements.minWater ?? 0,
-        },
-        safety: {
-          current: upgradeSafetyBonus,
-          required: currentRoute?.requirements.minSafety ?? 0,
-        },
-        navigation: {
-          current: upgradeNavigationBonus,
-          required: currentRoute?.requirements.minNavigation ?? 0,
-        },
-        maintenance: {
-          current: upgradeMaintenanceBonus,
-          required: currentRoute?.requirements.minMaintenance ?? 0,
-        },
-      }}
-      isSeaMode={step === "SEA_MODE"}
-      onStartVoyage={handleStartVoyage}
-    />
+    <>
+      <RotaTab
+        currentRoute={currentRoute}
+        routeReadiness={{
+          oceanReadiness: {
+            current: currentOceanReadiness,
+            required: currentRoute?.requirements.minOceanReadiness ?? 0,
+          },
+          energy: {
+            current: upgradeEnergyBonus,
+            required: currentRoute?.requirements.minEnergy ?? 0,
+          },
+          water: {
+            current: upgradeWaterBonus,
+            required: currentRoute?.requirements.minWater ?? 0,
+          },
+          safety: {
+            current: upgradeSafetyBonus,
+            required: currentRoute?.requirements.minSafety ?? 0,
+          },
+          navigation: {
+            current: upgradeNavigationBonus,
+            required: currentRoute?.requirements.minNavigation ?? 0,
+          },
+          maintenance: {
+            current: upgradeMaintenanceBonus,
+            required: currentRoute?.requirements.minMaintenance ?? 0,
+          },
+        }}
+        isSeaMode={step === "SEA_MODE"}
+        onStartVoyage={handleStartVoyage}
+      />
+      {currentRoute && <p className="route-feeling-text">{currentRoute.description}</p>}
+    </>
   );
 
   const renderTekneTab = () => {
@@ -1420,6 +1524,31 @@ function App() {
         </div>
       </div>
 
+      <div className="achievements-card mt-20">
+        <div className="achievements-header">
+          <div>
+            <span className="card-label">Başarımlar</span>
+            <strong>{unlockedAchievementCount}/{ACHIEVEMENTS.length} açıldı</strong>
+          </div>
+          <span className="achievements-summary">{captainLevel >= 3 ? "İlerleme iyi" : "Yolda devam"}</span>
+        </div>
+        <div className="achievements-list">
+          {achievementStatuses.map((achievement) => (
+            <div
+              key={achievement.id}
+              className={`achievement-row${achievement.unlocked ? " unlocked" : ""}`}
+            >
+              <span className="achievement-icon">{achievement.unlocked ? "✅" : "○"}</span>
+              <div className="achievement-copy">
+                <strong>{achievement.title}</strong>
+                <small>{achievement.description}</small>
+              </div>
+              <span className="achievement-state">{achievement.unlocked ? "Açıldı" : "Kilitli"}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="event-log-compact mt-20">
         <span className="card-label">Son Olaylar</span>
         {logs.map((log, i) => <div key={log + i} className="log-entry">{log}</div>)}
@@ -1504,6 +1633,7 @@ function App() {
           <div className="arrival-screen-icon">⚓</div>
           <h2>Varış!</h2>
           <p className="arrival-screen-subtitle">{arrivalPortName} limanına ulaştın.</p>
+          <p className="arrival-route-feeling">{currentRoute?.feeling}</p>
           <span className="arrival-screen-highlight">Rota Tamamlandı</span>
 
           <div className="arrival-screen-progress">

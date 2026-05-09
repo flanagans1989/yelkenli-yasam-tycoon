@@ -1601,79 +1601,27 @@ function App() {
 
         {icerikSubTab === "sponsor" && (
           <div className="sponsor-section fade-in">
-            <div className="brand-trust-card">
-               <span>Marka Güveni (Brand Trust)</span>
-               <strong>{brandTrust} / 100</strong>
-            </div>
-            <p className="helper-hint">Sponsorlar, içerik kariyerini düzenli gelire dönüştürür.</p>
-
             <div className="sponsor-career-card">
               <span className="sponsor-career-eyebrow">Sponsor Kariyeri</span>
               {activeSponsorName ? (
-                <>
-                  <div className="sponsor-career-title">{activeSponsorName}</div>
-                  <div className="sponsor-career-text">
-                    {currentSponsorTier
-                      ? `${currentSponsorTier.name} seviyesinde görünürlük kazandın. Bu marka artık dünya turu hikayenin bir parçası.`
-                      : "Her rota ve içerik, sponsor değerini büyüten bir kariyer adımı."}
-                  </div>
-                  <div className="sponsor-career-meta">
-                    {currentSponsorTier
-                      ? `Seviye: ${currentSponsorTier.name} · Marka Güveni: ${brandTrust}/100`
-                      : `Marka Güveni: ${brandTrust}/100`}
-                  </div>
-                  {nextSponsorTier && (
-                    <div className="sponsor-career-highlight">
-                      Bir sonraki hedef: {nextSponsorTier.minFollowers.toLocaleString("tr-TR")} takipçi
-                    </div>
-                  )}
-                </>
+                <div className="sponsor-career-title">{activeSponsorName}</div>
               ) : (
+                <div className="sponsor-career-title">İlk anlaşma seni bekliyor</div>
+              )}
+              <div className="sponsor-career-meta">
+                Marka Güveni: {brandTrust}/100
+                {currentSponsorTier ? ` · Seviye: ${currentSponsorTier.name}` : ""}
+              </div>
+              {nextSponsorTier && (
                 <>
-                  <div className="sponsor-career-title">İlk anlaşma seni bekliyor</div>
-                  <div className="sponsor-career-text">
-                    İlk sponsor anlaşman, bu yolculuğu gerçek bir denizcilik markasına çevirecek.
+                  <div className="sponsor-progress-bar mt-10">
+                    <div className="sponsor-progress-fill" style={{ width: `${sponsorProgressPercent}%` }}></div>
                   </div>
-                  {nextSponsorTier && (
-                    <>
-                      <div className="sponsor-career-meta">
-                        Yeni sponsor seviyesi için takipçi büyütmeye devam et.
-                      </div>
-                      <div className="sponsor-career-highlight">
-                        Bir sonraki hedef: {nextSponsorTier.minFollowers.toLocaleString("tr-TR")} takipçi
-                      </div>
-                    </>
-                  )}
+                  <div className="sponsor-career-highlight">
+                    {followers.toLocaleString("tr-TR")} / {nextSponsorTier.minFollowers.toLocaleString("tr-TR")} takipçi · Hedef: {nextSponsorTier.name}
+                  </div>
                 </>
               )}
-            </div>
-
-            <div className="sponsor-progress-card">
-              <div className="sponsor-progress-title">
-                {nextSponsorTier ? (
-                  followers < SPONSOR_TIERS[0].minFollowers
-                    ? "İlk sponsor teklifine yaklaşıyorsun."
-                    : "Bir sonraki sponsor seviyesine yaklaşıyorsun."
-                ) : (
-                  "En yüksek sponsor seviyesine ulaştın."
-                )}
-              </div>
-              <div className="sponsor-progress-text">
-                {nextSponsorTier
-                  ? `${nextSponsorTier.minFollowers.toLocaleString("tr-TR")} takipçiye ulaştığında ${nextSponsorTier.name} açılır${nextSponsorTier.tier === "micro" ? "." : " fırsatları güçlenir."}`
-                  : "Takipçi büyümen sponsor gücünü desteklemeye devam eder."}
-              </div>
-              <div className="sponsor-progress-bar">
-                <div
-                  className="sponsor-progress-fill"
-                  style={{ width: `${sponsorProgressPercent}%` }}
-                ></div>
-              </div>
-              <div className="sponsor-progress-meta">
-                {nextSponsorTier
-                  ? `${followers.toLocaleString("tr-TR")} / ${nextSponsorTier.minFollowers.toLocaleString("tr-TR")} takipçi`
-                  : `${followers.toLocaleString("tr-TR")} takipçi`}
-              </div>
             </div>
 
             <button className="btn-primary full-width mb-20" onClick={handleCheckSponsorOffers}>

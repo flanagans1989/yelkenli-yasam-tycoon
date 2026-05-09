@@ -40,6 +40,15 @@ export function LimanTab({
   onGoRoute,
 }: LimanTabProps) {
   const hasCompletedFirstRoute = completedRouteIds.length > 0;
+
+  const isResourceLow = energy < 30 || water < 30 || fuel < 30 || boatCondition < 30;
+  const isMoneyLow = credits < 1000;
+  const resourceStatusText = isResourceLow
+    ? "Seyir öncesi tekneyi ve enerjiyi toparlamak riskleri azaltır."
+    : isMoneyLow
+      ? "Nakit azaldı. İçerik ve sponsor gelirini güçlendirmek iyi olabilir."
+      : "Kaynakların seyir için dengeli görünüyor.";
+
   const guideMessage = !firstContentDone
     ? "Önce kısa bir içerik üret. Takipçi kazan, sonra ilk rotaya çık."
     : !hasCompletedFirstRoute
@@ -97,6 +106,7 @@ export function LimanTab({
       <div className="event-log-compact">
         <span className="card-label">Marina Servisi</span>
         <span className="card-label mt-10">Kaynak Durumu</span>
+        <p className={`resource-status-text${isResourceLow ? " resource-status-warn" : ""}`}>{resourceStatusText}</p>
         <div className="log-entry">Enerji: %{energy}</div>
         <div className="log-entry">Su: %{water}</div>
         <div className="log-entry">Yakıt: %{fuel}</div>

@@ -2511,6 +2511,17 @@ button {
 .upg-desc { font-size: 13px; color: #8aafcc; line-height: 1.5; margin: 0 0 8px 0; }
 .upg-strategy-hint { font-size: 11px; color: rgba(138, 175, 204, 0.55); font-style: italic; margin: 0 0 12px 0; line-height: 1.4; }
 
+.resource-status-text {
+  font-size: 12px;
+  color: rgba(138, 200, 220, 0.75);
+  font-style: italic;
+  margin: 4px 0 8px;
+  line-height: 1.4;
+}
+.resource-status-text.resource-status-warn {
+  color: rgba(245, 166, 35, 0.85);
+}
+
 .upg-details-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

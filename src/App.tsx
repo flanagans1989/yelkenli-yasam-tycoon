@@ -477,8 +477,11 @@ function App() {
   const [hasCompletedDailyGoalsOnce, setHasCompletedDailyGoalsOnce] = useState(false);
   const [upgradeCompleteBannerText, setUpgradeCompleteBannerText] = useState("");
   const [achievementUnlockedBannerText, setAchievementUnlockedBannerText] = useState("");
+  const [sponsorOfferBannerText, setSponsorOfferBannerText] = useState("");
   const previousUnlockedAchievementIdsRef = useRef<string[]>([]);
   const hasInitializedAchievementBannerRef = useRef(false);
+  const previousSponsorOfferIdsRef = useRef<string[]>([]);
+  const hasInitializedSponsorOfferBannerRef = useRef(false);
 
   const triggerFlash = (type: "credits" | "followers") => {
     if (type === "credits") {
@@ -558,6 +561,30 @@ function App() {
       setAchievementUnlockedBannerText(`${newlyUnlockedAchievement.title} açıldı.`);
     }
   }, [achievementStatuses]);
+
+  useEffect(() => {
+    const sponsorOfferIds = sponsorOffers.map((offer) => offer.id);
+
+    if (!hasInitializedSponsorOfferBannerRef.current) {
+      previousSponsorOfferIdsRef.current = sponsorOfferIds;
+      hasInitializedSponsorOfferBannerRef.current = true;
+      return;
+    }
+
+    const newlyAddedOffer = sponsorOffers.find(
+      (offer) => !previousSponsorOfferIdsRef.current.includes(offer.id),
+    );
+
+    previousSponsorOfferIdsRef.current = sponsorOfferIds;
+
+    if (newlyAddedOffer) {
+      setSponsorOfferBannerText(
+        newlyAddedOffer.brandName
+          ? `${newlyAddedOffer.brandName} yeni bir teklif gönderdi.`
+          : "Yeni bir marka dünya turu hikayene dahil olmak istiyor.",
+      );
+    }
+  }, [sponsorOffers]);
 
   useEffect(() => {
     const saved = localStorage.getItem(SAVE_KEY);
@@ -658,6 +685,16 @@ function App() {
 
     return () => window.clearTimeout(timeoutId);
   }, [achievementUnlockedBannerText]);
+
+  useEffect(() => {
+    if (!sponsorOfferBannerText) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setSponsorOfferBannerText("");
+    }, 3500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [sponsorOfferBannerText]);
 
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
@@ -2198,6 +2235,12 @@ function App() {
         <div className="achievement-unlocked-banner" role="status" aria-live="polite">
           <div className="achievement-unlocked-title">Rozet Kazanıldı!</div>
           <div className="achievement-unlocked-text">{achievementUnlockedBannerText}</div>
+        </div>
+      )}
+      {sponsorOfferBannerText && (
+        <div className="sponsor-offer-banner" role="status" aria-live="polite">
+          <div className="sponsor-offer-title">Sponsor Teklifi Geldi!</div>
+          <div className="sponsor-offer-text">{sponsorOfferBannerText}</div>
         </div>
       )}
       {["MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT"].includes(step) && (

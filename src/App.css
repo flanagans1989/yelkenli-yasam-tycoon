@@ -3379,6 +3379,35 @@ button {
   line-height: 1.4;
   font-weight: 600;
 }
+.sponsor-offer-banner {
+  position: absolute;
+  top: 154px;
+  left: 14px;
+  right: 14px;
+  z-index: 30;
+  background: rgba(70, 198, 222, 0.14);
+  border: 1px solid rgba(70, 198, 222, 0.3);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(10px);
+}
+
+.sponsor-offer-title {
+  color: #9cecff;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.sponsor-offer-text {
+  color: #e4fbff;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 600;
+}
 
 /* ── PROGRESS STRIP ── */
 .progress-strip {

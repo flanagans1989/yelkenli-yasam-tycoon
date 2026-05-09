@@ -1360,6 +1360,28 @@ function App() {
             )
           )
         : 100;
+    const selectedPlatform = selectedPlatformId
+      ? SOCIAL_PLATFORMS.find((platform) => platform.id === selectedPlatformId) ?? null
+      : null;
+    const contentCooldownRemaining = lastContentAt
+      ? Math.max(0, CONTENT_COOLDOWN_MS - (Date.now() - lastContentAt))
+      : 0;
+    const cooldownMinutes = Math.ceil(contentCooldownRemaining / 60000);
+
+    let contentCareerTitle = "Platform Momentum";
+    let contentCareerText =
+      "Düzenli içerik üretimi takipçiyi, sponsor fırsatlarını ve kaptan kariyerini büyütür.";
+
+    if (activeSponsorName) {
+      contentCareerTitle = "Marka Değeri Büyüyor";
+      contentCareerText = "Her içerik, sponsor değerini ve dünya turu hikayeni güçlendiriyor.";
+    } else if (nextSponsorTier && followers >= nextSponsorTier.minFollowers * 0.75) {
+      contentCareerTitle = "Sponsor Eşiğine Yaklaşıyorsun";
+      contentCareerText = "İçerik üretmeye devam et. İlk marka anlaşması artık daha yakın.";
+    } else if (followers < 800) {
+      contentCareerTitle = "İlk Kitleyi Kur";
+      contentCareerText = "Her içerik, ilk sadık takipçilerini toplamak için bir adım.";
+    }
 
     return (
       <div className="tab-content fade-in">
@@ -1375,6 +1397,21 @@ function App() {
         
         {icerikSubTab === "produce" && (
           <div className="fade-in">
+            <div className="content-career-card">
+              <span className="content-career-eyebrow">İçerik Kariyeri</span>
+              <div className="content-career-title">{contentCareerTitle}</div>
+              <div className="content-career-text">{contentCareerText}</div>
+              <div className="content-career-meta">
+                Mevcut takipçi: {followers.toLocaleString("tr-TR")}
+                {selectedPlatform ? ` · Seçili platform: ${selectedPlatform.name}` : ""}
+              </div>
+              {nextSponsorTier && (
+                <div className="content-career-highlight">
+                  Sıradaki hedef: {nextSponsorTier.minFollowers.toLocaleString("tr-TR")} takipçi
+                  {contentCooldownRemaining > 0 ? ` · ${cooldownMinutes} dk sonra yeni içerik` : ""}
+                </div>
+              )}
+            </div>
             {!contentResult ? (
               <>
                 <span className="card-label">1. Platform Seç</span>

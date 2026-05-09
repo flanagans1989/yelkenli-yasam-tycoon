@@ -2181,6 +2181,51 @@ button {
 
 .result-comment { font-style: italic; color: #8aafcc; text-align: center; font-size: 14px; }
 
+.content-career-card {
+  background: rgba(30, 159, 212, 0.08);
+  border: 1px solid rgba(30, 159, 212, 0.18);
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+.content-career-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: #8fdcff;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.content-career-title {
+  color: #f0f8ff;
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.content-career-text {
+  color: #a8d8f0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.content-career-meta {
+  margin-top: 10px;
+  color: #8aafcc;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.content-career-highlight {
+  margin-top: 10px;
+  color: #9df0d4;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 /* Sponsor UI */
 .brand-trust-card {
   background: rgba(46, 196, 160, 0.1);

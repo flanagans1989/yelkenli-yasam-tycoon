@@ -1969,6 +1969,23 @@ function App() {
     const worldProgressPercent = currentRoute?.worldProgressPercent ?? 0;
     const rewardCredits = arrivalReward?.credits ?? 0;
     const rewardFollowers = arrivalReward?.followers ?? 0;
+    const arrivalSummaryProgressPercent = Math.max(
+      0,
+      Math.min(100, (completedRouteCount / WORLD_ROUTES.length) * 100)
+    );
+    let arrivalMilestoneText = "Bu varış, dünya turundaki bir sonraki büyük adımın.";
+
+    if (completedRouteCount === 1) {
+      arrivalMilestoneText = "İlk rota tamamlandı. Artık bu yolculuk gerçekten başladı.";
+    } else if (arrivalSummaryProgressPercent >= 100) {
+      arrivalMilestoneText = "Dünya turu tamamlandı. Bu artık bir hayal değil, başarı hikayesi.";
+    } else if (arrivalSummaryProgressPercent >= 75) {
+      arrivalMilestoneText = "Son büyük etaplara giriyorsun. Dünya turu artık ulaşılabilir görünüyor.";
+    } else if (arrivalSummaryProgressPercent >= 50) {
+      arrivalMilestoneText = "Yolculuğun yarısı geride kaldı. Artık gerçek bir açık deniz hikayesi yazıyorsun.";
+    } else if (arrivalSummaryProgressPercent >= 25) {
+      arrivalMilestoneText = "Dünya turunun ilk çeyreğine yaklaşıyorsun.";
+    }
 
     return (
       <div className="selection-screen fade-in cinematic-bg" style={{justifyContent: 'center'}}>
@@ -2001,6 +2018,21 @@ function App() {
                 <small>Takipçi</small>
                 <strong>+{rewardFollowers.toLocaleString("tr-TR")}</strong>
               </div>
+            </div>
+          </div>
+
+          <div className="arrival-summary-card">
+            <div className="arrival-summary-title">Dünya Turu Özeti</div>
+            <div className="arrival-summary-meta">Tamamlanan rota: {completedRouteCount} / {WORLD_ROUTES.length}</div>
+            <div className="arrival-summary-text">{arrivalMilestoneText}</div>
+            <div className="arrival-summary-progress">
+              <div
+                className="arrival-summary-progress-fill"
+                style={{ width: `${arrivalSummaryProgressPercent}%` }}
+              ></div>
+            </div>
+            <div className="arrival-summary-next">
+              {nextRoute ? `Sıradaki rota: ${nextRoute.name}` : "Dünya turu tamamlandı."}
             </div>
           </div>
 

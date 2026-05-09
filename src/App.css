@@ -3046,6 +3046,56 @@ button {
   line-height: 1.3;
 }
 
+.arrival-summary-card {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(30, 159, 212, 0.08);
+  border: 1px solid rgba(30, 159, 212, 0.18);
+  text-align: left;
+}
+
+.arrival-summary-title {
+  color: #f0f8ff;
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.arrival-summary-text {
+  color: #aee4ff;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.arrival-summary-meta {
+  color: #8aafcc;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.arrival-summary-progress {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.arrival-summary-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #23abdf, #2ec4a0);
+  border-radius: 999px;
+}
+
+.arrival-summary-next {
+  color: #9df0d4;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .arrival-screen-next-route {
   margin-top: 18px;
   padding: 14px 16px;

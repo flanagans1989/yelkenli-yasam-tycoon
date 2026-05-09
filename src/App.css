@@ -2000,6 +2000,7 @@ button {
   border-bottom: none;
   padding-bottom: 0;
 }
+.log-entry.readiness-ok { color: #2ec4a0; }
 
 /* Bottom Tab Bar */
 .bottom-tab-bar {

@@ -98,18 +98,17 @@ export function RotaTab({
 
           <div className="event-log-compact mt-20">
             <span className="card-label">Hazırlık Durumu</span>
-            {readinessItems.map(({ label, value }) => {
-              const isReady = value.current >= value.required;
-
-              return (
-                <div key={label} className="log-entry">
-                  {label}: {value.current} / {value.required} {isReady ? "✅" : "⚠️"}
-                </div>
-              );
-            })}
-            <p className="empty-text">Eksikler varsa yolculuk daha riskli olur. Tekne sekmesinden upgrade alarak hazırlığını artırabilirsin.</p>
-            {weakReadinessItems.length > 0 && (
-              <p className="empty-text">Hazırlığın düşük. Yine de çıkabilirsin ama risk artar.</p>
+            {weakReadinessItems.length === 0 ? (
+              <div className="log-entry readiness-ok">✅ Tüm gereksinimler karşılandı. Rotaya çıkmaya hazırsın.</div>
+            ) : (
+              <>
+                {weakReadinessItems.map(({ label, value }) => (
+                  <div key={label} className="log-entry">
+                    ⚠️ {label}: {value.current} / {value.required}
+                  </div>
+                ))}
+                <p className="helper-hint">Eksikler riski artırır. Tekne sekmesinden upgrade alabilirsin.</p>
+              </>
             )}
           </div>
 

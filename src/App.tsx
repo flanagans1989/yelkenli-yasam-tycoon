@@ -1767,6 +1767,39 @@ function App() {
         </div>
       </div>
 
+      {(() => {
+        const captainRankLabel =
+          captainLevel >= 13
+            ? "Dünya Turu Kaptanı"
+            : captainLevel >= 9
+              ? "Okyanus Yolcusu"
+              : captainLevel >= 6
+                ? "Deneyimli Kaptan"
+                : captainLevel >= 4
+                  ? "Açık Deniz Adayı"
+                  : captainLevel >= 2
+                    ? "Kıyı Seyircisi"
+                    : "Acemi Kaptan";
+        const captainCareerText =
+          captainLevel >= 9
+            ? "Dünya turu hikayen, seni gerçek bir açık deniz kaptanına dönüştürüyor."
+            : captainLevel >= 4
+              ? "Artık sadece tekne kullanan biri değilsin; rotalarını planlayan, riskleri yöneten bir kaptansın."
+              : "Henüz yolculuğun başındasın. Her içerik, her rota ve her karar kaptanlığını geliştiriyor.";
+
+        return (
+          <div className="captain-career-card">
+            <span className="captain-career-eyebrow">Kaptan Kariyeri</span>
+            <div className="captain-career-title">Kaptan Rütbesi</div>
+            <div className="captain-career-rank">{captainRankLabel}</div>
+            <div className="captain-career-text">{captainCareerText}</div>
+            <div className="captain-career-meta">
+              Seviye: {captainLevel} · XP: {captainXp} · Tamamlanan rota: {completedRouteIds.length}
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="mini-skills-grid">
         {Object.entries(selectedProfile.skills).map(([key, value]) => (
           <div key={key} className="skill-box">

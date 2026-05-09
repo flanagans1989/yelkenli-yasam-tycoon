@@ -2536,6 +2536,51 @@ button {
 .skill-box span { display: block; font-size: 11px; color: #8aafcc; margin-bottom: 6px; text-transform: uppercase; font-weight: 700;}
 .skill-box strong { font-size: 16px; color: #1e9fd4; }
 
+.captain-career-card {
+  background: linear-gradient(180deg, rgba(30, 159, 212, 0.1), rgba(245, 166, 35, 0.08));
+  border: 1px solid rgba(30, 159, 212, 0.18);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.captain-career-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: #8fdcff;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.captain-career-title {
+  color: #f0f8ff;
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.captain-career-rank {
+  color: #f7c26b;
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.captain-career-text {
+  color: #a8d8f0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.captain-career-meta {
+  margin-top: 10px;
+  color: #8aafcc;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .career-goals h3 { font-size: 16px; margin: 0 0 16px 0; color: #f0f8ff; }
 .goal-item { margin-bottom: 16px; }
 .goal-item span { font-size: 13px; color: #8aafcc; display: block; margin-bottom: 8px; font-weight: 700; text-transform: uppercase;}

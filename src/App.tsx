@@ -1714,7 +1714,8 @@ function App() {
                            <strong>{offer.brandName}</strong>
                            <span className="spo-tier">{offer.tierName}</span>
                         </div>
-                        <p>Beklenen Ödül: {offer.minReward.toLocaleString("tr-TR")} - {offer.maxReward.toLocaleString("tr-TR")} TL</p>
+                        <p className="spo-career-line">Bu anlaşma, dünya turu hikayeni bir marka işbirliğine dönüştürür.</p>
+                        <p className="spo-reward-line">Kariyer Geliri: {offer.minReward.toLocaleString("tr-TR")} – {offer.maxReward.toLocaleString("tr-TR")} TL</p>
                         <button className="btn-buy mt-10 full-width" onClick={() => handleAcceptSponsor(offer.id)}>Kabul Et</button>
                      </div>
                   ))}

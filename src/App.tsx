@@ -1735,7 +1735,9 @@ function App() {
     );
   };
 
-  const renderRotaTab = () => (
+  const renderRotaTab = () => {
+    const nextRouteData = currentRoute ? getNextRoute(currentRoute.id as RouteId) : undefined;
+    return (
     <>
       <RotaTab
         currentRoute={currentRoute
@@ -1744,6 +1746,9 @@ function App() {
               feeling: currentRoute.feeling,
               difficulty: currentRoute.difficulty,
             }
+          : undefined}
+        nextRoute={nextRouteData
+          ? { name: nextRouteData.name, feeling: nextRouteData.feeling, riskLevel: nextRouteData.riskLevel }
           : undefined}
         routeReadiness={{
           oceanReadiness: {
@@ -1777,6 +1782,7 @@ function App() {
       <p className="helper-hint">Rotalar dünya turu ilerlemeni artırır. Her varış yeni bir hikaye adımıdır.</p>
     </>
   );
+  };
 
   const upgradeCategoryHints: Record<string, string> = {
     energy: "Uzun rotalarda güç üretimini ve dayanıklılığı artırır.",

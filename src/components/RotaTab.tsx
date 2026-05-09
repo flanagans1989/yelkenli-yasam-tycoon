@@ -12,6 +12,12 @@ interface RouteReadiness {
   maintenance: RouteReadinessValue;
 }
 
+interface NextRoutePreview {
+  name: string;
+  feeling?: string;
+  riskLevel: string;
+}
+
 interface RotaTabProps {
   currentRoute?: {
     name: string;
@@ -33,6 +39,7 @@ interface RotaTabProps {
       minOceanReadiness?: number;
     };
   };
+  nextRoute?: NextRoutePreview;
   routeReadiness: RouteReadiness;
   isSeaMode: boolean;
   onStartVoyage: () => void;
@@ -40,6 +47,7 @@ interface RotaTabProps {
 
 export function RotaTab({
   currentRoute,
+  nextRoute,
   routeReadiness,
   isSeaMode,
   onStartVoyage,
@@ -111,6 +119,17 @@ export function RotaTab({
         </article>
       ) : (
         <p>Tüm rotalar tamamlandı!</p>
+      )}
+
+      {nextRoute && (
+        <div className="next-route-preview">
+          <span className="next-route-eyebrow">Sıradaki Etap</span>
+          <div className="next-route-name">{nextRoute.name}</div>
+          <div className="next-route-note">Bu rota, dünya turu hikayeni bir sonraki bölgeye taşıyacak.</div>
+          {nextRoute.feeling && (
+            <div className="next-route-feeling">"{nextRoute.feeling}"</div>
+          )}
+        </div>
       )}
     </div>
   );

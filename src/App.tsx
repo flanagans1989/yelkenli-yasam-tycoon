@@ -479,6 +479,7 @@ function App() {
   const [achievementUnlockedBannerText, setAchievementUnlockedBannerText] = useState("");
   const [sponsorOfferBannerText, setSponsorOfferBannerText] = useState("");
   const [contentPublishedBannerText, setContentPublishedBannerText] = useState("");
+  const [voyageStartBannerText, setVoyageStartBannerText] = useState("");
   const previousUnlockedAchievementIdsRef = useRef<string[]>([]);
   const hasInitializedAchievementBannerRef = useRef(false);
   const previousSponsorOfferIdsRef = useRef<string[]>([]);
@@ -706,6 +707,16 @@ function App() {
 
     return () => window.clearTimeout(timeoutId);
   }, [contentPublishedBannerText]);
+
+  useEffect(() => {
+    if (!voyageStartBannerText) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setVoyageStartBannerText("");
+    }, 3500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [voyageStartBannerText]);
 
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
@@ -1338,6 +1349,11 @@ function App() {
     setPendingDecisionId(null);
     setCurrentSeaEvent(`Rotaya çıkıldı. Rüzgar kolayına.${readinessRiskText}`);
     setLogs(prev => [`${currentRoute.name} rotasına çıkıldı.${readinessRiskText}`, ...prev.slice(0, 4)]);
+    setVoyageStartBannerText(
+      currentRoute.feeling
+        ? `Hedef: ${currentRoute.name}. Dünya turunda yeni bir etap başlıyor. ${currentRoute.feeling}`
+        : `Hedef: ${currentRoute.name}. Dünya turunda yeni bir etap başlıyor.`,
+    );
     setStep("SEA_MODE");
     setActiveTab("liman");
   };
@@ -2263,6 +2279,12 @@ function App() {
         <div className="content-published-banner" role="status" aria-live="polite">
           <div className="content-published-title">İçerik Yayınlandı!</div>
           <div className="content-published-text">{contentPublishedBannerText}</div>
+        </div>
+      )}
+      {voyageStartBannerText && (
+        <div className="voyage-start-banner" role="status" aria-live="polite">
+          <div className="voyage-start-title">Seyir Başladı!</div>
+          <div className="voyage-start-text">{voyageStartBannerText}</div>
         </div>
       )}
       {["MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT"].includes(step) && (

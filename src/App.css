@@ -3437,6 +3437,35 @@ button {
   line-height: 1.4;
   font-weight: 600;
 }
+.voyage-start-banner {
+  position: absolute;
+  top: 294px;
+  left: 14px;
+  right: 14px;
+  z-index: 30;
+  background: rgba(92, 184, 255, 0.14);
+  border: 1px solid rgba(92, 184, 255, 0.3);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(10px);
+}
+
+.voyage-start-title {
+  color: #b7e4ff;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.voyage-start-text {
+  color: #eef8ff;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 600;
+}
 
 /* ── PROGRESS STRIP ── */
 .progress-strip {

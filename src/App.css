@@ -3418,22 +3418,36 @@ button {
   margin-top: 18px;
 }
 
-.upgrade-complete-banner {
+/* ── GAME TOAST (tekli bildirim sistemi) ── */
+@keyframes toastSlideDown {
+  from { opacity: 0; transform: translateY(-110%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toastSlideUp {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-110%); }
+}
+
+.game-toast {
   position: absolute;
   top: 14px;
   left: 14px;
   right: 14px;
   z-index: 30;
-  background: rgba(46, 196, 160, 0.14);
-  border: 1px solid rgba(46, 196, 160, 0.35);
   border-radius: 16px;
   padding: 12px 14px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(10px);
+  cursor: pointer;
+  animation: toastSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.upgrade-complete-title {
-  color: #9df0d4;
+.game-toast.leaving {
+  animation: toastSlideUp 0.25s ease-in both;
+}
+
+.game-toast-title {
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
@@ -3441,158 +3455,35 @@ button {
   margin-bottom: 4px;
 }
 
-.upgrade-complete-text {
-  color: #e8fff6;
+.game-toast-text {
   font-size: 13px;
   line-height: 1.4;
   font-weight: 600;
 }
 
-.achievement-unlocked-banner {
-  position: absolute;
-  top: 84px;
-  left: 14px;
-  right: 14px;
-  z-index: 30;
-  background: rgba(245, 166, 35, 0.14);
-  border: 1px solid rgba(245, 166, 35, 0.32);
-  border-radius: 16px;
-  padding: 12px 14px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(10px);
-}
+.game-toast--upgrade        { background: rgba(46,196,160,0.14); border: 1px solid rgba(46,196,160,0.35); }
+.game-toast--upgrade .game-toast-title { color: #9df0d4; }
+.game-toast--upgrade .game-toast-text  { color: #e8fff6; }
 
-.achievement-unlocked-title {
-  color: #f7c26b;
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 4px;
-}
+.game-toast--achievement        { background: rgba(245,166,35,0.14); border: 1px solid rgba(245,166,35,0.32); }
+.game-toast--achievement .game-toast-title { color: #f7c26b; }
+.game-toast--achievement .game-toast-text  { color: #fff3d6; }
 
-.achievement-unlocked-text {
-  color: #fff3d6;
-  font-size: 13px;
-  line-height: 1.4;
-  font-weight: 600;
-}
-.sponsor-offer-banner {
-  position: absolute;
-  top: 154px;
-  left: 14px;
-  right: 14px;
-  z-index: 30;
-  background: rgba(70, 198, 222, 0.14);
-  border: 1px solid rgba(70, 198, 222, 0.3);
-  border-radius: 16px;
-  padding: 12px 14px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(10px);
-}
+.game-toast--sponsor        { background: rgba(70,198,222,0.14); border: 1px solid rgba(70,198,222,0.3); }
+.game-toast--sponsor .game-toast-title { color: #9cecff; }
+.game-toast--sponsor .game-toast-text  { color: #e4fbff; }
 
-.sponsor-offer-title {
-  color: #9cecff;
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 4px;
-}
+.game-toast--content        { background: rgba(66,171,255,0.14); border: 1px solid rgba(66,171,255,0.3); }
+.game-toast--content .game-toast-title { color: #9ed6ff; }
+.game-toast--content .game-toast-text  { color: #eaf7ff; }
 
-.sponsor-offer-text {
-  color: #e4fbff;
-  font-size: 13px;
-  line-height: 1.4;
-  font-weight: 600;
-}
-.content-published-banner {
-  position: absolute;
-  top: 224px;
-  left: 14px;
-  right: 14px;
-  z-index: 30;
-  background: rgba(66, 171, 255, 0.14);
-  border: 1px solid rgba(66, 171, 255, 0.3);
-  border-radius: 16px;
-  padding: 12px 14px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(10px);
-}
+.game-toast--voyage        { background: rgba(92,184,255,0.14); border: 1px solid rgba(92,184,255,0.3); }
+.game-toast--voyage .game-toast-title { color: #b7e4ff; }
+.game-toast--voyage .game-toast-text  { color: #eef8ff; }
 
-.content-published-title {
-  color: #9ed6ff;
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 4px;
-}
-
-.content-published-text {
-  color: #eaf7ff;
-  font-size: 13px;
-  line-height: 1.4;
-  font-weight: 600;
-}
-.voyage-start-banner {
-  position: absolute;
-  top: 294px;
-  left: 14px;
-  right: 14px;
-  z-index: 30;
-  background: rgba(92, 184, 255, 0.14);
-  border: 1px solid rgba(92, 184, 255, 0.3);
-  border-radius: 16px;
-  padding: 12px 14px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(10px);
-}
-
-.voyage-start-title {
-  color: #b7e4ff;
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 4px;
-}
-
-.voyage-start-text {
-  color: #eef8ff;
-  font-size: 13px;
-  line-height: 1.4;
-  font-weight: 600;
-}
-.sea-decision-result-banner {
-  position: absolute;
-  top: 364px;
-  left: 14px;
-  right: 14px;
-  z-index: 30;
-  background: rgba(84, 198, 221, 0.14);
-  border: 1px solid rgba(84, 198, 221, 0.3);
-  border-radius: 16px;
-  padding: 12px 14px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(10px);
-}
-
-.sea-decision-result-title {
-  color: #a6f0ff;
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 4px;
-}
-
-.sea-decision-result-text {
-  color: #ebfcff;
-  font-size: 13px;
-  line-height: 1.4;
-  font-weight: 600;
-}
+.game-toast--sea_decision        { background: rgba(84,198,221,0.14); border: 1px solid rgba(84,198,221,0.3); }
+.game-toast--sea_decision .game-toast-title { color: #a6f0ff; }
+.game-toast--sea_decision .game-toast-text  { color: #ebfcff; }
 
 /* ── PROGRESS STRIP ── */
 .progress-strip {

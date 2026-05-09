@@ -118,6 +118,15 @@ type DailyGoal = {
   completed: boolean;
 };
 
+type ToastType = "upgrade" | "achievement" | "sponsor" | "content" | "voyage" | "sea_decision";
+
+type ToastItem = {
+  id: number;
+  type: ToastType;
+  title: string;
+  text: string;
+};
+
 type AchievementProgress = {
   totalContentProduced: number;
   totalRoutesCompleted: number;
@@ -475,12 +484,10 @@ function App() {
   const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
   const [totalContentProduced, setTotalContentProduced] = useState(0);
   const [hasCompletedDailyGoalsOnce, setHasCompletedDailyGoalsOnce] = useState(false);
-  const [upgradeCompleteBannerText, setUpgradeCompleteBannerText] = useState("");
-  const [achievementUnlockedBannerText, setAchievementUnlockedBannerText] = useState("");
-  const [sponsorOfferBannerText, setSponsorOfferBannerText] = useState("");
-  const [contentPublishedBannerText, setContentPublishedBannerText] = useState("");
-  const [voyageStartBannerText, setVoyageStartBannerText] = useState("");
-  const [seaDecisionResultBannerText, setSeaDecisionResultBannerText] = useState("");
+  const toastIdRef = useRef(0);
+  const [toastQueue, setToastQueue] = useState<ToastItem[]>([]);
+  const [activeToast, setActiveToast] = useState<ToastItem | null>(null);
+  const [isToastLeaving, setIsToastLeaving] = useState(false);
   const previousUnlockedAchievementIdsRef = useRef<string[]>([]);
   const hasInitializedAchievementBannerRef = useRef(false);
   const previousSponsorOfferIdsRef = useRef<string[]>([]);
@@ -494,6 +501,11 @@ function App() {
       setFlashFollowers(true);
       setTimeout(() => setFlashFollowers(false), 600);
     }
+  };
+
+  const pushToast = (type: ToastType, title: string, text: string) => {
+    const id = ++toastIdRef.current;
+    setToastQueue(prev => [...prev, { id, type, title, text }]);
   };
 
   const selectedProfile: PlayerProfile = PLAYER_PROFILES[profileIndex];
@@ -560,7 +572,7 @@ function App() {
     previousUnlockedAchievementIdsRef.current = unlockedAchievementIds;
 
     if (newlyUnlockedAchievement) {
-      setAchievementUnlockedBannerText(`${newlyUnlockedAchievement.title} açıldı.`);
+      pushToast("achievement", "Rozet Kazanıldı!", `${newlyUnlockedAchievement.title} açıldı.`);
     }
   }, [achievementStatuses]);
 
@@ -580,7 +592,9 @@ function App() {
     previousSponsorOfferIdsRef.current = sponsorOfferIds;
 
     if (newlyAddedOffer) {
-      setSponsorOfferBannerText(
+      pushToast(
+        "sponsor",
+        "Sponsor Teklifi Geldi!",
         newlyAddedOffer.brandName
           ? `${newlyAddedOffer.brandName} yeni bir teklif gönderdi.`
           : "Yeni bir marka dünya turu hikayene dahil olmak istiyor.",
@@ -669,64 +683,22 @@ function App() {
   }, [dailyGoals, dailyRewardClaimed]);
 
   useEffect(() => {
-    if (!upgradeCompleteBannerText) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setUpgradeCompleteBannerText("");
-    }, 3500);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [upgradeCompleteBannerText]);
+    if (activeToast || toastQueue.length === 0) return;
+    const next = toastQueue[0];
+    setToastQueue(prev => prev.slice(1));
+    setIsToastLeaving(false);
+    setActiveToast(next);
+  }, [activeToast, toastQueue]);
 
   useEffect(() => {
-    if (!achievementUnlockedBannerText) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setAchievementUnlockedBannerText("");
-    }, 3500);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [achievementUnlockedBannerText]);
-
-  useEffect(() => {
-    if (!sponsorOfferBannerText) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setSponsorOfferBannerText("");
-    }, 3500);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [sponsorOfferBannerText]);
-
-  useEffect(() => {
-    if (!contentPublishedBannerText) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setContentPublishedBannerText("");
-    }, 3500);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [contentPublishedBannerText]);
-
-  useEffect(() => {
-    if (!voyageStartBannerText) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setVoyageStartBannerText("");
-    }, 3500);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [voyageStartBannerText]);
-
-  useEffect(() => {
-    if (!seaDecisionResultBannerText) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setSeaDecisionResultBannerText("");
-    }, 3500);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [seaDecisionResultBannerText]);
+    if (!activeToast) return;
+    const leaveId = window.setTimeout(() => setIsToastLeaving(true), 3200);
+    const clearId = window.setTimeout(() => setActiveToast(null), 3500);
+    return () => {
+      window.clearTimeout(leaveId);
+      window.clearTimeout(clearId);
+    };
+  }, [activeToast]);
 
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
@@ -936,7 +908,7 @@ function App() {
 
       if (installationCompleteUpgrade) {
         applyUpgradeEffects(installationCompleteUpgrade);
-        setUpgradeCompleteBannerText(`${installationCompleteUpgrade.name} kurulumu tamamlandı!`);
+        pushToast("upgrade", "Upgrade Tamamlandı!", `${installationCompleteUpgrade.name} kurulumu tamamlandı!`);
       }
     } catch (e) {
       console.error("Load error", e);
@@ -1121,7 +1093,9 @@ function App() {
 
     setCurrentSeaEvent(choice.resultText);
     setLogs(prev => [`${decision.title}: ${choice.resultText}`, ...prev.slice(0, 4)]);
-    setSeaDecisionResultBannerText(
+    pushToast(
+      "sea_decision",
+      "Karar Uygulandı",
       effectSummary
         ? `${choice.label}. ${effectSummary}`
         : choice.label || "Seçimin denizdeki yolculuğun gidişatını etkiledi.",
@@ -1251,10 +1225,12 @@ function App() {
 
     const logMsg = `${platform?.name} platformunda içerik yayınlandı: +${gainFollowers} Takipçi, +${gainCredits} TL.`;
     setLogs(prev => [logMsg, ...prev.slice(0, 4)]);
-    setContentPublishedBannerText(
+    pushToast(
+      "content",
+      "İçerik Yayınlandı!",
       platform?.name
-        ? `+${gainFollowers.toLocaleString("tr-TR")} takipçi kazandın. Hikayen daha fazla kişiye ulaşıyor. Platform: ${platform.name}`
-        : `+${gainFollowers.toLocaleString("tr-TR")} takipçi kazandın. Hikayen daha fazla kişiye ulaşıyor.`,
+        ? `+${gainFollowers.toLocaleString("tr-TR")} takipçi kazandın. Platform: ${platform.name}`
+        : `+${gainFollowers.toLocaleString("tr-TR")} takipçi kazandın.`,
     );
     setLastContentAt(Date.now());
     setCaptainXp(prev => prev + 15);
@@ -1359,7 +1335,7 @@ function App() {
     applyUpgradeEffects(upgrade);
     setUpgradeInProgress(null);
     setLogs(prev => [`Kurulum tamamlandı: ${upgrade.name} aktif edildi.`, ...prev.slice(0, 4)]);
-    setUpgradeCompleteBannerText(`${upgrade.name} kurulumu tamamlandı!`);
+    pushToast("upgrade", "Upgrade Tamamlandı!", `${upgrade.name} kurulumu tamamlandı!`);
   };
 
   const handleStartVoyage = () => {
@@ -1376,9 +1352,11 @@ function App() {
     setPendingDecisionId(null);
     setCurrentSeaEvent(`Rotaya çıkıldı. Rüzgar kolayına.${readinessRiskText}`);
     setLogs(prev => [`${currentRoute.name} rotasına çıkıldı.${readinessRiskText}`, ...prev.slice(0, 4)]);
-    setVoyageStartBannerText(
+    pushToast(
+      "voyage",
+      "Seyir Başladı!",
       currentRoute.feeling
-        ? `Hedef: ${currentRoute.name}. Dünya turunda yeni bir etap başlıyor. ${currentRoute.feeling}`
+        ? `Hedef: ${currentRoute.name}. ${currentRoute.feeling}`
         : `Hedef: ${currentRoute.name}. Dünya turunda yeni bir etap başlıyor.`,
     );
     setStep("SEA_MODE");
@@ -2194,40 +2172,15 @@ function App() {
 
   return (
     <div className="game-wrapper">
-      {upgradeCompleteBannerText && (
-        <div className="upgrade-complete-banner" role="status" aria-live="polite">
-          <div className="upgrade-complete-title">Upgrade tamamlandı!</div>
-          <div className="upgrade-complete-text">{upgradeCompleteBannerText}</div>
-        </div>
-      )}
-      {achievementUnlockedBannerText && (
-        <div className="achievement-unlocked-banner" role="status" aria-live="polite">
-          <div className="achievement-unlocked-title">Rozet Kazanıldı!</div>
-          <div className="achievement-unlocked-text">{achievementUnlockedBannerText}</div>
-        </div>
-      )}
-      {sponsorOfferBannerText && (
-        <div className="sponsor-offer-banner" role="status" aria-live="polite">
-          <div className="sponsor-offer-title">Sponsor Teklifi Geldi!</div>
-          <div className="sponsor-offer-text">{sponsorOfferBannerText}</div>
-        </div>
-      )}
-      {contentPublishedBannerText && (
-        <div className="content-published-banner" role="status" aria-live="polite">
-          <div className="content-published-title">İçerik Yayınlandı!</div>
-          <div className="content-published-text">{contentPublishedBannerText}</div>
-        </div>
-      )}
-      {voyageStartBannerText && (
-        <div className="voyage-start-banner" role="status" aria-live="polite">
-          <div className="voyage-start-title">Seyir Başladı!</div>
-          <div className="voyage-start-text">{voyageStartBannerText}</div>
-        </div>
-      )}
-      {seaDecisionResultBannerText && (
-        <div className="sea-decision-result-banner" role="status" aria-live="polite">
-          <div className="sea-decision-result-title">Karar Uygulandı</div>
-          <div className="sea-decision-result-text">{seaDecisionResultBannerText}</div>
+      {activeToast && (
+        <div
+          className={`game-toast game-toast--${activeToast.type}${isToastLeaving ? " leaving" : ""}`}
+          role="status"
+          aria-live="polite"
+          onClick={() => setActiveToast(null)}
+        >
+          <div className="game-toast-title">{activeToast.title}</div>
+          <div className="game-toast-text">{activeToast.text}</div>
         </div>
       )}
       {["MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT"].includes(step) && (

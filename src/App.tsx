@@ -1940,35 +1940,7 @@ function App() {
   };
 
   const renderProgressStrip = () => {
-    const currentLevelMinXp = CAPTAIN_LEVEL_THRESHOLDS[captainLevel - 1] ?? 0;
-    const nextLevelMinXp = CAPTAIN_LEVEL_THRESHOLDS[captainLevel] ?? currentLevelMinXp;
-    const captainXpProgressPercent =
-      nextLevelMinXp > currentLevelMinXp
-        ? Math.max(
-            0,
-            Math.min(100, ((captainXp - currentLevelMinXp) / (nextLevelMinXp - currentLevelMinXp)) * 100)
-          )
-        : 100;
-    const worldTourProgressPercent = Math.max(
-      0,
-      Math.min(100, (completedRouteIds.length / WORLD_ROUTES.length) * 100)
-    );
     const nextSponsorTier = SPONSOR_TIERS.find((tier) => followers < tier.minFollowers);
-    const previousSponsorTier = [...SPONSOR_TIERS]
-      .reverse()
-      .find((tier) => followers >= tier.minFollowers);
-    const sponsorProgressMin = previousSponsorTier?.minFollowers ?? 0;
-    const sponsorProgressMax = nextSponsorTier?.minFollowers ?? sponsorProgressMin;
-    const sponsorProgressPercent =
-      sponsorProgressMax > sponsorProgressMin
-        ? Math.max(
-            0,
-            Math.min(
-              100,
-              ((followers - sponsorProgressMin) / (sponsorProgressMax - sponsorProgressMin)) * 100
-            )
-          )
-        : 100;
     const contentGoalDoneToday = dailyGoals.find((goal) => goal.type === "produce_content")?.completed ?? false;
     const hasAnyCompatibleUpgrade = BOAT_UPGRADES.some((upgrade) => {
       if (purchasedUpgradeIds.includes(upgrade.id)) return false;
@@ -2010,45 +1982,6 @@ function App() {
             <span className="progress-strip-item">Dünya Turu: {completedRouteIds.length}/{WORLD_ROUTES.length} Rota</span>
           </div>
 
-          <div className="progress-strip-bars">
-            <div className="progress-mini-bar">
-              <div className="progress-mini-bar-label">
-                <span>Seviye</span>
-                <span className="progress-mini-bar-meta">
-                  {nextLevelMinXp > currentLevelMinXp
-                    ? `${captainXp - currentLevelMinXp} / ${nextLevelMinXp - currentLevelMinXp} XP`
-                    : "Maks. seviye"}
-                </span>
-              </div>
-              <div className="progress-mini-bar-track">
-                <div className="progress-mini-bar-fill" style={{ width: `${captainXpProgressPercent}%` }}></div>
-              </div>
-            </div>
-
-            <div className="progress-mini-bar">
-              <div className="progress-mini-bar-label">
-                <span>Sponsor</span>
-                <span className="progress-mini-bar-meta">
-                  {nextSponsorTier
-                    ? `${followers.toLocaleString("tr-TR")} / ${nextSponsorTier.minFollowers.toLocaleString("tr-TR")}`
-                    : "En üst seviye"}
-                </span>
-              </div>
-              <div className="progress-mini-bar-track">
-                <div className="progress-mini-bar-fill" style={{ width: `${sponsorProgressPercent}%` }}></div>
-              </div>
-            </div>
-
-            <div className="progress-mini-bar">
-              <div className="progress-mini-bar-label">
-                <span>Dünya Turu</span>
-                <span className="progress-mini-bar-meta">{completedRouteIds.length}/{WORLD_ROUTES.length} rota</span>
-              </div>
-              <div className="progress-mini-bar-track">
-                <div className="progress-mini-bar-fill" style={{ width: `${worldTourProgressPercent}%` }}></div>
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="next-action-card">

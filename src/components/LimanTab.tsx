@@ -57,6 +57,25 @@ export function LimanTab({
 
   return (
     <div className="tab-content fade-in">
+      {!firstContentDone ? (
+        <button className="quest-card pulse" onClick={onGoContent}>
+          <div className="quest-icon">🎬</div>
+          <div className="quest-texts">
+            <h3>İlk içeriğini üret</h3>
+            <p>İçerik Stüdyosuna Git</p>
+          </div>
+        </button>
+      ) : (
+        <button className="quest-card done" onClick={onGoRoute}>
+          <div className="quest-icon">✅</div>
+          <div className="quest-texts">
+            <h3>{completedRouteIds.length > 0 ? "Yeni limana ulaştın" : "Sıradaki rotaya hazırlan"}</h3>
+            <p>Sıradaki Rota: {currentRouteName || "Bilinmiyor"}</p>
+          </div>
+          <span className="quest-card-arrow">›</span>
+        </button>
+      )}
+
       <div className="hub-center-visual">
         <div className="hub-scene">
           <div className="hub-boat-display">{getBoatSvg(selectedBoatId)}</div>
@@ -83,25 +102,6 @@ export function LimanTab({
         <div className="log-entry">{hasCompletedFirstRoute ? "✓" : "…"} 3) İlk rotanı tamamla</div>
         <div className="log-entry">{guideMessage}</div>
       </div>
-
-      {!firstContentDone ? (
-        <button className="quest-card pulse" onClick={onGoContent}>
-          <div className="quest-icon">🎬</div>
-          <div className="quest-texts">
-            <h3>İlk içeriğini üret</h3>
-            <p>İçerik Stüdyosuna Git</p>
-          </div>
-        </button>
-      ) : (
-        <button className="quest-card done" onClick={onGoRoute}>
-          <div className="quest-icon">✅</div>
-          <div className="quest-texts">
-            <h3>{completedRouteIds.length > 0 ? "Yeni limana ulaştın" : "Sıradaki rotaya hazırlan"}</h3>
-            <p>Sıradaki Rota: {currentRouteName || "Bilinmiyor"}</p>
-          </div>
-          <span className="quest-card-arrow">›</span>
-        </button>
-      )}
 
       <div className="event-log-compact">
         <span className="card-label">Marina Servisi</span>

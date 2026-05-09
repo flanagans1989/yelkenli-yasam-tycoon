@@ -3350,6 +3350,36 @@ button {
   font-weight: 600;
 }
 
+.achievement-unlocked-banner {
+  position: absolute;
+  top: 84px;
+  left: 14px;
+  right: 14px;
+  z-index: 30;
+  background: rgba(245, 166, 35, 0.14);
+  border: 1px solid rgba(245, 166, 35, 0.32);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(10px);
+}
+
+.achievement-unlocked-title {
+  color: #f7c26b;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.achievement-unlocked-text {
+  color: #fff3d6;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
 /* ── PROGRESS STRIP ── */
 .progress-strip {
   display: flex;

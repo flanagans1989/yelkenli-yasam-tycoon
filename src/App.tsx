@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 import type { Step, Tab, ContentResult, MarinaFilter } from "./types/game";
@@ -476,6 +476,9 @@ function App() {
   const [totalContentProduced, setTotalContentProduced] = useState(0);
   const [hasCompletedDailyGoalsOnce, setHasCompletedDailyGoalsOnce] = useState(false);
   const [upgradeCompleteBannerText, setUpgradeCompleteBannerText] = useState("");
+  const [achievementUnlockedBannerText, setAchievementUnlockedBannerText] = useState("");
+  const previousUnlockedAchievementIdsRef = useRef<string[]>([]);
+  const hasInitializedAchievementBannerRef = useRef(false);
 
   const triggerFlash = (type: "credits" | "followers") => {
     if (type === "credits") {
@@ -532,6 +535,29 @@ function App() {
     }),
   }));
   const unlockedAchievementCount = achievementStatuses.filter((achievement) => achievement.unlocked).length;
+
+  useEffect(() => {
+    const unlockedAchievementIds = achievementStatuses
+      .filter((achievement) => achievement.unlocked)
+      .map((achievement) => achievement.id);
+
+    if (!hasInitializedAchievementBannerRef.current) {
+      previousUnlockedAchievementIdsRef.current = unlockedAchievementIds;
+      hasInitializedAchievementBannerRef.current = true;
+      return;
+    }
+
+    const newlyUnlockedAchievement = achievementStatuses.find(
+      (achievement) =>
+        achievement.unlocked && !previousUnlockedAchievementIdsRef.current.includes(achievement.id),
+    );
+
+    previousUnlockedAchievementIdsRef.current = unlockedAchievementIds;
+
+    if (newlyUnlockedAchievement) {
+      setAchievementUnlockedBannerText(`${newlyUnlockedAchievement.title} açıldı.`);
+    }
+  }, [achievementStatuses]);
 
   useEffect(() => {
     const saved = localStorage.getItem(SAVE_KEY);
@@ -622,6 +648,16 @@ function App() {
 
     return () => window.clearTimeout(timeoutId);
   }, [upgradeCompleteBannerText]);
+
+  useEffect(() => {
+    if (!achievementUnlockedBannerText) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setAchievementUnlockedBannerText("");
+    }, 3500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [achievementUnlockedBannerText]);
 
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
@@ -2156,6 +2192,12 @@ function App() {
         <div className="upgrade-complete-banner" role="status" aria-live="polite">
           <div className="upgrade-complete-title">Upgrade tamamlandı!</div>
           <div className="upgrade-complete-text">{upgradeCompleteBannerText}</div>
+        </div>
+      )}
+      {achievementUnlockedBannerText && (
+        <div className="achievement-unlocked-banner" role="status" aria-live="polite">
+          <div className="achievement-unlocked-title">Rozet Kazanıldı!</div>
+          <div className="achievement-unlocked-text">{achievementUnlockedBannerText}</div>
         </div>
       )}
       {["MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT"].includes(step) && (

@@ -1346,6 +1346,8 @@ function App() {
     const previousSponsorTier = [...SPONSOR_TIERS]
       .reverse()
       .find((tier) => followers >= tier.minFollowers);
+    const currentSponsorTier = getSponsorTierByFollowers(followers, brandTrust);
+    const activeSponsorName = acceptedSponsors[acceptedSponsors.length - 1] ?? "";
     const sponsorProgressMin = previousSponsorTier?.minFollowers ?? 0;
     const sponsorProgressMax = nextSponsorTier?.minFollowers ?? sponsorProgressMin;
     const sponsorProgressPercent =
@@ -1454,6 +1456,47 @@ function App() {
             <div className="brand-trust-card">
                <span>Marka Güveni (Brand Trust)</span>
                <strong>{brandTrust} / 100</strong>
+            </div>
+
+            <div className="sponsor-career-card">
+              <span className="sponsor-career-eyebrow">Sponsor Kariyeri</span>
+              {activeSponsorName ? (
+                <>
+                  <div className="sponsor-career-title">{activeSponsorName}</div>
+                  <div className="sponsor-career-text">
+                    {currentSponsorTier
+                      ? `${currentSponsorTier.name} seviyesinde görünürlük kazandın. Bu marka artık dünya turu hikayenin bir parçası.`
+                      : "Her rota ve içerik, sponsor değerini büyüten bir kariyer adımı."}
+                  </div>
+                  <div className="sponsor-career-meta">
+                    {currentSponsorTier
+                      ? `Seviye: ${currentSponsorTier.name} · Marka Güveni: ${brandTrust}/100`
+                      : `Marka Güveni: ${brandTrust}/100`}
+                  </div>
+                  {nextSponsorTier && (
+                    <div className="sponsor-career-highlight">
+                      Bir sonraki hedef: {nextSponsorTier.minFollowers.toLocaleString("tr-TR")} takipçi
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="sponsor-career-title">İlk anlaşma seni bekliyor</div>
+                  <div className="sponsor-career-text">
+                    İlk sponsor anlaşman, bu yolculuğu gerçek bir denizcilik markasına çevirecek.
+                  </div>
+                  {nextSponsorTier && (
+                    <>
+                      <div className="sponsor-career-meta">
+                        Yeni sponsor seviyesi için takipçi büyütmeye devam et.
+                      </div>
+                      <div className="sponsor-career-highlight">
+                        Bir sonraki hedef: {nextSponsorTier.minFollowers.toLocaleString("tr-TR")} takipçi
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
             </div>
 
             <div className="sponsor-progress-card">

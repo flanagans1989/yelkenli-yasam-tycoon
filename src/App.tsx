@@ -13,7 +13,7 @@ import type { RouteId } from "../game-data/routes";
 import { SOCIAL_PLATFORMS } from "../game-data/socialPlatforms";
 import { BOAT_UPGRADES, UPGRADE_CATEGORIES } from "../game-data/upgrades";
 import type { UpgradeCategoryId } from "../game-data/upgrades";
-import { getSponsorTierByFollowers } from "../game-data/economy";
+import { getSponsorTierByFollowers, SPONSOR_TIERS } from "../game-data/economy";
 import { skillLabels, profileIcons } from "./data/labels";
 import { Onboarding, getBoatSvg } from "./components/Onboarding";
 import { HubScreen } from "./components/HubScreen";
@@ -1200,6 +1200,23 @@ function App() {
       CONTENT_TYPES.push({ id: "storm_vlog", label: "Fırtına / Olay" });
     }
 
+    const nextSponsorTier = SPONSOR_TIERS.find((tier) => followers < tier.minFollowers);
+    const previousSponsorTier = [...SPONSOR_TIERS]
+      .reverse()
+      .find((tier) => followers >= tier.minFollowers);
+    const sponsorProgressMin = previousSponsorTier?.minFollowers ?? 0;
+    const sponsorProgressMax = nextSponsorTier?.minFollowers ?? sponsorProgressMin;
+    const sponsorProgressPercent =
+      sponsorProgressMax > sponsorProgressMin
+        ? Math.max(
+            0,
+            Math.min(
+              100,
+              ((followers - sponsorProgressMin) / (sponsorProgressMax - sponsorProgressMin)) * 100
+            )
+          )
+        : 100;
+
     return (
       <div className="tab-content fade-in">
         <div className="content-stats-header">
@@ -1295,6 +1312,34 @@ function App() {
             <div className="brand-trust-card">
                <span>Marka Güveni (Brand Trust)</span>
                <strong>{brandTrust} / 100</strong>
+            </div>
+
+            <div className="sponsor-progress-card">
+              <div className="sponsor-progress-title">
+                {nextSponsorTier ? (
+                  followers < SPONSOR_TIERS[0].minFollowers
+                    ? "İlk sponsor teklifine yaklaşıyorsun."
+                    : "Bir sonraki sponsor seviyesine yaklaşıyorsun."
+                ) : (
+                  "En yüksek sponsor seviyesine ulaştın."
+                )}
+              </div>
+              <div className="sponsor-progress-text">
+                {nextSponsorTier
+                  ? `${nextSponsorTier.minFollowers.toLocaleString("tr-TR")} takipçiye ulaştığında ${nextSponsorTier.name} açılır${nextSponsorTier.tier === "micro" ? "." : " fırsatları güçlenir."}`
+                  : "Takipçi büyümen sponsor gücünü desteklemeye devam eder."}
+              </div>
+              <div className="sponsor-progress-bar">
+                <div
+                  className="sponsor-progress-fill"
+                  style={{ width: `${sponsorProgressPercent}%` }}
+                ></div>
+              </div>
+              <div className="sponsor-progress-meta">
+                {nextSponsorTier
+                  ? `${followers.toLocaleString("tr-TR")} / ${nextSponsorTier.minFollowers.toLocaleString("tr-TR")} takipçi`
+                  : `${followers.toLocaleString("tr-TR")} takipçi`}
+              </div>
             </div>
 
             <button className="btn-primary full-width mb-20" onClick={handleCheckSponsorOffers}>

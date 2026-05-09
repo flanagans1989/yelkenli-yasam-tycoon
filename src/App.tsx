@@ -1641,16 +1641,24 @@ function App() {
                 </div>
       
                 <span className="card-label mt-20">2. İçerik Türü Seç</span>
+                {selectedPlatformId && (
+                  <p className="helper-hint">✓ işaretli türler bu platformda en iyi sonucu verir.</p>
+                )}
                 <div className="type-pills">
-                  {CONTENT_TYPES.map(type => (
-                    <button 
-                      key={type.id} 
-                      className={`type-pill ${selectedContentType === type.id ? "active" : ""}`}
-                      onClick={() => setSelectedContentType(type.id)}
-                    >
-                      {type.label}
-                    </button>
-                  ))}
+                  {CONTENT_TYPES.map(type => {
+                    const selectedPlatform = SOCIAL_PLATFORMS.find(p => p.id === selectedPlatformId);
+                    const isMatch = selectedPlatform?.bestContentTypes.includes(type.id as any) ?? false;
+                    return (
+                      <button
+                        key={type.id}
+                        className={`type-pill ${selectedContentType === type.id ? "active" : ""} ${isMatch ? "match" : ""}`}
+                        onClick={() => setSelectedContentType(type.id)}
+                      >
+                        {isMatch && <span className="type-pill-match">✓ </span>}
+                        {type.label}
+                      </button>
+                    );
+                  })}
                 </div>
       
                 {(() => {

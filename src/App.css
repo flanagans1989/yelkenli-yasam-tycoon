@@ -2197,7 +2197,7 @@ button {
 .next-action-eyebrow {
   display: block;
   margin-bottom: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -3068,7 +3068,7 @@ button {
 
 .helper-hint {
   font-size: 12px;
-  color: rgba(138, 175, 204, 0.62);
+  color: rgba(138, 175, 204, 0.80);
   text-align: center;
   margin: 6px 0 10px;
   line-height: 1.4;

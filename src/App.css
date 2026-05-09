@@ -3075,6 +3075,36 @@ button {
   margin-top: 18px;
 }
 
+.upgrade-complete-banner {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 30;
+  background: rgba(46, 196, 160, 0.14);
+  border: 1px solid rgba(46, 196, 160, 0.35);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(10px);
+}
+
+.upgrade-complete-title {
+  color: #9df0d4;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.upgrade-complete-text {
+  color: #e8fff6;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
 /* ── PROGRESS STRIP ── */
 .progress-strip {
   display: flex;

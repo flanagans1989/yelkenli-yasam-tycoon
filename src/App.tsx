@@ -436,6 +436,7 @@ function App() {
   const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
   const [totalContentProduced, setTotalContentProduced] = useState(0);
   const [hasCompletedDailyGoalsOnce, setHasCompletedDailyGoalsOnce] = useState(false);
+  const [upgradeCompleteBannerText, setUpgradeCompleteBannerText] = useState("");
 
   const triggerFlash = (type: "credits" | "followers") => {
     if (type === "credits") {
@@ -572,6 +573,16 @@ function App() {
       ]);
     }
   }, [dailyGoals, dailyRewardClaimed]);
+
+  useEffect(() => {
+    if (!upgradeCompleteBannerText) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setUpgradeCompleteBannerText("");
+    }, 3500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [upgradeCompleteBannerText]);
 
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
@@ -781,6 +792,7 @@ function App() {
 
       if (installationCompleteUpgrade) {
         applyUpgradeEffects(installationCompleteUpgrade);
+        setUpgradeCompleteBannerText(`${installationCompleteUpgrade.name} kurulumu tamamlandı!`);
       }
     } catch (e) {
       console.error("Load error", e);
@@ -1181,6 +1193,7 @@ function App() {
     applyUpgradeEffects(upgrade);
     setUpgradeInProgress(null);
     setLogs(prev => [`Kurulum tamamlandı: ${upgrade.name} aktif edildi.`, ...prev.slice(0, 4)]);
+    setUpgradeCompleteBannerText(`${upgrade.name} kurulumu tamamlandı!`);
   };
 
   const handleStartVoyage = () => {
@@ -1883,6 +1896,12 @@ function App() {
 
   return (
     <div className="game-wrapper">
+      {upgradeCompleteBannerText && (
+        <div className="upgrade-complete-banner" role="status" aria-live="polite">
+          <div className="upgrade-complete-title">Upgrade tamamlandı!</div>
+          <div className="upgrade-complete-text">{upgradeCompleteBannerText}</div>
+        </div>
+      )}
       {["MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT"].includes(step) && (
         <Onboarding
           step={step}

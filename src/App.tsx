@@ -1545,6 +1545,7 @@ function App() {
                 </div>
               )}
             </div>
+            <p className="helper-hint">Takipçi büyüdükçe sponsor kapıları açılır.</p>
             {!contentResult ? (
               <>
                 <span className="card-label">1. Platform Seç</span>
@@ -1627,6 +1628,7 @@ function App() {
                <span>Marka Güveni (Brand Trust)</span>
                <strong>{brandTrust} / 100</strong>
             </div>
+            <p className="helper-hint">Sponsorlar, içerik kariyerini düzenli gelire dönüştürür.</p>
 
             <div className="sponsor-career-card">
               <span className="sponsor-career-eyebrow">Sponsor Kariyeri</span>
@@ -1767,6 +1769,7 @@ function App() {
         onStartVoyage={handleStartVoyage}
       />
       {currentRoute && <p className="route-feeling-text">{currentRoute.description}</p>}
+      <p className="helper-hint">Rotalar dünya turu ilerlemeni artırır. Her varış yeni bir hikaye adımıdır.</p>
     </>
   );
 
@@ -1811,6 +1814,7 @@ function App() {
              <div className="stat-box-small"><span>Navigasyon</span><strong>{upgradeNavigationBonus}</strong></div>
           </div>
         </div>
+        <p className="helper-hint">Upgrade'ler uzun rotalarda hayatta kalmanı ve daha verimli ilerlemeni kolaylaştırır.</p>
 
         <div className="upgrade-categories-scroll">
            {UPGRADE_CATEGORIES.map(cat => (

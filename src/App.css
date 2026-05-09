@@ -2587,6 +2587,66 @@ button {
 .goal-bar { height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
 .goal-fill { height: 100%; background: linear-gradient(90deg, #1e9fd4, #2ec4a0); border-radius: 4px; }
 
+.achievements-showcase-card {
+  background: linear-gradient(180deg, rgba(245, 166, 35, 0.08), rgba(30, 159, 212, 0.08));
+  border: 1px solid rgba(245, 166, 35, 0.16);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.achievements-showcase-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: #f7c26b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.achievements-showcase-title {
+  color: #f0f8ff;
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.achievements-showcase-text {
+  color: #a8d8f0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.achievements-showcase-meta {
+  margin-top: 10px;
+  color: #8aafcc;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.achievement-badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.achievement-badge-chip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(46, 196, 160, 0.12);
+  border: 1px solid rgba(46, 196, 160, 0.24);
+  color: #9df0d4;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.achievement-badge-chip.locked {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.08);
+  color: #8aafcc;
+}
+
 .achievements-card {
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.05);

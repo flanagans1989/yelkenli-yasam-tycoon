@@ -1824,6 +1824,39 @@ function App() {
         </div>
       </div>
 
+      {(() => {
+        const unlockedAchievements = achievementStatuses.filter((achievement) => achievement.unlocked);
+        const showcasedBadges =
+          unlockedAchievements.length > 0
+            ? unlockedAchievements.slice(0, 3)
+            : achievementStatuses.slice(0, 3);
+
+        return (
+          <div className="achievements-showcase-card mt-20">
+            <span className="achievements-showcase-eyebrow">Rozet Vitrini</span>
+            <div className="achievements-showcase-title">Başarı Yolculuğu</div>
+            <div className="achievements-showcase-text">
+              {unlockedAchievements.length > 0
+                ? "Açılan rozetler, dünya turu kariyerindeki gerçek ilerlemeyi gösterir."
+                : "İlk rozetini açmak için içerik üret, rota tamamla ve kaptanlığını geliştir."}
+            </div>
+            <div className="achievements-showcase-meta">
+              {unlockedAchievementCount}/{ACHIEVEMENTS.length} rozet açıldı
+            </div>
+            <div className="achievement-badge-list">
+              {showcasedBadges.map((achievement) => (
+                <div
+                  key={achievement.id}
+                  className={`achievement-badge-chip${achievement.unlocked ? "" : " locked"}`}
+                >
+                  {achievement.unlocked ? "🏅" : "○"} {achievement.title}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="achievements-card mt-20">
         <div className="achievements-header">
           <div>

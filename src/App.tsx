@@ -28,7 +28,7 @@ const OFFLINE_CREDITS_PER_MINUTE = 15;
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
 const CONTENT_COOLDOWN_MS = 30 * 60 * 1000;
 
-const CAPTAIN_LEVEL_THRESHOLDS = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 6000];
+const CAPTAIN_LEVEL_THRESHOLDS = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 6000, 8200, 11000, 14500, 19000, 25000];
 
 const DAILY_GOAL_THEMES = [
   {
@@ -1202,7 +1202,7 @@ function App() {
         ? `${choice.label}. ${effectSummary}`
         : choice.label || "Seçimin denizdeki yolculuğun gidişatını etkiledi.",
     );
-    setCaptainXp(prev => prev + 25);
+    setCaptainXp(prev => prev + 30);
     setPendingDecisionId(null);
   };
 
@@ -1225,7 +1225,7 @@ function App() {
     }
 
     setLogs(prev => [`${currentRoute.name} rotası tamamlandı. ${currentRoute.to} limanına varıldı. +${reward.credits} TL, +${reward.followers} takipçi ödül alındı.`, ...prev.slice(0, 4)]);
-    setCaptainXp(prev => prev + 60);
+    setCaptainXp(prev => prev + 80);
     completeGoal("complete_route");
     setPendingDecisionId(null);
     setStep("HUB");
@@ -1332,7 +1332,7 @@ function App() {
         : `+${gainFollowers.toLocaleString("tr-TR")} takipçi kazandın.`,
     );
     setLastContentAt(Date.now());
-    setCaptainXp(prev => prev + 15);
+    setCaptainXp(prev => prev + 20);
     completeGoal("produce_content");
   };
 
@@ -1624,6 +1624,12 @@ function App() {
             <p className="helper-hint">Takipçi büyüdükçe sponsor kapıları açılır.</p>
             {!contentResult ? (
               <>
+                {step === "SEA_MODE" && currentRoute && (
+                  <div className="route-content-hint">
+                    <span className="route-content-hint-label">Şu an: {currentRoute.name}</span>
+                    <span className="route-content-hint-themes">{currentRoute.contentThemes.join(" · ")}</span>
+                  </div>
+                )}
                 <span className="card-label">1. Platform Seç</span>
                 <div className="platform-grid">
                   {SOCIAL_PLATFORMS.filter(p => p.mvpStatus === "active").map(platform => (

@@ -478,6 +478,7 @@ function App() {
   const [upgradeCompleteBannerText, setUpgradeCompleteBannerText] = useState("");
   const [achievementUnlockedBannerText, setAchievementUnlockedBannerText] = useState("");
   const [sponsorOfferBannerText, setSponsorOfferBannerText] = useState("");
+  const [contentPublishedBannerText, setContentPublishedBannerText] = useState("");
   const previousUnlockedAchievementIdsRef = useRef<string[]>([]);
   const hasInitializedAchievementBannerRef = useRef(false);
   const previousSponsorOfferIdsRef = useRef<string[]>([]);
@@ -695,6 +696,16 @@ function App() {
 
     return () => window.clearTimeout(timeoutId);
   }, [sponsorOfferBannerText]);
+
+  useEffect(() => {
+    if (!contentPublishedBannerText) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setContentPublishedBannerText("");
+    }, 3500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [contentPublishedBannerText]);
 
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
@@ -1202,6 +1213,11 @@ function App() {
 
     const logMsg = `${platform?.name} platformunda içerik yayınlandı: +${gainFollowers} Takipçi, +${gainCredits} TL.`;
     setLogs(prev => [logMsg, ...prev.slice(0, 4)]);
+    setContentPublishedBannerText(
+      platform?.name
+        ? `+${gainFollowers.toLocaleString("tr-TR")} takipçi kazandın. Hikayen daha fazla kişiye ulaşıyor. Platform: ${platform.name}`
+        : `+${gainFollowers.toLocaleString("tr-TR")} takipçi kazandın. Hikayen daha fazla kişiye ulaşıyor.`,
+    );
     setLastContentAt(Date.now());
     setCaptainXp(prev => prev + 15);
     completeGoal("produce_content");
@@ -2241,6 +2257,12 @@ function App() {
         <div className="sponsor-offer-banner" role="status" aria-live="polite">
           <div className="sponsor-offer-title">Sponsor Teklifi Geldi!</div>
           <div className="sponsor-offer-text">{sponsorOfferBannerText}</div>
+        </div>
+      )}
+      {contentPublishedBannerText && (
+        <div className="content-published-banner" role="status" aria-live="polite">
+          <div className="content-published-title">İçerik Yayınlandı!</div>
+          <div className="content-published-text">{contentPublishedBannerText}</div>
         </div>
       )}
       {["MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT"].includes(step) && (

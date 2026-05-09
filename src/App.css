@@ -2337,20 +2337,6 @@ button {
 .accepted-sponsors-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .spo-badge { background: rgba(46, 196, 160, 0.15); color: #2ec4a0; border: 1px solid rgba(46, 196, 160, 0.3); padding: 8px 16px; border-radius: 12px; font-size: 13px; font-weight: 800; }
 
-.btn-buy {
-  background: linear-gradient(180deg, #23abdf, #12638f);
-  color: white;
-  font-weight: 800;
-  padding: 14px;
-  border-radius: 16px;
-  font-size: 15px;
-  box-shadow: 0 4px 0 #0d4a6e, 0 8px 20px rgba(30, 159, 212, 0.3);
-  transition: 0.2s;
-}
-.btn-buy:active {
-  transform: translateY(4px);
-  box-shadow: 0 0 0 #0d4a6e, 0 4px 10px rgba(30, 159, 212, 0.3);
-}
 
 /* Rota Tab */
 .route-card {

@@ -112,11 +112,11 @@ export function RotaTab({
   const completedCount = completedRouteIds.length;
 
   return (
-    <div className="rt-tab fade-in">
+    <div className="rt-tab rt-tab-v2 fade-in">
       {/* ── Journey Arc ── */}
       <div className="rt-arc-section glass-card">
         <div className="rt-arc-header">
-          <span className="rt-arc-label">DÜNYA TURU</span>
+          <span className="rt-arc-label">◐ DÜNYA TURU</span>
           <span className="rt-arc-count">{completedCount}/{WORLD_ROUTES.length} rota</span>
         </div>
         <div className="rt-arc-dots">
@@ -143,6 +143,13 @@ export function RotaTab({
         <>
           <div className="rt-hero-card glass-card">
             <div className="rt-hero-gradient" aria-hidden="true" />
+            <div className="rt-hero-route-label">
+              {currentRoute.from} <span className="rt-hero-route-arrow">↣</span> {currentRoute.to}
+            </div>
+            <div className="rt-hero-destination">
+              <span className="rt-hero-pin">📍</span>
+              <h2 className="rt-hero-name">{currentRoute.to}</h2>
+            </div>
             <div className="rt-hero-top-chips">
               <span className={`rt-risk-pill ${getRiskClass(currentRoute.riskLevel)}`}>
                 {RISK_LABELS[currentRoute.riskLevel] ?? currentRoute.riskLevel}
@@ -156,17 +163,15 @@ export function RotaTab({
                 </span>
               )}
             </div>
-            <div className="rt-hero-destination">
-              <span className="rt-hero-pin">📍</span>
-              <h2 className="rt-hero-name">{currentRoute.to}</h2>
-            </div>
-            <div className="rt-hero-route-label">{currentRoute.from} ↣ {currentRoute.to}</div>
             {currentRoute.feeling && (
               <p className="rt-hero-feeling">"{currentRoute.feeling}"</p>
             )}
             <div className="rt-hero-meta-row">
               <span className="rt-meta-chip">
-                İçerik Potansiyeli: {CONTENT_LABELS[currentRoute.contentPotential] ?? currentRoute.contentPotential}
+                <span className="rt-meta-chip-key">İçerik Potansiyeli</span>
+                <span className="rt-meta-chip-val">
+                  {CONTENT_LABELS[currentRoute.contentPotential] ?? currentRoute.contentPotential}
+                </span>
               </span>
             </div>
           </div>
@@ -222,16 +227,25 @@ export function RotaTab({
           {/* ── CTA ── */}
           <div className="rt-cta-zone">
             {isSeaMode ? (
-              <button className="primary-button" disabled>
-                Zaten Denizdesin
+              <button className="primary-button rt-cta-btn rt-cta-btn--ghost" disabled>
+                <span className="rt-cta-btn-icon">⛵</span>
+                <span className="rt-cta-btn-label">Zaten Denizdesin</span>
               </button>
             ) : isReady ? (
-              <button className="primary-button primary-button--pulse" onClick={onStartVoyage}>
-                ⚓ Rotaya Çık
+              <button
+                className="primary-button primary-button--pulse rt-cta-btn rt-cta-btn--go"
+                onClick={onStartVoyage}
+              >
+                <span className="rt-cta-btn-icon">⚓</span>
+                <span className="rt-cta-btn-label">Rotaya Çık</span>
               </button>
             ) : (
-              <button className="primary-button" onClick={onGoTekne}>
-                🔧 Tekneyi Hazırla
+              <button
+                className="primary-button rt-cta-btn rt-cta-btn--prep"
+                onClick={onGoTekne}
+              >
+                <span className="rt-cta-btn-icon">🔧</span>
+                <span className="rt-cta-btn-label">Tekneyi Hazırla</span>
               </button>
             )}
           </div>

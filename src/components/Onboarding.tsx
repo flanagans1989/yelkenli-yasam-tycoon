@@ -4,7 +4,6 @@ import { PLAYER_PROFILES } from "../../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../../game-data/marinas";
 import { STARTING_BOATS, STARTING_BUDGET } from "../../game-data/boats";
 import { skillLabels, profileIcons, ratingToScore } from "../data/labels";
-import { marinaIcons } from "../data/marinas";
 import { boatClassMeta } from "../data/boats";
 
 const getMarinaFilterCategory = (region: string): MarinaFilter => {
@@ -236,8 +235,57 @@ export function Onboarding({
       yalova:   { cx: 328, cy: 40  },
     };
 
+    const ROUTE_PATHS: Array<{ d: string; key: string }> = [
+      { key: "ist-yalova",   d: "M 310 24  Q 320 32  328 40" },
+      { key: "ist-cesme",    d: "M 310 24  Q 220 30  120 36  Q 75 42  42 58" },
+      { key: "cesme-kus",    d: "M 42  58  Q 48 70   58 80" },
+      { key: "kus-bodrum",   d: "M 58  80  Q 68 92   82 104" },
+      { key: "bodrum-gocek", d: "M 82  104 Q 96 112  108 118" },
+      { key: "gocek-marm",   d: "M 108 118 Q 118 122 128 125" },
+      { key: "marm-fethiye", d: "M 128 125 Q 138 124 148 122" },
+      { key: "fethiye-kas",  d: "M 148 122 Q 165 128 182 132" },
+      { key: "kas-antalya",  d: "M 182 132 Q 215 142 245 148" },
+    ];
+
+    const filteredIndices = STARTING_MARINAS
+      .map((m, i) => ({ id: m.id, idx: i }))
+      .filter(({ id }) => filteredMarinas.some((fm) => fm.id === id));
+
+    const cyclePrev = () => {
+      if (filteredIndices.length === 0) return;
+      const cur = filteredIndices.findIndex(({ idx }) => idx === marinaIndex);
+      const prev = cur <= 0 ? filteredIndices.length - 1 : cur - 1;
+      setMarinaIndex(filteredIndices[prev].idx);
+    };
+    const cycleNext = () => {
+      if (filteredIndices.length === 0) return;
+      const cur = filteredIndices.findIndex(({ idx }) => idx === marinaIndex);
+      const next = cur < 0 || cur >= filteredIndices.length - 1 ? 0 : cur + 1;
+      setMarinaIndex(filteredIndices[next].idx);
+    };
+
+    const score = (rating: string): number => {
+      const v = ratingToScore[rating] ?? 4;
+      return Math.max(1, Math.min(5, Math.round((v / 7) * 5)));
+    };
+
+    const ulasimDots = score(selectedMarina.routeAdvantage);
+    const guzellikStars = score(selectedMarina.contentPotential);
+
+    const weatherForRegion = (region: string): { temp: string; icon: string; label: string } => {
+      const r = region.toLocaleLowerCase("tr-TR");
+      if (r.includes("marmara") || r.includes("istanbul") || r.includes("yalova")) {
+        return { temp: "19°C", icon: "⛅", label: "Bulutlu" };
+      }
+      if (r.includes("akdeniz") || r.includes("antalya") || r.includes("kaş") || r.includes("kas")) {
+        return { temp: "26°C", icon: "☀️", label: "Güneşli" };
+      }
+      return { temp: "24°C", icon: "☀️", label: "Güneşli" };
+    };
+    const weather = weatherForRegion(selectedMarina.region);
+
     return (
-      <div className="ob-marina-screen ob-marina-screen-v2">
+      <div className="ob-marina-screen ob-marina-screen-v2 ob-marina-screen-v3">
         <div className="ob-step-header">
           <div className="ob-step-eyebrow">ADIM 2 / 4</div>
           <h2 className="ob-step-title">ÇIKIŞ LİMANINI SEÇ</h2>
@@ -256,12 +304,35 @@ export function Onboarding({
         </div>
 
         <div className="ob-marina-map-wrap">
+          <button
+            className="ob-map-arrow ob-map-arrow--left"
+            onClick={cyclePrev}
+            aria-label="Önceki liman"
+            type="button"
+          >‹</button>
+          <button
+            className="ob-map-arrow ob-map-arrow--right"
+            onClick={cycleNext}
+            aria-label="Sonraki liman"
+            type="button"
+          >›</button>
+
           <svg
             className="ob-marina-map"
             viewBox="0 0 380 170"
             preserveAspectRatio="xMidYMid meet"
             aria-label="Türkiye marina haritası"
           >
+            <defs>
+              <filter id="ob-map-route-glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="1.4" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
             <path
               className="ob-map-land"
               d="M 25 78 Q 38 46 65 54 Q 78 70 84 102 Q 100 120 118 127 Q 138 133 155 126 Q 185 136 250 152 Q 295 158 350 148 L 370 120 L 370 20 Q 345 14 315 22 Q 295 32 278 50 Q 258 66 235 70 Q 205 74 180 70 Q 150 64 115 60 Q 82 54 60 64 Z"
@@ -271,6 +342,12 @@ export function Onboarding({
               d="M 25 78 Q 38 46 65 54 Q 78 70 84 102 Q 100 120 118 127 Q 138 133 155 126 Q 185 136 250 152 Q 295 158 350 148"
               fill="none"
             />
+
+            <g className="ob-map-routes" filter="url(#ob-map-route-glow)">
+              {ROUTE_PATHS.map((r) => (
+                <path key={r.key} className="ob-map-route" d={r.d} fill="none" />
+              ))}
+            </g>
 
             {STARTING_MARINAS.map((marina) => {
               const coords = MARINA_COORDS[marina.id];
@@ -283,7 +360,7 @@ export function Onboarding({
               return (
                 <g
                   key={marina.id}
-                  className={`ob-map-pin-group${isActive ? " ob-map-pin-group--active" : ""}${!isVisible ? " ob-map-pin-group--hidden" : ""}`}
+                  className={`ob-map-pin-group${isActive ? " ob-map-pin-group--active" : ""}${!isVisible ? " ob-map-pin-group--hidden" : ""}${isRecommended ? " ob-map-pin-group--rec" : ""}`}
                   onClick={() => setMarinaIndex(idx)}
                   role="button"
                   aria-label={marina.name}
@@ -291,51 +368,106 @@ export function Onboarding({
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setMarinaIndex(idx); }}
                 >
                   {isActive && (
-                    <circle cx={coords.cx} cy={coords.cy} r={12} className="ob-map-pin-ring" />
+                    <circle cx={coords.cx} cy={coords.cy - 6} r={12} className="ob-map-pin-ring" />
                   )}
                   <circle
                     cx={coords.cx}
-                    cy={coords.cy}
-                    r={isRecommended ? 7 : 5}
-                    className={`ob-map-pin-dot${isRecommended ? " ob-map-pin-dot--gold" : ""}${isActive ? " ob-map-pin-dot--active" : ""}`}
+                    cy={coords.cy - 6}
+                    r={9}
+                    className="ob-map-pin-halo"
                   />
+                  <circle
+                    cx={coords.cx}
+                    cy={coords.cy - 6}
+                    r={7}
+                    className="ob-map-pin-disc"
+                  />
+                  <text
+                    x={coords.cx}
+                    y={coords.cy - 3}
+                    className="ob-map-pin-anchor"
+                    textAnchor="middle"
+                  >⚓</text>
+                  <g className="ob-map-pin-premium" transform={`translate(${coords.cx}, ${coords.cy - 18})`}>
+                    <rect x={-15} y={-5} width={30} height={8} rx={2} className="ob-map-pin-premium-bg" />
+                    <text x={0} y={1} className="ob-map-pin-premium-text" textAnchor="middle">PREMIUM</text>
+                  </g>
+                  <text
+                    x={coords.cx}
+                    y={coords.cy + 9}
+                    className="ob-map-pin-label"
+                    textAnchor="middle"
+                  >{marina.name.toUpperCase()}</text>
                 </g>
               );
             })}
           </svg>
         </div>
 
-        <div className="ob-marina-detail-sheet glass-card">
-          <div className="ob-sheet-drag-handle" aria-hidden="true" />
-          <div className="ob-sheet-header">
-            <span className="ob-sheet-icon">{marinaIcons[selectedMarina.id] ?? "⚓"}</span>
-            <div className="ob-sheet-name-block">
-              <strong className="ob-sheet-name">{selectedMarina.name}</strong>
-              <span className="ob-sheet-region">{selectedMarina.region}</span>
+        <div className="ob-marina-sheet-v3 glass-card">
+          <div className="ob-sheet-v3-row">
+            <div className="ob-sheet-photo" aria-hidden="true">
+              <span className="ob-sheet-photo-sky" />
+              <span className="ob-sheet-photo-sun" />
+              <span className="ob-sheet-photo-mountains" />
+              <span className="ob-sheet-photo-sea" />
+              <span className="ob-sheet-photo-boat">⛵</span>
+              {selectedMarina.bestProfiles.includes(selectedProfile.id) && (
+                <span className="ob-sheet-photo-rec">ÖNERİLEN</span>
+              )}
             </div>
-            {selectedMarina.bestProfiles.includes(selectedProfile.id) && (
-              <span className="ob-recommended-badge">ÖNERİLEN</span>
-            )}
-          </div>
-          <p className="ob-sheet-tagline">"{selectedMarina.tagline}"</p>
-          <div className="ob-sheet-features">
-            <div className="ob-feature-chip ob-feature-chip--pro">
-              <span>✓</span> {selectedMarina.bonus.title}
-            </div>
-            <div className="ob-feature-chip ob-feature-chip--warn">
-              <span>⚠</span> {selectedMarina.disadvantage.title}
+            <div className="ob-sheet-v3-id">
+              <h3 className="ob-sheet-v3-name">{selectedMarina.name.toUpperCase()}</h3>
+              <span className="ob-sheet-v3-sub">Limanı Detayları</span>
             </div>
           </div>
-          <div className="ob-sheet-routes">
+
+          <div className="ob-sheet-v3-stats">
+            <div className="ob-sheet-stat">
+              <span className="ob-sheet-stat-key">Konum</span>
+              <span className="ob-sheet-stat-val">{selectedMarina.region}</span>
+            </div>
+            <div className="ob-sheet-stat">
+              <span className="ob-sheet-stat-key">Ulaşım</span>
+              <span className="ob-sheet-stat-dots">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i} className={`ob-sheet-dot${i < ulasimDots ? " ob-sheet-dot--on" : ""}`} />
+                ))}
+                <span className="ob-sheet-stat-tail">{ulasimDots} of 5</span>
+              </span>
+            </div>
+            <div className="ob-sheet-stat">
+              <span className="ob-sheet-stat-key">Güzellik</span>
+              <span className="ob-sheet-stat-stars">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i} className={`ob-sheet-star${i < guzellikStars ? " ob-sheet-star--on" : ""}`}>★</span>
+                ))}
+                <span className="ob-sheet-stat-tail">{guzellikStars} of 5</span>
+              </span>
+            </div>
+            <div className="ob-sheet-stat">
+              <span className="ob-sheet-stat-key">Hava Durumu</span>
+              <span className="ob-sheet-stat-val ob-sheet-weather">
+                <span className="ob-sheet-weather-icon">{weather.icon}</span>
+                {weather.temp}, {weather.label}
+              </span>
+            </div>
+          </div>
+
+          <div className="ob-sheet-v3-perks">
+            <span className="ob-sheet-v3-perks-label">Yerel İmkanlar</span>
             {selectedMarina.firstRouteOptions.slice(0, 3).map((route, i) => (
-              <span key={i} className="ob-route-chip">{route}</span>
+              <div key={i} className="ob-sheet-perk">
+                <span className="ob-sheet-perk-check">✓</span>
+                <span className="ob-sheet-perk-text">{route}</span>
+              </div>
             ))}
           </div>
         </div>
 
         <div className="ob-screen-actions">
           <button className="secondary-button" onClick={() => setStep("PICK_PROFILE")}>Geri</button>
-          <button className="primary-button" onClick={() => setStep("PICK_BOAT")}>TEKNE SEÇİMİNE GEÇ →</button>
+          <button className="primary-button" onClick={() => setStep("PICK_BOAT")}>🧭 SEÇİLEN LİMANI ONAYLA →</button>
         </div>
       </div>
     );

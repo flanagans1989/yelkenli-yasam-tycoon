@@ -1845,6 +1845,11 @@ button {
   scrollbar-gutter: stable;
 }
 
+.hub-content--tekne {
+  padding-top: 18px;
+  scrollbar-gutter: auto;
+}
+
 .tab-content {
   display: flex;
   flex-direction: column;
@@ -4283,6 +4288,31 @@ button {
   padding: 10px 16px;
   background: rgba(13, 61, 94, 0.6);
   border-bottom: 1px solid rgba(94, 234, 248, 0.14);
+}
+
+.hub-wrapper--tekne .next-action-card {
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(13, 61, 94, 0.44);
+  border-bottom-color: rgba(94, 234, 248, 0.1);
+}
+
+.hub-wrapper--tekne .next-action-content {
+  gap: 1px;
+}
+
+.hub-wrapper--tekne .next-action-eyebrow {
+  font-size: 9px;
+  opacity: 0.82;
+}
+
+.hub-wrapper--tekne .next-action-title {
+  font-size: 13px;
+}
+
+.hub-wrapper--tekne .next-action-text {
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .next-action-content {
@@ -8038,20 +8068,21 @@ button {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: var(--space-3) var(--space-4) var(--space-10);
+  gap: 12px;
+  padding: var(--space-4) var(--space-4) var(--space-9);
 }
 
 /* ── Hero ── */
 .tk-tab-v2 .tk-hero {
   position: relative;
-  padding: 16px 16px 14px;
+  padding: 18px 16px 16px;
   border: 1px solid rgba(255, 217, 130, 0.20);
   background:
     radial-gradient(circle at 100% 0%, rgba(94, 234, 248, 0.10) 0%, transparent 55%),
     radial-gradient(circle at 0% 100%, rgba(255, 217, 130, 0.07) 0%, transparent 55%),
     linear-gradient(160deg, rgba(12, 42, 71, 0.85) 0%, rgba(8, 25, 42, 0.85) 100%);
   overflow: hidden;
+  scroll-margin-top: 12px;
 }
 .tk-tab-v2 .tk-hero::before {
   content: "";
@@ -8078,7 +8109,7 @@ button {
   gap: 14px;
   position: relative;
   z-index: 1;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 .tk-tab-v2 .tk-hero-boat {
   position: relative;
@@ -8271,6 +8302,7 @@ button {
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
+  margin-top: 2px;
   border: 1px solid rgba(94, 234, 248, 0.30);
   background:
     radial-gradient(circle at 0% 50%, rgba(94, 234, 248, 0.14) 0%, transparent 60%),
@@ -8328,7 +8360,7 @@ button {
   overflow-x: auto;
   gap: 8px;
   padding: 4px 0 8px;
-  margin: 2px -4px 0;
+  margin: 0 -4px 0;
   padding-left: 4px;
   padding-right: 4px;
   scrollbar-width: none;
@@ -9055,7 +9087,15 @@ button {
 
 /* Mobile narrow guards */
 @media (max-width: 360px) {
-  .tk-tab-v2 { padding: var(--space-3) var(--space-3) var(--space-10); }
+  .hub-content--tekne {
+    padding-top: 16px;
+  }
+
+  .hub-wrapper--tekne .next-action-card {
+    padding: 8px 14px;
+  }
+
+  .tk-tab-v2 { padding: var(--space-3) var(--space-3) var(--space-9); }
   .tk-tab-v2 .tk-hero { padding: 14px 12px 12px; }
   .tk-tab-v2 .tk-hero-name { font-size: 18px; }
   .tk-tab-v2 .tk-hero-boat { width: 64px; height: 64px; }

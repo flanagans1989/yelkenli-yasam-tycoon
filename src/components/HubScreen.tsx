@@ -49,7 +49,7 @@ export function HubScreen({
   renderKaptanTab,
 }: HubScreenProps) {
   return (
-    <div className={step === "SEA_MODE" ? "sea-mode-wrapper fade-in" : "hub-wrapper fade-in"}>
+    <div className={step === "SEA_MODE" ? "sea-mode-wrapper fade-in" : `hub-wrapper hub-wrapper--${activeTab} fade-in`}>
       {step === "SEA_MODE" ? (
         <header className="sea-topbar">
           <h2>{boatName}</h2>
@@ -70,7 +70,7 @@ export function HubScreen({
 
       {step === "HUB" && renderProgressStrip && renderProgressStrip()}
 
-      <main className={step === "SEA_MODE" ? "sea-content" : "hub-content"}>
+      <main className={step === "SEA_MODE" ? "sea-content" : `hub-content hub-content--${activeTab}`}>
         {activeTab === "liman" && step === "HUB" && renderLimanTab()}
         {activeTab === "liman" && step === "SEA_MODE" && renderSeaModeTab()}
         {activeTab === "icerik" && renderIcerikTab()}

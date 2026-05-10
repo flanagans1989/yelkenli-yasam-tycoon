@@ -6086,3 +6086,317 @@ button {
   font-style: italic;
   line-height: 1.4;
 }
+
+/* ─── BATCH 5-A: ARRIVAL / REWARD SCREEN ─── */
+
+.ar-screen {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  overflow-y: auto;
+  background: var(--ocean-deep);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Particle drift */
+
+.ar-particles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.ar-particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: ar-drift linear infinite;
+  opacity: 0;
+}
+
+.ar-particle--0 { width: 4px;  height: 4px;  left: 10%;  background: var(--gold-bright);  animation-duration: 6s;  animation-delay: 0s;    bottom: -8px; }
+.ar-particle--1 { width: 3px;  height: 3px;  left: 25%;  background: var(--cyan-glow);    animation-duration: 8s;  animation-delay: 1.2s;  bottom: -8px; }
+.ar-particle--2 { width: 5px;  height: 5px;  left: 40%;  background: var(--gold-warm);    animation-duration: 7s;  animation-delay: 0.5s;  bottom: -8px; }
+.ar-particle--3 { width: 3px;  height: 3px;  left: 55%;  background: var(--cyan-soft);    animation-duration: 9s;  animation-delay: 2s;    bottom: -8px; }
+.ar-particle--4 { width: 4px;  height: 4px;  left: 68%;  background: var(--gold-bright);  animation-duration: 7.5s; animation-delay: 0.8s; bottom: -8px; }
+.ar-particle--5 { width: 6px;  height: 6px;  left: 80%;  background: var(--cyan-glow);    animation-duration: 6.5s; animation-delay: 1.5s; bottom: -8px; }
+.ar-particle--6 { width: 3px;  height: 3px;  left: 88%;  background: var(--gold-warm);    animation-duration: 8.5s; animation-delay: 0.3s; bottom: -8px; }
+.ar-particle--7 { width: 4px;  height: 4px;  left: 5%;   background: var(--cyan-soft);    animation-duration: 7s;  animation-delay: 2.5s;  bottom: -8px; }
+
+@keyframes ar-drift {
+  0%   { transform: translateY(0)   rotate(0deg);   opacity: 0;    }
+  10%  { opacity: 0.8; }
+  80%  { opacity: 0.5; }
+  100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+}
+
+/* Main content */
+
+.ar-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-4) var(--space-10);
+}
+
+/* Hero */
+
+.ar-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-6) var(--space-4) var(--space-4);
+  position: relative;
+  animation: ar-hero-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes ar-hero-in {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+.ar-hero-glow {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 217, 130, 0.2) 0%, rgba(94, 234, 248, 0.1) 40%, transparent 70%);
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.ar-eyebrow {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  margin-bottom: var(--space-3);
+  text-shadow: 0 0 16px rgba(255, 217, 130, 0.6);
+  animation: ar-eyebrow-glow 2s ease-in-out infinite;
+}
+
+@keyframes ar-eyebrow-glow {
+  0%, 100% { text-shadow: 0 0 16px rgba(255, 217, 130, 0.5); }
+  50%       { text-shadow: 0 0 28px rgba(255, 217, 130, 0.9); }
+}
+
+.ar-pin {
+  font-size: 28px;
+  margin-bottom: var(--space-2);
+}
+
+.ar-port-name {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--gold-bright);
+  margin: 0 0 var(--space-3);
+  text-shadow: 0 2px 24px rgba(255, 217, 130, 0.45), 0 0 60px rgba(255, 217, 130, 0.2);
+  letter-spacing: 0.5px;
+}
+
+.ar-feeling {
+  font-size: 14px;
+  font-style: italic;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 280px;
+  line-height: 1.6;
+}
+
+/* Reward Block */
+
+.ar-reward-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: var(--space-3);
+  animation: ar-fade-up 0.4s 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes ar-fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);     }
+}
+
+.ar-reward-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  padding: var(--space-4) var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid;
+  text-align: center;
+}
+
+.ar-reward-tile--credits {
+  background: linear-gradient(160deg, rgba(15, 58, 92, 0.85) 0%, rgba(12, 42, 71, 0.65) 100%);
+  border-color: rgba(255, 217, 130, 0.3);
+  box-shadow: 0 0 24px rgba(255, 217, 130, 0.1) inset;
+}
+
+.ar-reward-tile--followers {
+  background: linear-gradient(160deg, rgba(15, 58, 92, 0.85) 0%, rgba(12, 42, 71, 0.65) 100%);
+  border-color: rgba(94, 234, 248, 0.25);
+  box-shadow: 0 0 24px rgba(94, 234, 248, 0.08) inset;
+}
+
+.ar-reward-amount {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  display: block;
+  margin-bottom: var(--space-2);
+  line-height: 1.1;
+}
+
+.ar-reward-tile--credits .ar-reward-amount {
+  color: var(--gold-bright);
+  text-shadow: 0 0 16px rgba(255, 217, 130, 0.5);
+}
+
+.ar-reward-tile--followers .ar-reward-amount {
+  color: var(--cyan-glow);
+  text-shadow: 0 0 16px rgba(94, 234, 248, 0.5);
+}
+
+.ar-reward-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: block;
+}
+
+.ar-xp-chip {
+  grid-column: 1 / -1;
+  justify-self: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--success-green);
+  background: rgba(75, 232, 163, 0.12);
+  border: 1px solid rgba(75, 232, 163, 0.3);
+  border-radius: var(--radius-pill);
+  padding: 5px 20px;
+}
+
+/* World Tour Arc */
+
+.ar-world-tour {
+  padding: var(--space-4) var(--space-5);
+  animation: ar-fade-up 0.4s 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ar-world-tour-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.ar-world-tour-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ar-world-tour-pct {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold-bright);
+}
+
+.ar-arc-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: var(--space-3);
+}
+
+.ar-arc-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ar-arc-dot--done {
+  background: var(--gold-bright);
+  box-shadow: 0 0 5px rgba(255, 217, 130, 0.5);
+}
+
+.ar-arc-dot--just-done {
+  background: var(--gold-bright);
+  box-shadow: 0 0 10px rgba(255, 217, 130, 0.9);
+  animation: ar-gold-burst 0.6s 1.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes ar-gold-burst {
+  0%   { transform: scale(0.4); box-shadow: 0 0 4px rgba(255, 217, 130, 0.4);  }
+  60%  { transform: scale(1.4); box-shadow: 0 0 20px rgba(255, 217, 130, 1);   }
+  100% { transform: scale(1);   box-shadow: 0 0 10px rgba(255, 217, 130, 0.85); }
+}
+
+.ar-arc-dot--future {
+  background: rgba(94, 122, 142, 0.3);
+  border: 1px solid rgba(94, 122, 142, 0.4);
+}
+
+.ar-milestone-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* Next Route Peek */
+
+.ar-next-peek {
+  padding: var(--space-4) var(--space-5);
+  opacity: 0.85;
+  animation: ar-fade-up 0.4s 2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ar-next-peek-eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.ar-next-peek-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* CTA Zone */
+
+.ar-cta-zone {
+  padding: var(--space-2) 0 var(--space-4);
+  animation: ar-fade-up 0.4s 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ar-cta-btn {
+  width: 100%;
+}

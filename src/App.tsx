@@ -21,6 +21,7 @@ import { LimanTab } from "./components/LimanTab";
 import { RotaTab } from "./components/RotaTab";
 import { SeaModeTab } from "./components/SeaModeTab";
 import { KaptanTab } from "./components/KaptanTab";
+import { ArrivalScreen } from "./components/ArrivalScreen";
 
 const SAVE_KEY = "yelkenli_save";
 const SAVE_VERSION = 2;
@@ -2090,8 +2091,6 @@ function App() {
     const arrivalReward = currentRoute ? getRouteCompletionRewards(currentRoute) : null;
     const completedRouteCount = Math.min(completedRouteIds.length + 1, WORLD_ROUTES.length);
     const nextRoute = currentRoute ? getNextRoute(currentRoute.id as RouteId) : undefined;
-    const arrivalPortName = currentRoute?.to ?? "Varış limanı";
-    const worldProgressPercent = currentRoute?.worldProgressPercent ?? 0;
     const rewardCredits = arrivalReward?.credits ?? 0;
     const rewardFollowers = arrivalReward?.followers ?? 0;
     const arrivalSummaryProgressPercent = Math.max(
@@ -2099,7 +2098,6 @@ function App() {
       Math.min(100, (completedRouteCount / WORLD_ROUTES.length) * 100)
     );
     let arrivalMilestoneText = "Bu varış, dünya turundaki bir sonraki büyük adımın.";
-
     if (completedRouteCount === 1) {
       arrivalMilestoneText = "İlk rota tamamlandı. Artık bu yolculuk gerçekten başladı.";
     } else if (arrivalSummaryProgressPercent >= 100) {
@@ -2113,62 +2111,19 @@ function App() {
     }
 
     return (
-      <div className="selection-screen fade-in cinematic-bg" style={{justifyContent: 'center'}}>
-        <div className="transparent-card centered arrival-screen-card">
-          <div className="arrival-screen-icon">⚓</div>
-          <h2>Varış!</h2>
-          <p className="arrival-screen-subtitle">{arrivalPortName} limanına ulaştın.</p>
-          <p className="arrival-route-feeling">{currentRoute?.feeling}</p>
-          <span className="arrival-screen-highlight">Rota Tamamlandı</span>
-
-          <div className="arrival-screen-progress">
-            <div className="arrival-screen-progress-row">
-              <span>Dünya turu ilerlemesi</span>
-              <strong>%{worldProgressPercent}</strong>
-            </div>
-            <div className="arrival-screen-progress-row">
-              <span>Rota</span>
-              <strong>{completedRouteCount} / {WORLD_ROUTES.length} tamamlandı</strong>
-            </div>
-          </div>
-
-          <div className="arrival-rewards">
-            <span className="card-label">Rota Ödülü</span>
-            <div className="arrival-reward-grid">
-              <div className="arrival-reward-box">
-                <small>Kredi</small>
-                <strong>+{rewardCredits.toLocaleString("tr-TR")} TL</strong>
-              </div>
-              <div className="arrival-reward-box">
-                <small>Takipçi</small>
-                <strong>+{rewardFollowers.toLocaleString("tr-TR")}</strong>
-              </div>
-            </div>
-          </div>
-
-          <div className="arrival-summary-card">
-            <div className="arrival-summary-title">Dünya Turu Özeti</div>
-            <div className="arrival-summary-meta">Tamamlanan rota: {completedRouteCount} / {WORLD_ROUTES.length}</div>
-            <div className="arrival-summary-text">{arrivalMilestoneText}</div>
-            <div className="arrival-summary-progress">
-              <div
-                className="arrival-summary-progress-fill"
-                style={{ width: `${arrivalSummaryProgressPercent}%` }}
-              ></div>
-            </div>
-            <div className="arrival-summary-next">
-              {nextRoute ? `Sıradaki rota: ${nextRoute.name}` : "Dünya turu tamamlandı."}
-            </div>
-          </div>
-
-          <div className="arrival-screen-next-route">
-            <span>Sıradaki rota</span>
-            <strong>{nextRoute ? nextRoute.name : "Dünya turu tamamlandı"}</strong>
-          </div>
-
-          <button className="btn-primary large mt-20" onClick={handleArrival}>Limana Dön</button>
-        </div>
-      </div>
+      <ArrivalScreen
+        portName={currentRoute?.to ?? "Varış Limanı"}
+        feeling={currentRoute?.feeling}
+        rewardCredits={rewardCredits}
+        rewardFollowers={rewardFollowers}
+        xpGain={80}
+        worldProgressPercent={currentRoute?.worldProgressPercent ?? 0}
+        completedRouteIds={completedRouteIds}
+        currentRouteId={currentRoute?.id ?? ""}
+        milestoneText={arrivalMilestoneText}
+        nextRouteName={nextRoute?.name}
+        onDone={handleArrival}
+      />
     );
   };
 

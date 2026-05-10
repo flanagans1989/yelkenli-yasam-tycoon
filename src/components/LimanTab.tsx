@@ -23,6 +23,17 @@ interface LimanTabProps {
   renderDailyGoals: () => ReactNode;
 }
 
+const RESOURCE_DEFS: Array<{
+  key: "energy" | "water" | "fuel" | "boat";
+  icon: string;
+  label: string;
+}> = [
+  { key: "energy", icon: "⚡", label: "Enerji" },
+  { key: "water", icon: "💧", label: "Su" },
+  { key: "fuel", icon: "⛽", label: "Yakıt" },
+  { key: "boat", icon: "⚓", label: "Tekne" },
+];
+
 export function LimanTab({
   selectedBoatId,
   currentLocationName,
@@ -77,66 +88,94 @@ export function LimanTab({
 
   const guideComplete = firstContentDone && hasCompletedFirstRoute;
 
+  const resourceValues: Record<"energy" | "water" | "fuel" | "boat", number> = {
+    energy,
+    water,
+    fuel,
+    boat: boatCondition,
+  };
+
   return (
-    <div className="lh-tab">
-      {/* ── Boat Hero ── */}
-      <div className="lh-hero">
-        <div className="lh-hero-boat-wrap">
-          <div className="lh-hero-boat-glow" aria-hidden="true" />
-          <div className="lh-hero-boat ob-boat-bob">
-            {getBoatSvg(selectedBoatId)}
-          </div>
-        </div>
-        <div className="lh-hero-location">
-          <span className="lh-location-pin">📍</span>
-          <span className="lh-location-name">{currentLocationName}</span>
-        </div>
+    <div className="lh-tab lh-tab-v2">
+      {/* ── Stage header ── */}
+      <header className="lh-stage">
+        <span className="lh-stage-eyebrow">⚓ MARİNA ÜSSÜ</span>
+        <h2 className="lh-stage-title">{currentLocationName}</h2>
+        <p className="lh-stage-sub">Kaptanın limanı · Sıradaki hamleye hazır</p>
+      </header>
 
-        {/* Resource chips */}
-        <div className="lh-resource-row">
-          <div className={`lh-res-chip${energy < 30 ? " lh-res-chip--crit" : ""}`}>
-            ⚡ {energy}%
-          </div>
-          <div className={`lh-res-chip${water < 30 ? " lh-res-chip--crit" : ""}`}>
-            💧 {water}%
-          </div>
-          <div className={`lh-res-chip${fuel < 30 ? " lh-res-chip--crit" : ""}`}>
-            ⛽ {fuel}%
-          </div>
-          <div className={`lh-res-chip${boatCondition < 30 ? " lh-res-chip--crit" : ""}`}>
-            ⚓ {boatCondition}%
-          </div>
+      {/* ── Boat hero stage ── */}
+      <div className="lh-boat-stage">
+        <div className="lh-boat-halo" aria-hidden="true" />
+        <div className="lh-boat-ring" aria-hidden="true" />
+        <div className="lh-boat-deck ob-boat-bob">
+          {getBoatSvg(selectedBoatId)}
         </div>
+        <div className="lh-boat-base" aria-hidden="true" />
 
-        {/* Progress micro-bars */}
-        <div className="lh-progress-micro">
-          <div className="lh-micro-bar">
-            <span className="lh-micro-label">Dünya Turu</span>
-            <div className="lh-micro-track">
-              <div className="lh-micro-fill" style={{ width: `${worldProgress}%` }} />
+        <div className="lh-progress-pair">
+          <div className="lh-mini-bar">
+            <span className="lh-mini-label">Dünya Turu</span>
+            <div className="lh-mini-track">
+              <div
+                className="lh-mini-fill lh-mini-fill--gold"
+                style={{ width: `${worldProgress}%` }}
+              />
             </div>
-            <span className="lh-micro-val">%{worldProgress}</span>
+            <span className="lh-mini-val">%{worldProgress}</span>
           </div>
-          <div className="lh-micro-bar">
-            <span className="lh-micro-label">Okyanus Hazırlığı</span>
-            <div className="lh-micro-track">
-              <div className="lh-micro-fill lh-micro-fill--ocean" style={{ width: `${currentOceanReadiness}%` }} />
+          <div className="lh-mini-bar">
+            <span className="lh-mini-label">Okyanus Hazır</span>
+            <div className="lh-mini-track">
+              <div
+                className="lh-mini-fill lh-mini-fill--cyan"
+                style={{ width: `${currentOceanReadiness}%` }}
+              />
             </div>
-            <span className="lh-micro-val">{currentOceanReadiness}%</span>
+            <span className="lh-mini-val">{currentOceanReadiness}%</span>
           </div>
         </div>
       </div>
 
-      {/* ── Quest Card ── */}
-      <button className="lh-quest-card" onClick={questAction}>
-        <span className="lh-quest-icon">{questIcon}</span>
-        <div className="lh-quest-text">
-          <span className="lh-quest-eyebrow">SIRADAKİ HAMLE</span>
-          <strong className="lh-quest-title">{questTitle}</strong>
-          <span className="lh-quest-sub">{questSub}</span>
-        </div>
-        <span className="lh-quest-arrow">›</span>
+      {/* ── Sıradaki Hamle CTA ── */}
+      <button className="lh-action-cta" onClick={questAction}>
+        <span className="lh-action-glow" aria-hidden="true" />
+        <span className="lh-action-icon-wrap">
+          <span className="lh-action-icon">{questIcon}</span>
+        </span>
+        <span className="lh-action-text">
+          <span className="lh-action-eyebrow">SIRADAKİ HAMLE</span>
+          <span className="lh-action-title">{questTitle}</span>
+          <span className="lh-action-sub">{questSub}</span>
+        </span>
+        <span className="lh-action-arrow">›</span>
       </button>
+
+      {/* ── Resource grid ── */}
+      <section className="lh-res-grid">
+        {RESOURCE_DEFS.map(({ key, icon, label }) => {
+          const value = resourceValues[key];
+          const crit = value < 30;
+          return (
+            <div
+              key={key}
+              className={`lh-res-card${crit ? " is-crit" : ""}`}
+              data-res={key}
+            >
+              <span className="lh-res-icon">{icon}</span>
+              <div className="lh-res-body">
+                <div className="lh-res-row">
+                  <span className="lh-res-label">{label}</span>
+                  <span className="lh-res-val">%{value}</span>
+                </div>
+                <div className="lh-res-track">
+                  <div className="lh-res-fill" style={{ width: `${value}%` }} />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </section>
 
       {/* ── Daily Goals (slotted from App.tsx) ── */}
       {renderDailyGoals()}
@@ -156,9 +195,9 @@ export function LimanTab({
       )}
 
       {/* ── Marina Service Accordion ── */}
-      <div className="lh-accordion glass-card">
+      <div className="lh-accordion lh-accordion-v2 glass-card">
         <button className="lh-accordion-hdr" onClick={() => setMarinaOpen((p) => !p)}>
-          <span>⚓ Marina Servisi</span>
+          <span><span className="lh-accordion-icon">⚓</span>Marina Servisi</span>
           <span className={`lh-chevron${marinaOpen ? " lh-chevron--open" : ""}`}>›</span>
         </button>
         {marinaOpen && (
@@ -209,9 +248,9 @@ export function LimanTab({
       </div>
 
       {/* ── Event Log Accordion ── */}
-      <div className="lh-accordion glass-card">
+      <div className="lh-accordion lh-accordion-v2 glass-card">
         <button className="lh-accordion-hdr" onClick={() => setLogsOpen((p) => !p)}>
-          <span>📋 Son Olaylar</span>
+          <span><span className="lh-accordion-icon">📋</span>Son Olaylar</span>
           <span className={`lh-chevron${logsOpen ? " lh-chevron--open" : ""}`}>›</span>
         </button>
         {logsOpen && (

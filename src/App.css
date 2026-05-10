@@ -10100,6 +10100,30 @@ button {
     margin-bottom: 20px;
   }
 
+  .ob-main-menu-v2 .ob-menu-hero {
+    min-height: 34vh;
+    padding-top: 48px;
+    padding-bottom: 6px;
+  }
+
+  .ob-main-menu-v2 .ob-menu-eyebrow {
+    margin-bottom: 20px;
+  }
+
+  .ob-main-menu-v2 .ob-menu-boat-stage {
+    width: 116px;
+    height: 116px;
+  }
+
+  .ob-main-menu-v2 .ob-menu-boat-svg {
+    width: 70px;
+    height: 70px;
+  }
+
+  .ob-main-menu-v2 .ob-menu-copy {
+    margin-top: 16px;
+  }
+
   .ob-menu-title {
     font-size: clamp(28px, 8.2vw, 32px);
   }
@@ -10479,6 +10503,26 @@ button {
     margin-bottom: 16px;
   }
 
+  .ob-main-menu-v2 .ob-menu-hero {
+    min-height: 31vh;
+    padding-top: 42px;
+    padding-bottom: 6px;
+  }
+
+  .ob-main-menu-v2 .ob-menu-eyebrow {
+    margin-bottom: 20px;
+  }
+
+  .ob-main-menu-v2 .ob-menu-boat-stage {
+    width: 112px;
+    height: 112px;
+  }
+
+  .ob-main-menu-v2 .ob-menu-boat-svg {
+    width: 68px;
+    height: 68px;
+  }
+
   .ob-portrait-stage {
     width: 110px;
     height: 110px;
@@ -10624,23 +10668,23 @@ button {
 
 /* ── 1. Main Menu: shrink hero ring ── */
 .ob-main-menu-v2 .ob-menu-hero {
-  min-height: 38vh;
-  padding-top: 58px;
+  min-height: 36vh;
+  padding-top: 64px;
   padding-bottom: 12px;
 }
 .ob-main-menu-v2 .ob-menu-eyebrow {
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
 .ob-main-menu-v2 .ob-menu-boat-stage {
-  width: 154px;
-  height: 154px;
+  width: 120px;
+  height: 120px;
 }
 .ob-main-menu-v2 .ob-menu-boat-svg {
-  width: 90px;
-  height: 90px;
+  width: 72px;
+  height: 72px;
 }
 .ob-main-menu-v2 .ob-menu-copy {
-  margin-top: 18px;
+  margin-top: 20px;
 }
 
 /* ── 1. Main Menu: premium corner buttons ── */

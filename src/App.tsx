@@ -30,7 +30,6 @@ const SAVE_VERSION = 2;
 const MAX_OFFLINE_MINUTES = 480;
 const OFFLINE_CREDITS_PER_MINUTE = 15;
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
-const CONTENT_COOLDOWN_MS = 30 * 60 * 1000;
 
 const CAPTAIN_LEVEL_THRESHOLDS = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 6000, 8200, 11000, 14500, 19000, 25000];
 
@@ -74,6 +73,14 @@ const getCaptainLevel = (xp: number): number => {
     if (xp >= CAPTAIN_LEVEL_THRESHOLDS[i]) return i + 1;
   }
   return 1;
+};
+
+const getContentCooldownMs = (captainLevel: number): number => {
+  if (captainLevel <= 1) return 5 * 60 * 1000;
+  if (captainLevel === 2) return 8 * 60 * 1000;
+  if (captainLevel === 3) return 12 * 60 * 1000;
+  if (captainLevel === 4) return 18 * 60 * 1000;
+  return 30 * 60 * 1000;
 };
 
 const makeDailyGoals = (dateKey: string = new Date().toISOString().slice(0, 10)): DailyGoal[] => {
@@ -1301,8 +1308,10 @@ function App() {
   const handleProduceContentV2 = () => {
     if (!selectedPlatformId || !selectedContentType) return;
 
-    if (lastContentAt && Date.now() - lastContentAt < CONTENT_COOLDOWN_MS) {
-      const remainingMs = CONTENT_COOLDOWN_MS - (Date.now() - lastContentAt);
+    const contentCooldownMs = getContentCooldownMs(captainLevel);
+
+    if (lastContentAt && Date.now() - lastContentAt < contentCooldownMs) {
+      const remainingMs = contentCooldownMs - (Date.now() - lastContentAt);
       const remainingMin = Math.ceil(remainingMs / 60000);
       setLogs(prev => [`İçerik hazırlığı sürüyor. ${remainingMin} dakika sonra tekrar üret.`, ...prev.slice(0, 4)]);
       return;
@@ -1645,8 +1654,9 @@ function App() {
     const selectedPlatform = selectedPlatformId
       ? SOCIAL_PLATFORMS.find((platform) => platform.id === selectedPlatformId) ?? null
       : null;
+    const contentCooldownMs = getContentCooldownMs(captainLevel);
     const contentCooldownRemaining = lastContentAt
-      ? Math.max(0, CONTENT_COOLDOWN_MS - (Date.now() - lastContentAt))
+      ? Math.max(0, contentCooldownMs - (Date.now() - lastContentAt))
       : 0;
     const cooldownMinutes = Math.ceil(contentCooldownRemaining / 60000);
 

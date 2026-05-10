@@ -843,6 +843,7 @@ function App() {
         "Günlük görevler tamamlandı! +2.500 TL bonus.",
         ...prev.slice(0, 4),
       ]);
+      setCelebrationQueue(q => [...q, { type: "daily_goals" as const }]);
     }
   }, [dailyGoals, dailyRewardClaimed]);
 

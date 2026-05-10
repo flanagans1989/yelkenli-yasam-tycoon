@@ -6565,3 +6565,46 @@ button {
   width: 100%;
   min-height: 52px;
 }
+
+/* ─── BATCH 5-C: DAILY GOALS 3/3 + TOAST POLISH ─── */
+
+/* daily goals celebration card */
+.cel-card--daily {
+  border-color: rgba(46, 196, 160, 0.35);
+}
+.cel-eyebrow--green {
+  color: var(--success-green, #2ec4a0);
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.cel-daily-icon {
+  font-size: 52px;
+  line-height: 1;
+  margin: 8px 0 4px;
+}
+.cel-daily-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e8fff6;
+  margin-bottom: 4px;
+}
+
+/* ── sponsor toast polish ── */
+.game-toast--sponsor {
+  border-left: 3px solid rgba(70, 198, 222, 0.7);
+  box-shadow: 0 4px 20px rgba(70, 198, 222, 0.12);
+}
+.game-toast--sponsor .game-toast-title {
+  font-size: 13px;
+}
+
+/* ── upgrade toast polish ── */
+.game-toast--upgrade {
+  border-left: 3px solid rgba(46, 196, 160, 0.7);
+  box-shadow: 0 4px 20px rgba(46, 196, 160, 0.12);
+}
+.game-toast--upgrade .game-toast-title {
+  font-size: 13px;
+}

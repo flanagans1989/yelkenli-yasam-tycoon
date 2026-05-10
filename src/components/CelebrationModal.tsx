@@ -1,6 +1,7 @@
 export type CelebrationItem =
   | { type: "levelup"; level: number; rank: string; bonus: number }
-  | { type: "achievement"; title: string; description: string; icon: string };
+  | { type: "achievement"; title: string; description: string; icon: string }
+  | { type: "daily_goals" };
 
 interface CelebrationModalProps {
   celebration: CelebrationItem;
@@ -21,6 +22,23 @@ export function CelebrationModal({ celebration, onDismiss }: CelebrationModalPro
           <div className="cel-bonus">+{celebration.bonus.toLocaleString("tr-TR")} TL bonus</div>
           <button className="primary-button primary-button--pulse cel-dismiss-btn" onClick={onDismiss}>
             Devam Et
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (celebration.type === "daily_goals") {
+    return (
+      <div className="cel-modal" role="dialog" aria-modal="true" aria-label="Günlük görevler tamamlandı">
+        <div className="cel-backdrop" aria-hidden="true" onClick={onDismiss} />
+        <div className="cel-card glass-card cel-card--daily">
+          <span className="cel-eyebrow cel-eyebrow--green">GÜNLÜK GÖREVLER TAMAMLANDI</span>
+          <div className="cel-daily-icon">✅</div>
+          <div className="cel-daily-title">Harika İş!</div>
+          <div className="cel-bonus">+2.500 TL ödül kazandın</div>
+          <button className="primary-button cel-dismiss-btn" onClick={onDismiss}>
+            Süper!
           </button>
         </div>
       </div>

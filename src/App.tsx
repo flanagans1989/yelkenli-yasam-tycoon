@@ -83,6 +83,14 @@ const getContentCooldownMs = (captainLevel: number): number => {
   return 30 * 60 * 1000;
 };
 
+const getBoatUpgradeDurationMs = (captainLevel: number): number => {
+  if (captainLevel <= 1) return 3 * 60 * 1000;
+  if (captainLevel === 2) return 5 * 60 * 1000;
+  if (captainLevel === 3) return 8 * 60 * 1000;
+  if (captainLevel === 4) return 12 * 60 * 1000;
+  return 20 * 60 * 1000;
+};
+
 const makeDailyGoals = (dateKey: string = new Date().toISOString().slice(0, 10)): DailyGoal[] => {
   const theme = getDailyGoalTheme(dateKey);
 
@@ -1458,18 +1466,32 @@ function App() {
     }
   };
 
-  const getUpgradeInstallMs = (upgrade: (typeof BOAT_UPGRADES)[number]) => {
+  const getUpgradeInstallMs = (upgrade: (typeof BOAT_UPGRADES)[number], captainLevelForDuration: number = captainLevel) => {
+    const baseDurationMs = getBoatUpgradeDurationMs(captainLevelForDuration);
+
     if (typeof upgrade.installDays === "number" && upgrade.installDays > 0) {
-      return upgrade.installDays * 30 * 60 * 1000;
+      return upgrade.installDays * baseDurationMs;
     }
 
     if (upgrade.cost >= 15000 || upgrade.size === "large" || upgrade.size === "ocean") {
-      return 30 * 60 * 1000;
+      return baseDurationMs;
     }
     if (upgrade.cost >= 7000 || upgrade.size === "medium") {
-      return 15 * 60 * 1000;
+      return Math.max(60 * 1000, Math.ceil(baseDurationMs / 2));
     }
-    return 5 * 60 * 1000;
+    return Math.max(60 * 1000, Math.ceil(baseDurationMs / 6));
+  };
+
+  const formatInstallDuration = (durationMs: number) => {
+    const totalMinutes = Math.max(1, Math.ceil(durationMs / 60000));
+
+    if (totalMinutes < 60) {
+      return `${totalMinutes} dk`;
+    }
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return minutes === 0 ? `${hours} sa` : `${hours} sa ${minutes} dk`;
   };
 
   const formatRemainingInstallTime = (targetTime: number) => {
@@ -2072,6 +2094,7 @@ function App() {
             const hasWarning = comp && (comp.efficiency === "poor" || comp.efficiency === "limited");
             const cantAfford = credits < upgrade.cost;
             const buyDisabled = cantAfford || !!upgradeInProgress;
+            const installDurationLabel = formatInstallDuration(getUpgradeInstallMs(upgrade));
 
             return (
               <div
@@ -2094,7 +2117,7 @@ function App() {
                 <p className="tk-upg-desc">{upgrade.description}</p>
 
                 <div className="tk-upg-meta">
-                  <span className="tk-upg-meta-pill">⏱ {upgrade.installDays} gün</span>
+                  <span className="tk-upg-meta-pill">⏱ {installDurationLabel}</span>
                   <span className="tk-upg-meta-pill">⚓ {upgrade.marinaRequirement.toUpperCase()}</span>
                 </div>
 

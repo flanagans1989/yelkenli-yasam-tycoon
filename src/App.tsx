@@ -1600,19 +1600,26 @@ function App() {
   );
 
   const renderIcerikTab = () => {
-    const CONTENT_TYPES = [
-      { id: "marina_life", label: "Marina Yaşamı" },
-      { id: "boat_tour", label: "Tekne Turu" },
-      { id: "maintenance_upgrade", label: "Bakım / Upgrade" },
-      { id: "city_trip", label: "Şehir Gezisi" },
-      { id: "nature_bay", label: "Koy / Doğa" },
-      { id: "sailing_vlog", label: "Seyir Vlogu" },
+    const CONTENT_TYPES: Array<{ id: string; label: string; icon: string }> = [
+      { id: "marina_life", label: "Marina Yaşamı", icon: "⚓" },
+      { id: "boat_tour", label: "Tekne Turu", icon: "⛵" },
+      { id: "maintenance_upgrade", label: "Bakım / Upgrade", icon: "🔧" },
+      { id: "city_trip", label: "Şehir Gezisi", icon: "🏛" },
+      { id: "nature_bay", label: "Koy / Doğa", icon: "🌅" },
+      { id: "sailing_vlog", label: "Seyir Vlogu", icon: "🧭" },
     ];
-  
+
     if (step === "SEA_MODE") {
-      CONTENT_TYPES.push({ id: "ocean_diary", label: "Deniz Günlüğü" });
-      CONTENT_TYPES.push({ id: "storm_vlog", label: "Fırtına / Olay" });
+      CONTENT_TYPES.push({ id: "ocean_diary", label: "Deniz Günlüğü", icon: "🌐" });
+      CONTENT_TYPES.push({ id: "storm_vlog", label: "Fırtına / Olay", icon: "⛈" });
     }
+
+    const PLATFORM_VISUALS: Record<string, { icon: string; specialty: string }> = {
+      viewTube: { icon: "▶", specialty: "Kalıcı büyüme" },
+      clipTok:  { icon: "⚡", specialty: "Viral patlama" },
+      instaSea: { icon: "◈", specialty: "Marka işbirliği" },
+      facePort: { icon: "◉", specialty: "Sadık topluluk" },
+    };
 
     const nextSponsorTier = SPONSOR_TIERS.find((tier) => followers < tier.minFollowers);
     const previousSponsorTier = [...SPONSOR_TIERS]
@@ -1655,121 +1662,189 @@ function App() {
       contentCareerText = "Her içerik, ilk sadık takipçilerini toplamak için bir adım.";
     }
 
+    const onContentCooldown = contentCooldownRemaining > 0;
+    const followersToTier = nextSponsorTier
+      ? Math.max(0, nextSponsorTier.minFollowers - followers)
+      : 0;
+    const ctaDisabled = !selectedPlatformId || !selectedContentType || onContentCooldown;
+    const selectedTypeMeta = selectedContentType
+      ? CONTENT_TYPES.find((t) => t.id === selectedContentType) ?? null
+      : null;
+
     return (
       <div className="tab-content fade-in">
-        <div className="content-stats-header">
-           <div className="stat-box"><span>Takipçi</span><strong>{followers.toLocaleString("tr-TR")}</strong></div>
-           <div className="stat-box"><span>Bütçe</span><strong>{credits.toLocaleString("tr-TR")} TL</strong></div>
-        </div>
-
         <div className="sub-tab-bar">
            <button className={`sub-tab ${icerikSubTab === "produce" ? "active" : ""}`} onClick={() => setIcerikSubTab("produce")}>İçerik Üret</button>
            <button className={`sub-tab ${icerikSubTab === "sponsor" ? "active" : ""}`} onClick={() => setIcerikSubTab("sponsor")}>Sponsorluklar</button>
         </div>
-        
+
         {icerikSubTab === "produce" && (
-          <div className="fade-in">
-            <div className="content-career-card">
-              <span className="content-career-eyebrow">İçerik Kariyeri</span>
-              <div className="content-career-title">{contentCareerTitle}</div>
-              <div className="content-career-text">{contentCareerText}</div>
-              <div className="content-career-meta">
-                Mevcut takipçi: {followers.toLocaleString("tr-TR")}
-                {selectedPlatform ? ` · Seçili platform: ${selectedPlatform.name}` : ""}
-              </div>
-              {nextSponsorTier && (
-                <div className="content-career-highlight">
-                  Sıradaki hedef: {nextSponsorTier.minFollowers.toLocaleString("tr-TR")} takipçi
-                  {contentCooldownRemaining > 0 ? ` · ${cooldownMinutes} dk sonra yeni içerik` : ""}
+          <div className="cs-studio fade-in">
+            <header className="cs-header">
+              <div className="cs-header-rim" aria-hidden="true"></div>
+              <span className="cs-eyebrow">◐ Kaptan Medya Odası</span>
+              <h2 className="cs-title">{contentCareerTitle}</h2>
+              <p className="cs-subtitle">{contentCareerText}</p>
+              <div className="cs-stat-strip">
+                <div className="cs-stat-chip">
+                  <span className="cs-stat-label">Takipçi</span>
+                  <span className="cs-stat-value">{followers.toLocaleString("tr-TR")}</span>
                 </div>
-              )}
-            </div>
-            <p className="helper-hint">Takipçi büyüdükçe sponsor kapıları açılır.</p>
+                <div className="cs-stat-chip">
+                  <span className="cs-stat-label">Bütçe</span>
+                  <span className="cs-stat-value cs-stat-value--gold">{credits.toLocaleString("tr-TR")} TL</span>
+                </div>
+                {nextSponsorTier && (
+                  <div className="cs-stat-chip cs-stat-chip--target">
+                    <span className="cs-stat-label">{nextSponsorTier.name}'a</span>
+                    <span className="cs-stat-value cs-stat-value--cyan">
+                      {followersToTier.toLocaleString("tr-TR")}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </header>
+
             {!contentResult ? (
               <>
                 {step === "SEA_MODE" && currentRoute && (
-                  <div className="route-content-hint">
-                    <span className="route-content-hint-label">Şu an: {currentRoute.name}</span>
-                    <span className="route-content-hint-themes">{currentRoute.contentThemes.join(" · ")}</span>
+                  <div className="cs-route-hint">
+                    <span className="cs-route-hint-icon" aria-hidden="true">🌊</span>
+                    <div className="cs-route-hint-body">
+                      <span className="cs-route-hint-label">Şu an: {currentRoute.name}</span>
+                      <span className="cs-route-hint-themes">{currentRoute.contentThemes.join(" · ")}</span>
+                    </div>
                   </div>
                 )}
-                <span className="card-label">1. Platform Seç</span>
-                <div className="platform-grid">
-                  {SOCIAL_PLATFORMS.filter(p => p.mvpStatus === "active").map(platform => (
-                    <button 
-                      key={platform.id} 
-                      className={`platform-card ${selectedPlatformId === platform.id ? "active" : ""}`} 
-                      onClick={() => setSelectedPlatformId(platform.id)}
-                    >
-                      <div className="platform-header">
-                        <strong>{platform.name}</strong>
-                      </div>
-                      <small>{platform.tagline}</small>
-                    </button>
-                  ))}
+
+                <div className="cs-step-row">
+                  <span className="cs-step-num">01</span>
+                  <span className="cs-step-text">Yayın Platformu</span>
                 </div>
-      
-                <span className="card-label mt-20">2. İçerik Türü Seç</span>
-                {selectedPlatformId && (
-                  <p className="helper-hint">✓ işaretli türler bu platformda en iyi sonucu verir.</p>
-                )}
-                <div className="type-pills">
-                  {CONTENT_TYPES.map(type => {
-                    const selectedPlatform = SOCIAL_PLATFORMS.find(p => p.id === selectedPlatformId);
-                    const isMatch = selectedPlatform?.bestContentTypes.includes(type.id as any) ?? false;
+                <div className="cs-platform-grid">
+                  {SOCIAL_PLATFORMS.filter(p => p.mvpStatus === "active").map(platform => {
+                    const visual = PLATFORM_VISUALS[platform.id] ?? { icon: "●", specialty: platform.mainRole };
+                    const isActive = selectedPlatformId === platform.id;
                     return (
                       <button
-                        key={type.id}
-                        className={`type-pill ${selectedContentType === type.id ? "active" : ""} ${isMatch ? "match" : ""}`}
-                        onClick={() => setSelectedContentType(type.id)}
+                        key={platform.id}
+                        type="button"
+                        className={`cs-platform-tile ${isActive ? "is-active" : ""}`}
+                        data-platform={platform.id}
+                        onClick={() => setSelectedPlatformId(platform.id)}
                       >
-                        {isMatch && <span className="type-pill-match">✓ </span>}
-                        {type.label}
+                        <div className="cs-platform-icon">
+                          <span aria-hidden="true">{visual.icon}</span>
+                        </div>
+                        <div className="cs-platform-text">
+                          <strong className="cs-platform-name">{platform.name}</strong>
+                          <span className="cs-platform-role">{visual.specialty}</span>
+                        </div>
+                        {isActive && <span className="cs-platform-check" aria-hidden="true">✓</span>}
                       </button>
                     );
                   })}
                 </div>
-      
-                {(() => {
-                  const cooldownRemaining = lastContentAt ? Math.max(0, CONTENT_COOLDOWN_MS - (Date.now() - lastContentAt)) : 0;
-                  const onContentCooldown = cooldownRemaining > 0;
-                  const cooldownMinutes = Math.ceil(cooldownRemaining / 60000);
-                  const isDisabled = !selectedPlatformId || !selectedContentType || onContentCooldown;
-                  return (
+
+                <div className={`cs-step-row ${!selectedPlatformId ? "cs-step-row--locked" : ""}`}>
+                  <span className="cs-step-num">02</span>
+                  <span className="cs-step-text">İçerik Formatı</span>
+                  {selectedPlatformId && (
+                    <span className="cs-step-hint">altın kenar = uyumlu</span>
+                  )}
+                </div>
+                {!selectedPlatformId ? (
+                  <div className="cs-types-locked">Önce platform seç</div>
+                ) : (
+                  <div className="cs-type-grid">
+                    {CONTENT_TYPES.map(type => {
+                      const isMatch = selectedPlatform?.bestContentTypes.includes(type.id as any) ?? false;
+                      const isActive = selectedContentType === type.id;
+                      return (
+                        <button
+                          key={type.id}
+                          type="button"
+                          className={`cs-type-tile ${isActive ? "is-active" : ""} ${isMatch ? "is-match" : ""}`}
+                          onClick={() => setSelectedContentType(type.id)}
+                        >
+                          <span className="cs-type-icon" aria-hidden="true">{type.icon}</span>
+                          <span className="cs-type-label">{type.label}</span>
+                          {isMatch && <span className="cs-type-badge">UYUMLU</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="cs-cta-block">
+                  {selectedPlatformId && selectedContentType && !onContentCooldown && (
+                    <div className="cs-cta-preview">
+                      <span className="cs-cta-preview-icon">{PLATFORM_VISUALS[selectedPlatformId]?.icon ?? "●"}</span>
+                      <span className="cs-cta-preview-text">
+                        {selectedPlatform?.name} <span className="cs-cta-sep">·</span> {selectedTypeMeta?.label}
+                      </span>
+                    </div>
+                  )}
+                  {onContentCooldown ? (
+                    <div className="cs-cooldown-card">
+                      <span className="cs-cooldown-eyebrow">Stüdyo Dinleniyor</span>
+                      <strong className="cs-cooldown-time">{cooldownMinutes} dk</strong>
+                      <span className="cs-cooldown-text">Bir sonraki içerik için kısa bir nefes.</span>
+                    </div>
+                  ) : (
                     <button
-                      className={`btn-primary large mt-20 ${isDisabled ? "disabled" : ""}`}
+                      type="button"
+                      className={`cs-cta-btn ${ctaDisabled ? "is-disabled" : ""}`}
                       onClick={handleProduceContentV2}
-                      disabled={isDisabled}
+                      disabled={ctaDisabled}
                     >
-                      {onContentCooldown ? `${cooldownMinutes} dk sonra tekrar üret` : "🎬 İçerik Üret"}
+                      <span className="cs-cta-btn-icon" aria-hidden="true">🎬</span>
+                      <span className="cs-cta-btn-label">İÇERİK ÜRET</span>
                     </button>
-                  );
-                })()}
+                  )}
+                  {!selectedPlatformId || !selectedContentType ? (
+                    <span className="cs-cta-hint">
+                      {!selectedPlatformId ? "Önce yayın platformu seç" : "Bir format seç"}
+                    </span>
+                  ) : null}
+                </div>
               </>
             ) : (
-              <div className="content-result-card fade-in">
-                 <div className="result-header">
-                    <h2>Yayınlandı!</h2>
-                    {contentResult.viral && <span className="viral-badge">🔥 VİRAL</span>}
-                 </div>
-                 
-                 <div className="result-details">
-                   <div className="res-row"><span>Platform:</span> <strong>{contentResult.platform}</strong></div>
-                   <div className="res-row"><span>Kalite Skoru:</span> <strong>{contentResult.quality} / 100</strong></div>
-                 </div>
-                 
-                 <div className="result-gains">
-                   <div className="gain-box followers"><span>+{contentResult.followersGained.toLocaleString("tr-TR")}</span><small>Takipçi</small></div>
-                   <div className="gain-box credits"><span>+{contentResult.creditsGained.toLocaleString("tr-TR")} TL</span><small>Kredi</small></div>
-                 </div>
-                 
-                 <p className="result-comment">"{contentResult.comment}"</p>
-                 
-                 <button className="btn-secondary full-width mt-20" onClick={() => {
-                   setContentResult(null);
-                   setSelectedPlatformId(null);
-                   setSelectedContentType(null);
-                 }}>Yeni İçerik Üret</button>
+              <div className="cs-result-card fade-in">
+                {contentResult.viral && (
+                  <div className="cs-result-viral" aria-hidden="true">🔥 VİRAL</div>
+                )}
+                <span className="cs-result-eyebrow">Yayınlandı</span>
+                <div className="cs-result-quality">
+                  <span className="cs-result-quality-num">{contentResult.quality}</span>
+                  <span className="cs-result-quality-max">/100</span>
+                  <span className="cs-result-quality-label">kalite skoru</span>
+                </div>
+                <div className="cs-result-meta">
+                  <span className="cs-result-platform">{contentResult.platform}</span>
+                </div>
+                <div className="cs-result-gains">
+                  <div className="cs-gain cs-gain--followers">
+                    <span className="cs-gain-num">+{contentResult.followersGained.toLocaleString("tr-TR")}</span>
+                    <span className="cs-gain-label">Takipçi</span>
+                  </div>
+                  <div className="cs-gain cs-gain--credits">
+                    <span className="cs-gain-num">+{contentResult.creditsGained.toLocaleString("tr-TR")} TL</span>
+                    <span className="cs-gain-label">Kredi</span>
+                  </div>
+                </div>
+                <p className="cs-result-comment">"{contentResult.comment}"</p>
+                <button
+                  type="button"
+                  className="cs-result-reset"
+                  onClick={() => {
+                    setContentResult(null);
+                    setSelectedPlatformId(null);
+                    setSelectedContentType(null);
+                  }}
+                >
+                  Yeni İçerik Üret
+                </button>
               </div>
             )}
           </div>

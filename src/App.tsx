@@ -1493,28 +1493,26 @@ function App() {
   };
 
   const renderLimanTab = () => (
-    <>
-      {renderDailyGoalsCard()}
-      <LimanTab
-        selectedBoatId={selectedBoat.id}
-        currentLocationName={currentLocationName}
-        worldProgress={worldProgress}
-        currentOceanReadiness={currentOceanReadiness}
-        credits={credits}
-        energy={energy}
-        water={water}
-        fuel={fuel}
-        boatCondition={boatCondition}
-        firstContentDone={firstContentDone}
-        completedRouteIds={completedRouteIds}
-        currentRouteName={currentRoute?.name}
-        logs={logs}
-        onMarinaRest={handleMarinaRest}
-        onRepairBoat={handleRepairBoat}
-        onGoContent={() => setActiveTab("icerik")}
-        onGoRoute={() => setActiveTab("rota")}
-      />
-    </>
+    <LimanTab
+      selectedBoatId={selectedBoat.id}
+      currentLocationName={currentLocationName}
+      worldProgress={worldProgress}
+      currentOceanReadiness={currentOceanReadiness}
+      credits={credits}
+      energy={energy}
+      water={water}
+      fuel={fuel}
+      boatCondition={boatCondition}
+      firstContentDone={firstContentDone}
+      completedRouteIds={completedRouteIds}
+      currentRouteName={currentRoute?.name}
+      logs={logs}
+      onMarinaRest={handleMarinaRest}
+      onRepairBoat={handleRepairBoat}
+      onGoContent={() => setActiveTab("icerik")}
+      onGoRoute={() => setActiveTab("rota")}
+      renderDailyGoals={renderDailyGoalsCard}
+    />
   );
 
   const renderSeaModeTab = () => (
@@ -2017,20 +2015,15 @@ function App() {
     const isSponsorProgressClose = Boolean(nextSponsorTier && followers >= nextSponsorTier.minFollowers * 0.75);
 
     let nextActionTitle = "Dünya turuna devam";
-    let nextActionText = "İçerik üret, tekneni geliştir ve sıradaki rotaya hazırlan.";
 
     if (!contentGoalDoneToday || followers < 800) {
       nextActionTitle = "İlk içerik zamanı";
-      nextActionText = "Önce 1 içerik üret. Takipçi kazan, günlük görevi başlat ve sponsor yolunu aç.";
     } else if (firstContentDone && currentRoute && completedRouteIds.length < 2) {
       nextActionTitle = "İlk rotanı başlat";
-      nextActionText = "Artık denize çıkabilirsin. Rota tamamladıkça dünya turunda ilerleyeceksin.";
     } else if (canStartAnyUpgrade || hasAnyCompatibleUpgrade) {
       nextActionTitle = "Tekneyi güçlendir";
-      nextActionText = "Bir upgrade başlat. Kurulum tamamlandığında yolculukların daha güvenli ve verimli olur.";
     } else if (isSponsorProgressClose) {
       nextActionTitle = "Sponsor hedefini kovala";
-      nextActionText = "Takipçi büyütmeye devam et. Yeni sponsor seviyesi gelirini güçlendirecek.";
     }
 
     return (
@@ -2047,9 +2040,20 @@ function App() {
         </div>
 
         <div className="next-action-card">
-          <span className="next-action-eyebrow">Kaptan Tavsiyesi</span>
-          <div className="next-action-title">{nextActionTitle}</div>
-          <div className="next-action-text">{nextActionText}</div>
+          <div className="next-action-content">
+            <span className="next-action-eyebrow">Kaptan Tavsiyesi</span>
+            <div className="next-action-title">{nextActionTitle}</div>
+          </div>
+          <button
+            className="next-action-cta primary-button"
+            onClick={() => setActiveTab(
+              (!contentGoalDoneToday || followers < 800) ? "icerik" :
+              (firstContentDone && completedRouteIds.length < 2) ? "rota" :
+              (canStartAnyUpgrade || hasAnyCompatibleUpgrade) ? "tekne" : "icerik"
+            )}
+          >
+            Git →
+          </button>
         </div>
       </>
     );

@@ -22,10 +22,14 @@ interface SeaModeTabProps {
   water: number;
   fuel: number;
   boatCondition: number;
+  routeFromName?: string;
+  routeToName?: string;
   onAdvanceDay: () => void;
   pendingDecision: SeaDecisionView | null;
   onResolveDecision: (choiceKey: "choiceA" | "choiceB") => void;
 }
+
+const MAX_DOTS = 20;
 
 export function SeaModeTab({
   selectedBoatId,
@@ -36,124 +40,134 @@ export function SeaModeTab({
   water,
   fuel,
   boatCondition,
+  routeFromName,
+  routeToName,
   onAdvanceDay,
   pendingDecision,
   onResolveDecision,
 }: SeaModeTabProps) {
-  const progressPercent =
-    voyageTotalDays > 0 ? (1 - voyageDaysRemaining / voyageTotalDays) * 100 : 0;
+  const completedDays = voyageTotalDays - voyageDaysRemaining;
   const hasDepletedResources = energy <= 0 || water <= 0 || fuel <= 0;
   const criticalResources = [
     energy < 25 ? "Enerji" : null,
     water < 25 ? "Su" : null,
     fuel < 25 ? "Yakıt" : null,
-    boatCondition < 25 ? "Tekne Durumu" : null,
+    boatCondition < 25 ? "Tekne" : null,
   ].filter(Boolean) as string[];
-  const hasCriticalResources = criticalResources.length > 0;
+  const hasCritical = criticalResources.length > 0;
+
+  const dotsCount = Math.min(voyageTotalDays, MAX_DOTS);
+  const dotsPerDay = voyageTotalDays / dotsCount;
 
   return (
-    <div className="sea-mode-content fade-in">
-      <div className="sea-visual">
-        <div className="boat-animation">{getBoatSvg(selectedBoatId)}</div>
-      </div>
-
-      <div className="sea-status-card">
-        <h3 className="days-left">{voyageDaysRemaining} Gün Kaldı</h3>
-        <div className="progress-bar-container">
-          <div className="progress-fill" style={{ width: `${progressPercent}%` }}></div>
-        </div>
-        <p className="sea-event-text">{currentSeaEvent}</p>
-      </div>
-
-      {hasCriticalResources && (
-        <div className="sea-critical-banner" role="alert" aria-live="polite">
-          <strong>{hasDepletedResources ? "Kaynak Tükendi! Tekne yıpranıyor." : "Kritik Kaynak! Limana ulaşmadan önce kaynaklarını yönet."}</strong>
-          <span>Kritik seviyede: {criticalResources.join(", ")}</span>
+    <div className="sm-tab fade-in">
+      {/* ── Critical Banner ── */}
+      {hasCritical && (
+        <div className="sm-critical-banner" role="alert" aria-live="polite">
+          <span className="sm-critical-icon">⚠️</span>
+          <div className="sm-critical-text">
+            <strong>{hasDepletedResources ? "Kaynak Tükendi!" : "Kritik Kaynak"}</strong>
+            <span>{criticalResources.join(", ")} kritik seviyede</span>
+          </div>
         </div>
       )}
 
-      <div className="resource-grid">
-        <div className={`res-card ${energy < 25 ? "critical-pulse" : ""}`}>
-          <div className="res-card-top">
-            <span>Enerji</span>
-            <strong className={energy < 25 ? "critical" : ""}>{energy}%</strong>
-          </div>
-          <div className="res-bar-track">
-            <div
-              className="res-bar-fill"
-              style={{
-                width: `${energy}%`,
-                background: energy < 25 ? "#e05252" : energy < 50 ? "#f5a623" : "#2ec4a0",
-              }}
-            ></div>
-          </div>
+      {/* ── Voyage Arc ── */}
+      <div className="sm-voyage-arc">
+        <div className="sm-voyage-arc-header">
+          <span className="sm-voyage-label">{completedDays} / {voyageTotalDays} gün</span>
+          <span className="sm-voyage-days-left">{voyageDaysRemaining} gün kaldı</span>
         </div>
-        <div className={`res-card ${water < 25 ? "critical-pulse" : ""}`}>
-          <div className="res-card-top">
-            <span>Su</span>
-            <strong className={water < 25 ? "critical" : ""}>{water}%</strong>
-          </div>
-          <div className="res-bar-track">
-            <div
-              className="res-bar-fill"
-              style={{
-                width: `${water}%`,
-                background: water < 25 ? "#e05252" : water < 50 ? "#f5a623" : "#1e9fd4",
-              }}
-            ></div>
-          </div>
-        </div>
-        <div className={`res-card ${fuel < 25 ? "critical-pulse" : ""}`}>
-          <div className="res-card-top">
-            <span>Yakıt</span>
-            <strong className={fuel < 25 ? "critical" : ""}>{fuel}%</strong>
-          </div>
-          <div className="res-bar-track">
-            <div
-              className="res-bar-fill"
-              style={{
-                width: `${fuel}%`,
-                background: fuel < 25 ? "#e05252" : fuel < 50 ? "#f5a623" : "#8aafcc",
-              }}
-            ></div>
-          </div>
-        </div>
-        <div className={`res-card ${boatCondition < 25 ? "critical-pulse" : ""}`}>
-          <div className="res-card-top">
-            <span>Tekne Durumu</span>
-            <strong className={boatCondition < 25 ? "critical" : ""}>{boatCondition}%</strong>
-          </div>
-          <div className="res-bar-track">
-            <div
-              className="res-bar-fill"
-              style={{
-                width: `${boatCondition}%`,
-                background:
-                  boatCondition < 25 ? "#e05252" : boatCondition < 50 ? "#f5a623" : "#2ec4a0",
-              }}
-            ></div>
-          </div>
+        <div className="sm-voyage-dots">
+          {Array.from({ length: dotsCount }, (_, i) => {
+            const dayIndex = Math.round(i * dotsPerDay);
+            const isDone = dayIndex < completedDays;
+            const isCurrent = dayIndex === completedDays;
+            let cls = "sm-voyage-dot";
+            if (isDone) cls += " sm-voyage-dot--done";
+            else if (isCurrent) cls += " sm-voyage-dot--current";
+            else cls += " sm-voyage-dot--future";
+            return <div key={i} className={cls} />;
+          })}
         </div>
       </div>
 
-      {pendingDecision ? (
-        <div className="sea-decision-card">
-          <span className="sea-decision-tag">Karar Olayı</span>
-          <h3>{pendingDecision.title}</h3>
-          <p>{pendingDecision.description}</p>
-          <div className="sea-decision-actions">
-            <button className="btn-secondary" onClick={() => onResolveDecision("choiceA")}>
-              {pendingDecision.choiceA.label}
-            </button>
-            <button className="btn-primary large" onClick={() => onResolveDecision("choiceB")}>
-              {pendingDecision.choiceB.label}
-            </button>
+      {/* ── Boat Hero ── */}
+      <div className="sm-hero-zone">
+        <div className="sm-boat-glow" aria-hidden="true" />
+        <div className="sm-boat-wrap ob-boat-bob">
+          {getBoatSvg(selectedBoatId)}
+        </div>
+        {routeFromName && routeToName && (
+          <div className="sm-route-chip">
+            {routeFromName} ↣ {routeToName}
+          </div>
+        )}
+      </div>
+
+      {/* ── Resource Row ── */}
+      <div className="sm-resource-row">
+        <div className={`sm-res-chip${energy < 25 ? " sm-res-chip--crit" : ""}`}>
+          ⚡ {energy}%
+        </div>
+        <div className={`sm-res-chip${water < 25 ? " sm-res-chip--crit" : ""}`}>
+          💧 {water}%
+        </div>
+        <div className={`sm-res-chip${fuel < 25 ? " sm-res-chip--crit" : ""}`}>
+          ⛽ {fuel}%
+        </div>
+        <div className={`sm-res-chip${boatCondition < 25 ? " sm-res-chip--crit" : ""}`}>
+          ⚓ {boatCondition}%
+        </div>
+      </div>
+
+      {/* ── Sea Event Text ── */}
+      {currentSeaEvent && (
+        <div className="sm-event-log glass-card">
+          <span className="sm-event-eyebrow">SON OLAY</span>
+          <p className="sm-event-text">{currentSeaEvent}</p>
+        </div>
+      )}
+
+      {/* ── Advance Day CTA ── */}
+      {!pendingDecision && (
+        <div className="sm-advance-zone">
+          <button
+            className="primary-button primary-button--pulse sm-advance-btn"
+            onClick={onAdvanceDay}
+          >
+            ⛵ Bir Gün İlerle
+          </button>
+          <span className="sm-advance-hint">{voyageDaysRemaining} gün kaldı</span>
+        </div>
+      )}
+
+      {/* ── Decision Modal ── */}
+      {pendingDecision && (
+        <div className="sm-decision-modal" role="dialog" aria-modal="true">
+          <div className="sm-decision-backdrop" aria-hidden="true" />
+          <div className="sm-decision-card glass-card">
+            <span className="sm-decision-tag">⚓ KARAR ANI</span>
+            <h3 className="sm-decision-title">{pendingDecision.title}</h3>
+            <p className="sm-decision-desc">{pendingDecision.description}</p>
+            <div className="sm-decision-choices">
+              <button
+                className="sm-choice-btn sm-choice-btn--a"
+                onClick={() => onResolveDecision("choiceA")}
+              >
+                <span className="sm-choice-label">{pendingDecision.choiceA.label}</span>
+                <span className="sm-choice-result">{pendingDecision.choiceA.resultText}</span>
+              </button>
+              <button
+                className="sm-choice-btn sm-choice-btn--b primary-button"
+                onClick={() => onResolveDecision("choiceB")}
+              >
+                <span className="sm-choice-label">{pendingDecision.choiceB.label}</span>
+                <span className="sm-choice-result">{pendingDecision.choiceB.resultText}</span>
+              </button>
+            </div>
           </div>
         </div>
-      ) : (
-        <button className="btn-primary large mt-20 pulse-btn" onClick={onAdvanceDay}>
-          Bir Gün İlerle
-        </button>
       )}
     </div>
   );

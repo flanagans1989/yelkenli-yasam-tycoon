@@ -1525,6 +1525,8 @@ function App() {
       water={water}
       fuel={fuel}
       boatCondition={boatCondition}
+      routeFromName={currentRoute?.from}
+      routeToName={currentRoute?.to}
       onAdvanceDay={advanceDay}
       pendingDecision={
         pendingDecisionId
@@ -1815,9 +1817,10 @@ function App() {
           },
         }}
         isSeaMode={step === "SEA_MODE"}
+        completedRouteIds={completedRouteIds}
         onStartVoyage={handleStartVoyage}
+        onGoTekne={() => setActiveTab("tekne")}
       />
-      <p className="helper-hint">Rotalar dünya turu ilerlemeni artırır. Her varış yeni bir hikaye adımıdır.</p>
     </>
   );
   };

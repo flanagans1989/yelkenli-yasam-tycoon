@@ -546,6 +546,8 @@ button {
   padding: 24px;
   min-height: 100%;
   overflow-y: auto;
+  position: relative;
+  z-index: 1;
 }
 
 .profile-selection-screen {

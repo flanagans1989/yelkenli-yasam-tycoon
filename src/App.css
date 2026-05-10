@@ -3,7 +3,7 @@
 :root {
   font-family: var(--font-body);
   color: #f7fbff;
-  background: #040d16;
+  background: var(--ocean-deep);
 }
 
 * {
@@ -17,7 +17,7 @@ body {
   -webkit-tap-highlight-color: transparent;
   background:
     radial-gradient(circle at top, rgba(30, 159, 212, 0.14) 0%, transparent 35%),
-    #02070d;
+    var(--ocean-deep);
 }
 
 #root {
@@ -2898,7 +2898,7 @@ button {
 
 @media (max-width: 390px) {
   body {
-    background: #040d16;
+    background: var(--ocean-deep);
   }
 
   .game-wrapper {
@@ -3600,10 +3600,7 @@ button {
   text-align: center;
 }
 
-/* ═══════════════════════════════════════════════════════
-   BATCH 1 — GLOBAL VISUAL FOUNDATION
-   Pure CSS additions. No existing selectors modified below.
-   ═══════════════════════════════════════════════════════ */
+/* ─── REDESIGN FOUNDATION ─── */
 
 /* ── App Background (persistent 3-layer ocean) ── */
 .app-background {
@@ -3618,6 +3615,8 @@ button {
 .app-bg-stars {
   position: absolute;
   inset: 0;
+  will-change: transform;
+  transform: translateZ(0);
   background-image:
     radial-gradient(2px 2px at 15%  8%,  rgba(240,248,255,0.90) 0%, transparent 100%),
     radial-gradient(3px 3px at 35% 14%,  rgba(255,255,255,0.85) 0%, transparent 100%),
@@ -3683,25 +3682,21 @@ button {
   border-radius: var(--radius-md);
   height: 56px;
   padding: 0 24px;
-  font-family: var(--font-body);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   box-shadow: var(--shadow-button);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-  animation: primary-btn-pulse 1.5s ease-in-out infinite;
 }
 
 .primary-button:active {
   transform: scale(0.98) translateY(1px);
   box-shadow: none;
-  animation: none;
 }
 
 .primary-button:disabled,
@@ -3710,8 +3705,17 @@ button {
   border-color: transparent;
   box-shadow: none;
   opacity: 0.45;
-  animation: none;
   cursor: not-allowed;
+}
+
+/* Opt-in CTA pulse — box-shadow animation, apply only to primary actions */
+.primary-button--pulse {
+  animation: primary-btn-pulse 1.5s ease-in-out infinite;
+}
+.primary-button--pulse:active,
+.primary-button--pulse:disabled,
+.primary-button--pulse.disabled {
+  animation: none;
 }
 
 @keyframes primary-btn-pulse {
@@ -3727,10 +3731,8 @@ button {
   border-radius: var(--radius-md);
   height: 48px;
   padding: 0 20px;
-  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3758,7 +3760,6 @@ button {
   background: transparent;
   border: 1px solid rgba(94,234,248,0.25);
   color: var(--text-secondary);
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;

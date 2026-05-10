@@ -3956,8 +3956,8 @@ button {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100dvh;
-  padding: 20px 16px 24px;
+  min-height: 100%;
+  padding: 20px 16px max(24px, env(safe-area-inset-bottom));
   overflow-y: auto;
 }
 
@@ -3989,6 +3989,8 @@ button {
   gap: var(--space-3);
   margin-top: auto;
   padding-top: 16px;
+  padding-bottom: 4px;
+  flex-shrink: 0;
 }
 
 .ob-screen-actions .secondary-button {
@@ -3997,6 +3999,11 @@ button {
 
 .ob-screen-actions .primary-button {
   flex: 1;
+}
+
+.ob-screen-actions .primary-button,
+.ob-screen-actions .secondary-button {
+  min-height: 48px;
 }
 
 /* ── Captain / Profile selection ── */
@@ -4388,6 +4395,7 @@ button {
   display: flex;
   gap: 8px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .ob-boat-tab {
@@ -4411,9 +4419,11 @@ button {
 .ob-boat-hero-card {
   display: flex;
   flex-direction: row;
+  align-items: flex-start;
   gap: 12px;
   padding: 16px;
   margin-bottom: 12px;
+  overflow: visible;
 }
 
 .ob-boat-info-col {
@@ -4428,6 +4438,7 @@ button {
   display: flex;
   gap: 6px;
   margin-bottom: 4px;
+  flex-wrap: wrap;
 }
 
 .ob-badge {
@@ -4472,11 +4483,12 @@ button {
   color: var(--text-secondary);
   margin: 0;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .ob-boat-visual-col {
   position: relative;
-  width: 106px;
+  width: 96px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -4492,8 +4504,8 @@ button {
 }
 
 .ob-boat-hero-svg {
-  width: 88px;
-  height: 88px;
+  width: 80px;
+  height: 80px;
   color: var(--cyan-glow);
   position: relative;
   z-index: 1;
@@ -4586,12 +4598,14 @@ button {
   color: var(--text-secondary);
   flex: 1;
   text-align: right;
+  min-width: 0;
 }
 
 .ob-budget-line {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding: 10px 14px;
   background: rgba(255, 217, 130, 0.06);
   border: 1px solid rgba(255, 217, 130, 0.15);
@@ -4608,6 +4622,82 @@ button {
 .ob-budget-tier {
   font-size: 11px;
   color: var(--text-muted);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+@media (max-width: 390px) {
+  .ob-screen-actions {
+    gap: 10px;
+  }
+
+  .ob-screen-actions .primary-button,
+  .ob-screen-actions .secondary-button {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .ob-boat-hero-card {
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .ob-boat-name {
+    font-size: 17px;
+  }
+
+  .ob-boat-visual-col {
+    width: 88px;
+  }
+
+  .ob-boat-hero-svg {
+    width: 72px;
+    height: 72px;
+  }
+
+  .ob-compat-panel,
+  .ob-budget-line {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+@media (max-height: 700px) {
+  .ob-profile-screen,
+  .ob-marina-screen,
+  .ob-boat-screen,
+  .ob-naming-screen {
+    padding-top: 16px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+
+  .ob-step-header,
+  .ob-naming-hero-header {
+    margin-bottom: 12px;
+  }
+
+  .ob-step-title {
+    font-size: 20px;
+  }
+
+  .ob-boat-hero-card {
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .ob-stat-grid {
+    gap: 6px;
+  }
+
+  .ob-stat-cell {
+    padding: 9px 10px;
+  }
+
+  .ob-compat-panel,
+  .ob-budget-line {
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
 }
 
 /* ── Boat naming ── */

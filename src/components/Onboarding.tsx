@@ -143,7 +143,7 @@ export function Onboarding({
     return (
       <div className="ob-profile-screen">
         <div className="ob-step-header">
-          <div className="ob-step-eyebrow">ADIM 1 / 5</div>
+          <div className="ob-step-eyebrow">ADIM 1 / 4</div>
           <h2 className="ob-step-title">KAPTANINI SEÇ</h2>
         </div>
 
@@ -232,7 +232,7 @@ export function Onboarding({
     return (
       <div className="ob-marina-screen">
         <div className="ob-step-header">
-          <div className="ob-step-eyebrow">ADIM 2 / 5</div>
+          <div className="ob-step-eyebrow">ADIM 2 / 4</div>
           <h2 className="ob-step-title">ÇIKIŞ LİMANINI SEÇ</h2>
         </div>
 
@@ -352,7 +352,7 @@ export function Onboarding({
     return (
       <div className="ob-boat-screen">
         <div className="ob-step-header">
-          <div className="ob-step-eyebrow">ADIM 3 / 5</div>
+          <div className="ob-step-eyebrow">ADIM 3 / 4</div>
           <h2 className="ob-step-title">TEKNENİ SEÇ</h2>
         </div>
 
@@ -429,7 +429,7 @@ export function Onboarding({
     <div className="ob-naming-screen">
       <div className="ob-naming-hero-header">
         <h2 className="ob-naming-title">SON HAZIRLIK</h2>
-        <div className="ob-step-eyebrow">ADIM 4 / 5</div>
+        <div className="ob-step-eyebrow">ADIM 4 / 4</div>
       </div>
 
       <div className="ob-naming-hero">

@@ -7250,7 +7250,7 @@ button {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   padding-bottom: var(--space-6);
 }
 
@@ -7258,7 +7258,7 @@ button {
 .lh-stage {
   position: relative;
   text-align: center;
-  padding: 6px 4px 0;
+  padding: 2px 4px 0;
 }
 .lh-stage-eyebrow {
   display: inline-block;
@@ -7297,38 +7297,39 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 4px 0 8px;
-  margin-top: -2px;
+  padding: 0;
+  margin-top: -6px;
+  margin-bottom: -2px;
 }
 .lh-boat-halo {
   position: absolute;
-  top: -10px;
+  top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 280px;
-  height: 240px;
+  width: 220px;
+  height: 170px;
   background:
-    radial-gradient(ellipse at 50% 35%, rgba(94,234,248,0.28) 0%, rgba(94,234,248,0.10) 35%, transparent 70%),
-    radial-gradient(ellipse at 50% 80%, rgba(255,217,130,0.10) 0%, transparent 60%);
-  filter: blur(14px);
+    radial-gradient(ellipse at 50% 40%, rgba(94,234,248,0.18) 0%, rgba(94,234,248,0.06) 40%, transparent 72%),
+    radial-gradient(ellipse at 50% 85%, rgba(255,217,130,0.06) 0%, transparent 60%);
+  filter: blur(12px);
   pointer-events: none;
   z-index: 0;
 }
 .lh-boat-ring {
   position: absolute;
-  top: 14px;
+  top: 6px;
   left: 50%;
   transform: translateX(-50%);
-  width: 220px;
-  height: 220px;
+  width: 168px;
+  height: 168px;
   border-radius: 50%;
-  border: 1px dashed rgba(94,234,248,0.18);
+  border: 1px dashed rgba(94,234,248,0.14);
   box-shadow:
-    0 0 0 1px rgba(94,234,248,0.06) inset,
-    0 0 40px rgba(94,234,248,0.10) inset;
+    0 0 0 1px rgba(94,234,248,0.05) inset,
+    0 0 28px rgba(94,234,248,0.07) inset;
   pointer-events: none;
   z-index: 0;
-  animation: lh-ring-drift 18s linear infinite;
+  animation: lh-ring-drift 22s linear infinite;
 }
 @keyframes lh-ring-drift {
   to { transform: translateX(-50%) rotate(360deg); }
@@ -7336,21 +7337,21 @@ button {
 .lh-boat-deck {
   position: relative;
   z-index: 2;
-  width: 200px;
-  height: 200px;
+  width: 150px;
+  height: 150px;
   color: var(--cyan-glow);
   filter:
-    drop-shadow(0 0 18px rgba(94,234,248,0.55))
-    drop-shadow(0 12px 22px rgba(0,0,0,0.45));
+    drop-shadow(0 0 12px rgba(94,234,248,0.40))
+    drop-shadow(0 8px 16px rgba(0,0,0,0.40));
 }
 .lh-boat-base {
   position: relative;
   z-index: 1;
-  width: 220px;
-  height: 12px;
-  margin-top: -8px;
-  background: radial-gradient(ellipse at center, rgba(94,234,248,0.35) 0%, rgba(94,234,248,0.05) 60%, transparent 80%);
-  filter: blur(2px);
+  width: 170px;
+  height: 8px;
+  margin-top: -4px;
+  background: radial-gradient(ellipse at center, rgba(94,234,248,0.25) 0%, rgba(94,234,248,0.04) 60%, transparent 80%);
+  filter: blur(1.5px);
 }
 
 /* Progress micro-bars under boat */
@@ -7361,7 +7362,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: 12px;
+  margin-top: 8px;
   padding: 0 4px;
 }
 .lh-tab-v2 .lh-mini-bar {
@@ -7627,9 +7628,10 @@ button {
 /* Mobile narrow guards */
 @media (max-width: 360px) {
   .lh-stage-title { font-size: 19px; }
-  .lh-boat-deck { width: 168px; height: 168px; }
-  .lh-boat-halo { width: 240px; height: 200px; }
-  .lh-boat-ring { width: 188px; height: 188px; top: 12px; }
+  .lh-boat-deck { width: 132px; height: 132px; }
+  .lh-boat-halo { width: 200px; height: 150px; }
+  .lh-boat-ring { width: 148px; height: 148px; top: 6px; }
+  .lh-boat-base { width: 150px; }
   .lh-action-cta { padding: 14px 12px; min-height: 72px; gap: 12px; }
   .lh-action-icon-wrap { flex: 0 0 46px; width: 46px; height: 46px; }
   .lh-action-icon { font-size: 24px; }

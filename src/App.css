@@ -9938,3 +9938,615 @@ button {
   .ob-marina-screen-v3 .ob-sheet-v3-stats { padding: 9px 10px; }
   .ob-marina-screen-v3 .ob-sheet-stat { font-size: 11.5px; }
 }
+
+/* ═════════════════════════════════════════════════════════════════
+   GLOBAL MOBILE PROPORTION / SPACING POLISH
+   CSS-only responsive balancing for 390x667 and 360x800
+   ═════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 390px) {
+  .game-wrapper {
+    min-height: 100dvh;
+  }
+
+  .hub-topbar {
+    padding: 16px 16px 14px;
+  }
+
+  .hub-topbar h2,
+  .sea-topbar h2 {
+    font-size: 20px;
+  }
+
+  .hub-content,
+  .sea-content {
+    padding: 18px 16px;
+    padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+    scrollbar-gutter: auto;
+  }
+
+  .hub-content--tekne {
+    padding-top: 14px;
+  }
+
+  .bottom-tab-bar {
+    padding: 8px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .tab {
+    min-height: 44px;
+    justify-content: center;
+    font-size: 11px;
+  }
+
+  .tab span {
+    font-size: 20px;
+  }
+
+  .tab.active span {
+    transform: translateY(-3px);
+  }
+
+  .progress-strip {
+    padding: 6px 12px;
+  }
+
+  .next-action-card {
+    padding: 9px 12px;
+    gap: 10px;
+  }
+
+  .next-action-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+
+  .next-action-title {
+    font-size: 14px;
+  }
+
+  .next-action-text {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .ob-main-menu {
+    padding: 0 16px max(20px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .ob-corners {
+    bottom: max(14px, env(safe-area-inset-bottom, 0px));
+    padding: 0 10px;
+  }
+
+  .ob-corner-btn {
+    width: 52px;
+    height: 52px;
+  }
+
+  .ob-corner-label {
+    font-size: 11px;
+  }
+
+  .ob-menu-hero {
+    min-height: 36vh;
+    padding-top: 34px;
+    padding-bottom: 4px;
+  }
+
+  .ob-menu-boat-stage {
+    width: 156px;
+    height: 156px;
+  }
+
+  .ob-menu-boat-svg {
+    width: 122px;
+    height: 122px;
+  }
+
+  .ob-menu-copy {
+    margin-top: 8px;
+    margin-bottom: 20px;
+  }
+
+  .ob-menu-title {
+    font-size: clamp(28px, 8.2vw, 32px);
+  }
+
+  .ob-menu-tycoon {
+    font-size: 13px;
+    letter-spacing: 0.28em;
+  }
+
+  .ob-profile-screen,
+  .ob-marina-screen,
+  .ob-boat-screen,
+  .ob-naming-screen {
+    padding: 16px 14px max(20px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .ob-step-header,
+  .ob-naming-hero-header {
+    margin-bottom: 12px;
+  }
+
+  .ob-step-eyebrow,
+  .ob-naming-label,
+  .content-cta-eyebrow,
+  .rt-next-peek-eyebrow,
+  .sm-event-eyebrow,
+  .ar-next-peek-eyebrow,
+  .cel-eyebrow,
+  .lh-quest-eyebrow {
+    font-size: 11px;
+  }
+
+  .ob-step-title {
+    font-size: 20px;
+  }
+
+  .ob-portrait-stage {
+    width: 118px;
+    height: 118px;
+    margin-bottom: 14px;
+  }
+
+  .ob-portrait-emoji {
+    font-size: 54px;
+  }
+
+  .ob-captain-tagline,
+  .ob-sheet-tagline,
+  .ob-boat-summary,
+  .ob-onboarding-msg {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .ob-marina-map-wrap {
+    margin-bottom: 10px;
+  }
+
+  .ob-marina-detail-sheet {
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+
+  .ob-boat-hero-card {
+    padding: 14px;
+  }
+
+  .ob-boat-visual-col {
+    min-height: 96px;
+  }
+
+  .ob-boat-hero-glow {
+    filter: blur(10px);
+  }
+
+  .ob-naming-title {
+    font-size: clamp(24px, 7vw, 28px);
+  }
+
+  .ob-naming-hero {
+    width: 176px;
+    height: 176px;
+    margin: 0 auto 18px;
+  }
+
+  .ob-naming-boat-svg {
+    width: 104px;
+    height: 104px;
+  }
+
+  .lh-tab {
+    gap: 9px;
+  }
+
+  .lh-hero {
+    padding: 10px 0 0;
+  }
+
+  .lh-hero-boat-wrap {
+    width: 168px;
+    height: 168px;
+    margin-bottom: 8px;
+  }
+
+  .lh-hero-boat-glow {
+    filter: blur(16px);
+  }
+
+  .lh-hero-boat {
+    width: 136px;
+    height: 136px;
+  }
+
+  .lh-progress-micro {
+    gap: 5px;
+    padding-bottom: 2px;
+  }
+
+  .lh-quest-card {
+    padding: 14px;
+    gap: 12px;
+    animation-duration: 2.6s;
+  }
+
+  .lh-quest-title {
+    font-size: 15px;
+  }
+
+  .lh-guide-card,
+  .lh-accordion-hdr,
+  .lh-accordion-body {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .content-stats-header {
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .stat-box {
+    padding: 14px;
+  }
+
+  .sub-tab-bar {
+    margin-bottom: 18px;
+  }
+
+  .content-creator-hero,
+  .content-production-panel,
+  .content-cta-panel,
+  .content-result-card {
+    border-radius: 18px;
+  }
+
+  .content-result-card,
+  .result-details,
+  .gain-box {
+    padding: 14px;
+  }
+
+  .content-platform-card {
+    min-height: 132px;
+  }
+
+  .content-type-card {
+    min-height: 92px;
+  }
+
+  .content-create-button,
+  .rt-cta-zone .primary-button,
+  .sm-advance-btn,
+  .ar-cta-btn {
+    min-height: 48px;
+  }
+
+  .rt-tab,
+  .sm-tab,
+  .tk-tab-v2,
+  .kp-tab-v2 {
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .rt-arc-section,
+  .rt-hero-card,
+  .rt-readiness-hdr,
+  .rt-readiness-detail,
+  .rt-next-peek {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .rt-hero-card {
+    min-height: 164px;
+    padding-top: 16px;
+    padding-bottom: 14px;
+  }
+
+  .rt-hero-name {
+    font-size: 22px;
+  }
+
+  .rt-hero-feeling,
+  .rt-readiness-hint,
+  .rt-next-peek-feeling {
+    font-size: 12px;
+  }
+
+  .sm-tab {
+    gap: 12px;
+    padding-top: 4px;
+  }
+
+  .sm-critical-banner,
+  .sm-voyage-arc,
+  .sm-event-log,
+  .sm-decision-card {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .sm-hero-zone {
+    padding: 12px 0 4px;
+  }
+
+  .sm-boat-glow {
+    width: 170px;
+    height: 170px;
+  }
+
+  .sm-boat-wrap {
+    width: 132px;
+    height: 132px;
+  }
+
+  .sm-route-chip,
+  .sm-advance-hint,
+  .sm-choice-result {
+    font-size: 12px;
+  }
+
+  .sm-decision-modal {
+    padding: 14px;
+    align-items: flex-end;
+  }
+
+  .sm-decision-title {
+    font-size: 18px;
+  }
+
+  .sm-decision-desc {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .ar-content {
+    gap: 14px;
+    padding: 18px 14px calc(32px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ar-hero {
+    padding: 18px 12px 10px;
+  }
+
+  .ar-hero-glow {
+    width: 210px;
+    height: 210px;
+  }
+
+  .ar-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+  }
+
+  .ar-port-name {
+    font-size: clamp(26px, 7vw, 30px);
+    margin-bottom: 10px;
+  }
+
+  .ar-feeling,
+  .ar-milestone-text {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .ar-reward-block {
+    gap: 10px;
+  }
+
+  .ar-reward-tile {
+    min-height: 118px;
+    padding: 14px 12px;
+  }
+
+  .ar-reward-amount {
+    font-size: 20px;
+  }
+
+  .ar-world-tour,
+  .ar-next-peek {
+    padding: 14px;
+  }
+
+  .cel-modal {
+    padding: 0 14px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .cel-card {
+    padding: 18px 16px;
+  }
+
+  .tk-tab-v2,
+  .kp-tab-v2 {
+    gap: 12px;
+  }
+
+  .tk-tab-v2 .tk-hero,
+  .kp-tab-v2 .kp-hero {
+    padding-top: 16px;
+    padding-bottom: 14px;
+  }
+
+  .tk-tab-v2 .tk-hero-boat-halo,
+  .kp-tab-v2 .kp-avatar-halo,
+  .kp-tab-v2 .kp-hero-glow {
+    filter: blur(6px);
+  }
+
+  .tk-tab-v2 .tk-upgrade-list {
+    gap: 10px;
+  }
+
+  .kp-tab-v2 .kp-hero-row {
+    margin-bottom: 12px;
+  }
+
+  .kp-tab-v2 .kp-ach-grid {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 390px) and (max-height: 740px) {
+  .ob-menu-hero {
+    min-height: 32vh;
+    padding-top: 24px;
+  }
+
+  .ob-menu-boat-stage {
+    width: 142px;
+    height: 142px;
+  }
+
+  .ob-menu-boat-svg {
+    width: 112px;
+    height: 112px;
+  }
+
+  .ob-menu-copy {
+    margin-bottom: 16px;
+  }
+
+  .ob-portrait-stage {
+    width: 110px;
+    height: 110px;
+    margin-bottom: 12px;
+  }
+
+  .ob-naming-hero {
+    width: 160px;
+    height: 160px;
+    margin-bottom: 14px;
+  }
+
+  .ob-naming-boat-svg {
+    width: 94px;
+    height: 94px;
+  }
+
+  .hub-topbar,
+  .sea-topbar {
+    padding-top: 14px;
+    padding-bottom: 12px;
+  }
+
+  .hub-content,
+  .sea-content {
+    padding-top: 14px;
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .lh-hero-boat-wrap {
+    width: 152px;
+    height: 152px;
+  }
+
+  .lh-hero-boat {
+    width: 124px;
+    height: 124px;
+  }
+
+  .content-stats-header,
+  .sub-tab-bar,
+  .content-creator-hero,
+  .route-content-hint {
+    margin-bottom: 14px;
+  }
+
+  .rt-tab,
+  .sm-tab,
+  .tk-tab-v2,
+  .kp-tab-v2 {
+    padding-top: 2px;
+  }
+
+  .rt-hero-card {
+    min-height: 152px;
+    padding: 14px;
+  }
+
+  .sm-hero-zone {
+    padding-top: 8px;
+  }
+
+  .sm-boat-glow {
+    width: 150px;
+    height: 150px;
+  }
+
+  .sm-boat-wrap {
+    width: 118px;
+    height: 118px;
+  }
+
+  .ar-content {
+    gap: 12px;
+    padding-top: 14px;
+  }
+
+  .ar-hero {
+    padding-top: 14px;
+    padding-bottom: 8px;
+  }
+
+  .ar-hero-glow {
+    width: 184px;
+    height: 184px;
+  }
+
+  .ar-reward-tile {
+    min-height: 108px;
+  }
+
+  .cel-card {
+    padding: 16px 14px;
+  }
+
+  .tk-tab-v2 .tk-hero,
+  .kp-tab-v2 .kp-hero {
+    padding: 14px 14px 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .hub-topbar,
+  .sea-topbar,
+  .hub-content,
+  .sea-content,
+  .rt-tab,
+  .sm-tab,
+  .tk-tab-v2,
+  .kp-tab-v2,
+  .ar-content {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .bottom-tab-bar {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .tab span {
+    font-size: 19px;
+  }
+
+  .content-platform-card,
+  .content-type-card {
+    padding: 11px;
+  }
+
+  .rt-hero-name,
+  .kp-tab-v2 .kp-hero-name {
+    font-size: 20px;
+  }
+
+  .ar-port-name {
+    font-size: 24px;
+  }
+}

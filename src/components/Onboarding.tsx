@@ -77,55 +77,61 @@ export function Onboarding({
   const nextProfile = () => setProfileIndex((i) => (i + 1) % PLAYER_PROFILES.length);
   const prevProfile = () => setProfileIndex((i) => (i - 1 + PLAYER_PROFILES.length) % PLAYER_PROFILES.length);
 
-  const renderStepHeader = (current: number, title: string) => (
-    <div className="progress-header fade-in">
-      <div className="progress-indicator">
-        {current}/5
-      </div>
-      <h2>{title}</h2>
-    </div>
-  );
-
   const renderMainMenu = () => (
-    <div className="menu-container fade-in cinematic-bg">
-      <div className="menu-top-teaser">
-        <span>⚓</span> YENİ MACERA SENİ BEKLİYOR
+    <div className="ob-main-menu">
+      <div className="ob-corners">
+        <button className="ob-corner-btn" aria-label="Ayarlar" onClick={() => console.log("settings")}>
+          <span className="ob-corner-icon">⚙</span>
+          <span className="ob-corner-label">AYARLAR</span>
+        </button>
+        <button className="ob-corner-btn" aria-label="Mağaza" onClick={() => console.log("store")}>
+          <span className="ob-corner-icon">🏪</span>
+          <span className="ob-corner-label">MAĞAZA</span>
+        </button>
+        <button className="ob-corner-btn" aria-label="Başarımlar" onClick={() => console.log("achievements")}>
+          <span className="ob-corner-icon">🏆</span>
+          <span className="ob-corner-label">BAŞARIM</span>
+        </button>
+        <button className="ob-corner-btn" aria-label="Sosyal" onClick={() => console.log("social")}>
+          <span className="ob-corner-icon">👥</span>
+          <span className="ob-corner-label">SOSYAL</span>
+        </button>
       </div>
-      <div className="menu-ocean-scene">
-        <div className="stars-layer"></div>
-        <div className="horizon-glow"></div>
-        <div className="menu-boat-silhouette">{getBoatSvg("denizkusu_34")}</div>
-        <div className="water-reflection"></div>
-        <svg className="wave-layer w1" viewBox="0 0 2400 80" preserveAspectRatio="none"><path d="M0 40 Q150 0 300 40 Q450 80 600 40 Q750 0 900 40 Q1050 80 1200 40 Q1350 0 1500 40 Q1650 80 1800 40 Q1950 0 2100 40 Q2250 80 2400 40 V80 H0Z" fill="rgba(14,100,160,0.85)"/></svg>
-        <svg className="wave-layer w2" viewBox="0 0 2400 80" preserveAspectRatio="none"><path d="M0 50 Q150 15 300 50 Q450 85 600 50 Q750 15 900 50 Q1050 85 1200 50 Q1350 15 1500 50 Q1650 85 1800 50 Q1950 15 2100 50 Q2250 85 2400 50 V80 H0Z" fill="rgba(10,70,120,0.6)"/></svg>
-        <div className="water-shimmer shimmer-1"></div>
-        <div className="water-shimmer shimmer-2"></div>
-        <div className="water-shimmer shimmer-3"></div>
-      </div>
-      <div className="hero-copy">
-        <div className="hero-title-block">
-          <h1>Yelkenli Yaşam</h1>
-          <span className="title-sub">TYCOON</span>
-          <p className="hero-text">Türkiye'den dünya turuna</p>
+
+      <div className="ob-menu-hero">
+        <div className="ob-menu-eyebrow">⚓ YENİ MACERA SENİ BEKLİYOR</div>
+        <div className="ob-menu-boat-stage">
+          <div className="ob-menu-boat-glow" aria-hidden="true" />
+          <div className="ob-menu-boat-svg ob-boat-bob">
+            {getBoatSvg("denizkusu_34")}
+          </div>
         </div>
-        <div className="hero-divider"></div>
+      </div>
 
-        <div className="menu-actions">
-          <button className="btn-primary large" onClick={() => setStep("PICK_PROFILE")}>
-            <span>⚓</span> YENİ OYUN
-          </button>
+      <div className="ob-menu-copy">
+        <h1 className="ob-menu-title">Yelkenli Yaşam</h1>
+        <div className="ob-menu-tycoon">TYCOON</div>
+        <p className="ob-menu-subtitle">Türkiye'den Dünya Turuna</p>
+      </div>
 
-          {hasSave && (
-            <button className="btn-secondary large" onClick={onLoadGame}>
-              <span>🧭</span> DEVAM ET <span className="dot-sep">·</span> <span className="save-name">{saveBoatName}</span>
+      <div className="ob-menu-actions">
+        {hasSave ? (
+          <>
+            <button className="primary-button primary-button--pulse" onClick={onLoadGame}>
+              🧭 DEVAM ET · {saveBoatName}
             </button>
-          )}
-        </div>
-
-        <div className="social-proof">
-          <span>🚢</span> 47.000 kaptan denizde
-        </div>
+            <button className="secondary-button" onClick={() => setStep("PICK_PROFILE")}>
+              ⚓ YENİ OYUN
+            </button>
+          </>
+        ) : (
+          <button className="primary-button primary-button--pulse" onClick={() => setStep("PICK_PROFILE")}>
+            ⚓ YENİ OYUN
+          </button>
+        )}
       </div>
+
+      <div className="ob-social-proof">Topluluk büyüyor</div>
     </div>
   );
 
@@ -135,51 +141,60 @@ export function Onboarding({
       .slice(0, 3);
 
     return (
-      <div className="selection-screen profile-selection-screen fade-in">
-        <div className="profile-selection-header">
-          <div className="profile-selection-topline">
-            <div className="profile-step-indicator">{"1 / 5"}</div>
-            <div className="profile-step-dots" aria-hidden="true">
-              <span className="profile-step-dot active"></span>
-              <span className="profile-step-dot"></span>
-              <span className="profile-step-dot"></span>
-              <span className="profile-step-dot"></span>
-              <span className="profile-step-dot"></span>
-            </div>
-          </div>
-          <h2>Kaptanını Seç</h2>
+      <div className="ob-profile-screen">
+        <div className="ob-step-header">
+          <div className="ob-step-eyebrow">ADIM 1 / 5</div>
+          <h2 className="ob-step-title">KAPTANINI SEÇ</h2>
         </div>
 
-        <div className="profile-carousel">
-          <button className="nav-btn profile-nav-btn" onClick={prevProfile} aria-label="Önceki kaptan">‹</button>
+        <div className="ob-captain-carousel">
+          <button className="ob-tap-zone ob-tap-zone--left" onClick={prevProfile} aria-label="Önceki kaptan" />
+          <button className="ob-tap-zone ob-tap-zone--right" onClick={nextProfile} aria-label="Sonraki kaptan" />
 
-          <article className="profile-card big-card fade-in" key={selectedProfile.id}>
-            <div className="profile-icon">{profileIcons[selectedProfile.id] || "👤"}</div>
-            <h2>{selectedProfile.name}</h2>
-            <p className="tagline">"{selectedProfile.tagline}"</p>
+          <div className="ob-captain-card fade-in" key={selectedProfile.id}>
+            <div className="ob-portrait-stage">
+              <div className="ob-portrait-ring-outer" aria-hidden="true" />
+              <div className="ob-portrait-ring-inner" aria-hidden="true" />
+              <div className="ob-portrait-circle">
+                <span className="ob-portrait-emoji">{profileIcons[selectedProfile.id] || "👤"}</span>
+              </div>
+            </div>
 
-            <div className="skills-mini">
+            <h3 className="ob-captain-name">{selectedProfile.name}</h3>
+            <p className="ob-captain-tagline">"{selectedProfile.tagline}"</p>
+
+            <div className="ob-skills">
               {topSkills.map(([k, v]) => (
-                <div key={k} className="skill-row">
-                  <span>{skillLabels[k] ?? k}</span>
-                  <div className="skill-bar"><div className="skill-fill" data-skill={k} style={{width: `${v*20}%`}}></div></div>
-                  <strong className={`skill-value skill-${k}`}>{v}</strong>
+                <div key={k} className="ob-skill-row">
+                  <span className="ob-skill-label">{skillLabels[k] ?? k}</span>
+                  <div className="ob-skill-bar">
+                    <div className="ob-skill-fill" style={{ width: `${v * 20}%` }} />
+                  </div>
+                  <span className="ob-skill-score">{v}/5</span>
                 </div>
               ))}
             </div>
 
-            <div className="pros-cons">
-              <div className="pro"><span className="pro-icon">✓</span> <strong>{selectedProfile.advantage.title}</strong></div>
-              <div className="con"><span className="con-icon">⚠</span> <strong>{selectedProfile.disadvantage.title}</strong></div>
+            <div className="ob-chips">
+              <div className="ob-chip ob-chip--pro">
+                <span>✓</span> {selectedProfile.advantage.title}
+              </div>
+              <div className="ob-chip ob-chip--con">
+                <span>⚠</span> {selectedProfile.disadvantage.title}
+              </div>
             </div>
-          </article>
-
-          <button className="nav-btn profile-nav-btn" onClick={nextProfile} aria-label="Sonraki kaptan">›</button>
+          </div>
         </div>
 
-        <div className="step-actions profile-step-actions mt-20">
-          <button className="btn-secondary" onClick={() => setStep("MAIN_MENU")}>Geri</button>
-          <button className="btn-primary large" onClick={() => setStep("PICK_MARINA")}>Limanlara Bak →</button>
+        <div className="ob-pagination-dots" aria-hidden="true">
+          {PLAYER_PROFILES.map((_, i) => (
+            <span key={i} className={`ob-dot ${i === profileIndex ? "ob-dot--active" : ""}`} />
+          ))}
+        </div>
+
+        <div className="ob-screen-actions">
+          <button className="secondary-button" onClick={() => setStep("MAIN_MENU")}>Geri</button>
+          <button className="primary-button" onClick={() => setStep("PICK_MARINA")}>LİMANLARA BAK →</button>
         </div>
       </div>
     );
@@ -193,89 +208,127 @@ export function Onboarding({
     const handleMarinaFilterChange = (filter: MarinaFilter) => {
       setMarinaFilter(filter);
       if (filter === "all") return;
-
       const activeStillVisible = getMarinaFilterCategory(selectedMarina.region) === filter;
       if (activeStillVisible) return;
-
       const nextMarina = STARTING_MARINAS.find((marina) => getMarinaFilterCategory(marina.region) === filter);
       if (!nextMarina) return;
       const nextIndex = STARTING_MARINAS.findIndex((marina) => marina.id === nextMarina.id);
       if (nextIndex >= 0) setMarinaIndex(nextIndex);
     };
 
+    const MARINA_COORDS: Record<string, { cx: number; cy: number }> = {
+      cesme:    { cx: 42,  cy: 58  },
+      kusadasi: { cx: 58,  cy: 80  },
+      bodrum:   { cx: 82,  cy: 104 },
+      gocek:    { cx: 108, cy: 118 },
+      marmaris: { cx: 128, cy: 125 },
+      fethiye:  { cx: 148, cy: 122 },
+      kas:      { cx: 182, cy: 132 },
+      antalya:  { cx: 245, cy: 148 },
+      istanbul: { cx: 310, cy: 24  },
+      yalova:   { cx: 328, cy: 40  },
+    };
+
     return (
-      <div className="selection-screen marina-selection-screen fade-in">
-        <div className="marina-selection-header">
-          <div className="marina-selection-topline">
-            <div className="marina-step-indicator">2 / 5</div>
-            <div className="marina-step-dots" aria-hidden="true">
-              <span className="marina-step-dot"></span>
-              <span className="marina-step-dot active"></span>
-              <span className="marina-step-dot"></span>
-              <span className="marina-step-dot"></span>
-              <span className="marina-step-dot"></span>
+      <div className="ob-marina-screen">
+        <div className="ob-step-header">
+          <div className="ob-step-eyebrow">ADIM 2 / 5</div>
+          <h2 className="ob-step-title">ÇIKIŞ LİMANINI SEÇ</h2>
+        </div>
+
+        <div className="ob-region-filter">
+          {(["all", "ege", "akdeniz", "marmara"] as MarinaFilter[]).map((f) => (
+            <button
+              key={f}
+              className={`ob-filter-pill ${marinaFilter === f ? "ob-filter-pill--active" : ""}`}
+              onClick={() => handleMarinaFilterChange(f)}
+            >
+              {f === "all" ? "Tümü" : f === "ege" ? "Ege" : f === "akdeniz" ? "Akdeniz" : "Marmara"}
+            </button>
+          ))}
+        </div>
+
+        <div className="ob-marina-map-wrap">
+          <svg
+            className="ob-marina-map"
+            viewBox="0 0 380 170"
+            preserveAspectRatio="xMidYMid meet"
+            aria-label="Türkiye marina haritası"
+          >
+            <path
+              className="ob-map-land"
+              d="M 25 78 Q 38 46 65 54 Q 78 70 84 102 Q 100 120 118 127 Q 138 133 155 126 Q 185 136 250 152 Q 295 158 350 148 L 370 120 L 370 20 Q 345 14 315 22 Q 295 32 278 50 Q 258 66 235 70 Q 205 74 180 70 Q 150 64 115 60 Q 82 54 60 64 Z"
+            />
+            <path
+              className="ob-map-coast"
+              d="M 25 78 Q 38 46 65 54 Q 78 70 84 102 Q 100 120 118 127 Q 138 133 155 126 Q 185 136 250 152 Q 295 158 350 148"
+              fill="none"
+            />
+
+            {STARTING_MARINAS.map((marina) => {
+              const coords = MARINA_COORDS[marina.id];
+              if (!coords) return null;
+              const idx = STARTING_MARINAS.findIndex((m) => m.id === marina.id);
+              const isActive = idx === marinaIndex;
+              const isRecommended = marina.bestProfiles.includes(selectedProfile.id);
+              const isVisible = filteredMarinas.some((m) => m.id === marina.id);
+
+              return (
+                <g
+                  key={marina.id}
+                  className={`ob-map-pin-group${isActive ? " ob-map-pin-group--active" : ""}${!isVisible ? " ob-map-pin-group--hidden" : ""}`}
+                  onClick={() => setMarinaIndex(idx)}
+                  role="button"
+                  aria-label={marina.name}
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setMarinaIndex(idx); }}
+                >
+                  {isActive && (
+                    <circle cx={coords.cx} cy={coords.cy} r={12} className="ob-map-pin-ring" />
+                  )}
+                  <circle
+                    cx={coords.cx}
+                    cy={coords.cy}
+                    r={isRecommended ? 7 : 5}
+                    className={`ob-map-pin-dot${isRecommended ? " ob-map-pin-dot--gold" : ""}${isActive ? " ob-map-pin-dot--active" : ""}`}
+                  />
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        <div className="ob-marina-detail-sheet glass-card">
+          <div className="ob-sheet-drag-handle" aria-hidden="true" />
+          <div className="ob-sheet-header">
+            <span className="ob-sheet-icon">{marinaIcons[selectedMarina.id] ?? "⚓"}</span>
+            <div className="ob-sheet-name-block">
+              <strong className="ob-sheet-name">{selectedMarina.name}</strong>
+              <span className="ob-sheet-region">{selectedMarina.region}</span>
+            </div>
+            {selectedMarina.bestProfiles.includes(selectedProfile.id) && (
+              <span className="ob-recommended-badge">ÖNERİLEN</span>
+            )}
+          </div>
+          <p className="ob-sheet-tagline">"{selectedMarina.tagline}"</p>
+          <div className="ob-sheet-features">
+            <div className="ob-feature-chip ob-feature-chip--pro">
+              <span>✓</span> {selectedMarina.bonus.title}
+            </div>
+            <div className="ob-feature-chip ob-feature-chip--warn">
+              <span>⚠</span> {selectedMarina.disadvantage.title}
             </div>
           </div>
-          <h2>Başlangıç Marinası</h2>
-        </div>
-
-        <div className="marina-filters" role="tablist" aria-label="Marina bölge filtresi">
-          <button className={`marina-filter-chip ${marinaFilter === "all" ? "active" : ""}`} onClick={() => handleMarinaFilterChange("all")}>Tümü</button>
-          <button className={`marina-filter-chip ${marinaFilter === "ege" ? "active" : ""}`} onClick={() => handleMarinaFilterChange("ege")}>Ege</button>
-          <button className={`marina-filter-chip ${marinaFilter === "akdeniz" ? "active" : ""}`} onClick={() => handleMarinaFilterChange("akdeniz")}>Akdeniz</button>
-          <button className={`marina-filter-chip ${marinaFilter === "marmara" ? "active" : ""}`} onClick={() => handleMarinaFilterChange("marmara")}>Marmara</button>
-        </div>
-
-        <div className="marina-list">
-          {filteredMarinas.map((marina) => {
-            const idx = STARTING_MARINAS.findIndex((item) => item.id === marina.id);
-            const isActive = idx === marinaIndex;
-            const isRecommended = marina.bestProfiles.includes(selectedProfile.id);
-
-            return (
-              <button
-                key={marina.id}
-                className={`marina-list-item ${isActive ? "active" : ""}`}
-                onClick={() => setMarinaIndex(idx)}
-              >
-                <div className="marina-list-icon">{marinaIcons[marina.id] ?? "⚓"}</div>
-                <div className="marina-list-copy">
-                  <div className="marina-list-title-row">
-                    <strong>{marina.name}</strong>
-                    {isRecommended && <span className="marina-rec-badge">ÖNERİLEN</span>}
-                  </div>
-                  <span>{marina.region}</span>
-                </div>
-                <div className="marina-list-status" aria-hidden="true"></div>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="marina-detail-sheet slide-up">
-          <div className="marina-detail-header">
-            <h3>{selectedMarina.name}</h3>
-            <span className="marina-region-badge">{selectedMarina.region}</span>
+          <div className="ob-sheet-routes">
+            {selectedMarina.firstRouteOptions.slice(0, 3).map((route, i) => (
+              <span key={i} className="ob-route-chip">{route}</span>
+            ))}
           </div>
-          <p className="marina-tagline">"{selectedMarina.tagline}"</p>
-
-          <div className="marina-detail-cards">
-            <div className="marina-detail-card bonus">
-              <span>✓</span>
-              <strong>{selectedMarina.bonus.title}</strong>
-            </div>
-            <div className="marina-detail-card warning">
-              <span>⚠</span>
-              <strong>{selectedMarina.disadvantage.title}</strong>
-            </div>
-          </div>
-
-          <p className="marina-routes">{selectedMarina.firstRouteOptions.join(" · ")}</p>
         </div>
 
-        <div className="step-actions marina-step-actions">
-          <button className="btn-secondary" onClick={() => setStep("PICK_PROFILE")}>Geri</button>
-          <button className="btn-primary large" onClick={() => setStep("PICK_BOAT")}>Tekne Seçimine Geç →</button>
+        <div className="ob-screen-actions">
+          <button className="secondary-button" onClick={() => setStep("PICK_PROFILE")}>Geri</button>
+          <button className="primary-button" onClick={() => setStep("PICK_BOAT")}>TEKNE SEÇİMİNE GEÇ →</button>
         </div>
       </div>
     );
@@ -290,104 +343,78 @@ export function Onboarding({
       : "Sıkı bütçe başlangıcı";
 
     const boatDecisionStats = [
-      { label: "Maliyet", score: 8 - (ratingToScore[selectedBoat.stats.maintenanceCost] ?? 4) },
+      { label: "Maliyet",     score: 8 - (ratingToScore[selectedBoat.stats.maintenanceCost] ?? 4) },
       { label: "Dayanıklılık", score: 8 - (ratingToScore[selectedBoat.stats.breakdownRisk] ?? 4) },
-      { label: "Konfor", score: ratingToScore[selectedBoat.stats.comfort] ?? 4 },
-      { label: "Açık Deniz", score: ratingToScore[selectedBoat.stats.safety] ?? 4 },
+      { label: "Konfor",      score: ratingToScore[selectedBoat.stats.comfort] ?? 4 },
+      { label: "Açık Deniz",  score: ratingToScore[selectedBoat.stats.safety] ?? 4 },
     ];
 
     return (
-      <div className="selection-screen boat-selection-screen fade-in">
-        {renderStepHeader(3, "Tekneni Seç")}
+      <div className="ob-boat-screen">
+        <div className="ob-step-header">
+          <div className="ob-step-eyebrow">ADIM 3 / 5</div>
+          <h2 className="ob-step-title">TEKNENİ SEÇ</h2>
+        </div>
 
-        <div className="boat-layout">
-          <div className="boat-tabs">
-            {STARTING_BOATS.map((boat, idx) => (
-              <button
-                key={boat.id}
-                className={`boat-tab ${idx === boatIndex ? "active" : ""}`}
-                onClick={() => setBoatIndex(idx)}
-              >
-                {boat.lengthFt} ft
-              </button>
+        <div className="ob-boat-tabs">
+          {STARTING_BOATS.map((boat, idx) => (
+            <button
+              key={boat.id}
+              className={`ob-boat-tab${idx === boatIndex ? " ob-boat-tab--active" : ""}`}
+              onClick={() => setBoatIndex(idx)}
+            >
+              {boat.lengthFt} ft
+            </button>
+          ))}
+        </div>
+
+        <div className="ob-boat-hero-card glass-card fade-in" key={selectedBoat.id}>
+          <div className="ob-boat-info-col">
+            <div className="ob-boat-badges">
+              <span className="ob-badge ob-badge--class">{selectedBoatClass.label}</span>
+              <span className="ob-badge ob-badge--length">{selectedBoat.lengthFt} ft</span>
+            </div>
+            <h3 className="ob-boat-name">{selectedBoat.name}</h3>
+            <p className="ob-boat-tagline">{selectedBoatClass.tone}</p>
+            <p className="ob-boat-summary">{selectedBoatClass.summary}</p>
+          </div>
+          <div className="ob-boat-visual-col">
+            <div className="ob-boat-hero-glow" aria-hidden="true" />
+            <div className="ob-boat-hero-svg">{getBoatSvg(selectedBoat.id)}</div>
+            <span className="ob-boat-age-chip">{selectedBoat.ageCondition}</span>
+          </div>
+        </div>
+
+        <div className="ob-stat-grid">
+          {boatDecisionStats.map((stat) => (
+            <div key={stat.label} className="ob-stat-cell">
+              <span className="ob-stat-label">{stat.label}</span>
+              <strong className="ob-stat-value">{stat.score}/7</strong>
+              <div className="ob-stat-bar">
+                <div className="ob-stat-fill" style={{ width: `${(stat.score / 7) * 100}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="ob-compat-panel">
+          <span className="ob-compat-label">Uyum</span>
+          <div className="ob-compat-profiles">
+            {selectedBoat.bestProfiles.map((id) => (
+              <span key={id} className="ob-compat-icon">{profileIcons[id] ?? "👤"}</span>
             ))}
           </div>
+          <span className="ob-compat-note">{selectedBoat.gameRole}</span>
+        </div>
 
-          <article className="boat-card premium-boat-card fade-in" key={selectedBoat.id}>
-            <div className="boat-hero-panel">
-              <div className="boat-hero-copy">
-                <div className="boat-size-row">
-                  <span className="boat-class-badge">{selectedBoatClass.label}</span>
-                  <span className="boat-length-badge">{selectedBoat.lengthFt} ft</span>
-                </div>
-                <h2>{selectedBoat.name}</h2>
-                <p className="boat-tone">{selectedBoatClass.tone}</p>
-                <p className="boat-hero-summary">{selectedBoatClass.summary}</p>
-              </div>
+        <div className="ob-budget-line">
+          <span>{remainingBudget.toLocaleString("tr-TR")} TL ile başlarsın</span>
+          <span className="ob-budget-tier">{budgetTier}</span>
+        </div>
 
-              <div className="boat-visual-stage">
-                <div className="boat-stage-glow"></div>
-                <div className="boat-silhouette premium">{getBoatSvg(selectedBoat.id)}</div>
-                <div className="boat-age-badge">{selectedBoat.ageCondition}</div>
-              </div>
-            </div>
-
-            <div className="boat-decision-grid">
-              {boatDecisionStats.map((stat) => (
-                <div key={stat.label} className="boat-stat-card">
-                  <span>{stat.label}</span>
-                  <strong>{stat.score}/7</strong>
-                  <div className="boat-stat-bar">
-                    <div className="boat-stat-fill" style={{ width: `${(stat.score / 7) * 100}%` }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="boat-fit-panel">
-              <div className="boat-fit-card positive">
-                <small>Bu tekne kim için?</small>
-                <strong>{selectedBoat.bestProfiles.map((id) => profileIcons[id] ?? "👤").join(" ")} için güçlü seçim</strong>
-              </div>
-              <div className="boat-fit-card neutral">
-                <small>Oyun stili</small>
-                <strong>{selectedBoat.gameRole}</strong>
-              </div>
-            </div>
-
-            <div className="budget-calculator premium">
-              <div className="budget-header">
-                <h3>Bütçe Etkisi</h3>
-                <span>{budgetTier}</span>
-              </div>
-              <div className="budget-row"><span>Başlangıç Bütçesi</span> <span>{STARTING_BUDGET.toLocaleString("tr-TR")} TL</span></div>
-              <div className="budget-row"><span>Tekne Fiyatı</span> <span>- {selectedBoat.purchaseCost.toLocaleString("tr-TR")} TL</span></div>
-              <div className="budget-row total"><span>Kalan Bütçe</span> <span>{remainingBudget.toLocaleString("tr-TR")} TL</span></div>
-              <p className="budget-note">{selectedBoat.remainingBudgetFeeling}</p>
-            </div>
-
-            <div className="boat-tradeoff-row">
-              <div className="boat-tradeoff positive">
-                <span>✓</span>
-                <div>
-                  <small>Avantaj</small>
-                  <strong>{selectedBoat.advantage.title}</strong>
-                </div>
-              </div>
-              <div className="boat-tradeoff negative">
-                <span>⚠</span>
-                <div>
-                  <small>Dikkat</small>
-                  <strong>{selectedBoat.disadvantage.title}</strong>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <div className="step-actions onboarding-step-actions">
-            <button className="btn-secondary" onClick={() => setStep("PICK_MARINA")}>Geri</button>
-            <button className="btn-primary large" onClick={() => setStep("NAME_BOAT")}>Bu Tekneyi Seç</button>
-          </div>
+        <div className="ob-screen-actions">
+          <button className="secondary-button" onClick={() => setStep("PICK_MARINA")}>Geri</button>
+          <button className="primary-button" onClick={() => setStep("NAME_BOAT")}>BU TEKNEYİ SEÇ →</button>
         </div>
       </div>
     );
@@ -399,36 +426,53 @@ export function Onboarding({
   };
 
   const renderBoatNaming = () => (
-    <div className="selection-screen naming-selection-screen fade-in">
-      {renderStepHeader(4, "Son Hazırlık")}
-
-      <div className="naming-box centered transparent-card">
-        <div className="boat-silhouette big">{getBoatSvg(selectedBoat.id)}</div>
-        <h2>Tekneye İsim Ver</h2>
-        <p>{"Denizlerdeki yeni yuvana bir isim koy."}</p>
-
-        <div className="naming-input-group">
-          <input
-            type="text"
-            placeholder="Teknenin adını yaz..."
-            value={boatName}
-            onChange={(e) => setBoatName(e.target.value)}
-            autoFocus
-          />
-        </div>
-
-        {onboardingMessage && <p>{onboardingMessage}</p>}
-
-        <div className={`name-live-preview ${boatName.trim() ? 'visible' : ''}`}>
-          « {boatName || '...'} »
-        </div>
-
-        <button className="btn-text" onClick={generateRandomName}>🎲 Rastgele İsim Öner</button>
+    <div className="ob-naming-screen">
+      <div className="ob-naming-hero-header">
+        <h2 className="ob-naming-title">SON HAZIRLIK</h2>
+        <div className="ob-step-eyebrow">ADIM 4 / 5</div>
       </div>
 
-      <div className="step-actions onboarding-step-actions">
-        <button className="btn-secondary" onClick={() => setStep("PICK_BOAT")}>Geri</button>
-        <button className="btn-primary large" onClick={onFinalizeGame}>⚓ Denize İndir</button>
+      <div className="ob-naming-hero">
+        <div className="ob-naming-ring ob-naming-ring--outer" aria-hidden="true" />
+        <div className="ob-naming-ring ob-naming-ring--inner" aria-hidden="true" />
+        <div className="ob-naming-boat-svg">{getBoatSvg(selectedBoat.id)}</div>
+        <div className="ob-naming-particles" aria-hidden="true">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className={`ob-particle ob-particle--${i + 1}`} />
+          ))}
+        </div>
+      </div>
+
+      <div className="ob-naming-form">
+        <label className="ob-naming-label" htmlFor="ob-boat-name-input">TEKNEYE İSİM VER</label>
+        <input
+          id="ob-boat-name-input"
+          className="ob-glass-input"
+          type="text"
+          placeholder="Teknenin adını yaz..."
+          value={boatName}
+          onChange={(e) => setBoatName(e.target.value)}
+          autoFocus
+          maxLength={32}
+        />
+        <button className="ob-random-pill secondary-button" type="button" onClick={generateRandomName}>
+          🎲 Rastgele İsim Öner
+        </button>
+        {boatName.trim() && (
+          <div className="ob-name-preview" key={boatName}>« {boatName} »</div>
+        )}
+        {onboardingMessage && <p className="ob-onboarding-msg">{onboardingMessage}</p>}
+      </div>
+
+      <div className="ob-screen-actions">
+        <button className="secondary-button" onClick={() => setStep("PICK_BOAT")}>Geri</button>
+        <button
+          className="primary-button primary-button--pulse"
+          onClick={onFinalizeGame}
+          disabled={!boatName.trim()}
+        >
+          ⚓ DENİZE İNDİR
+        </button>
       </div>
     </div>
   );

@@ -19,6 +19,8 @@ interface KaptanTabProps {
   logs: string[];
 }
 
+const CAPTAIN_LEVEL_THRESHOLDS = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 6000, 8200, 11000, 14500, 19000, 25000];
+
 export function KaptanTab({
   selectedProfile,
   captainLevel,
@@ -58,83 +60,163 @@ export function KaptanTab({
     ...achievementStatuses.filter((a) => !a.unlocked),
   ];
 
+  const currentLevelFloor = CAPTAIN_LEVEL_THRESHOLDS[captainLevel - 1] ?? 0;
+  const nextLevelXp = CAPTAIN_LEVEL_THRESHOLDS[captainLevel] ?? null;
+  const isMaxLevel = nextLevelXp === null;
+  const xpIntoLevel = captainXp - currentLevelFloor;
+  const xpSpan = isMaxLevel ? 0 : (nextLevelXp - currentLevelFloor);
+  const xpProgressPct = isMaxLevel ? 100 : Math.max(0, Math.min(100, (xpIntoLevel / xpSpan) * 100));
+  const xpToNext = isMaxLevel ? 0 : Math.max(0, nextLevelXp - captainXp);
+
+  const followerGoal = 1_000_000;
+  const followerPct = Math.min((followers / followerGoal) * 100, 100);
+
+  const formatFollowers = (n: number) => {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1)}K`;
+    return n.toString();
+  };
+
   return (
-    <div className="tab-content fade-in">
-      <span className="card-label">Kaptan Dosyası</span>
-      <div className="captain-header">
-        <div className="captain-avatar">{profileIcons[selectedProfile.id]}</div>
-        <div className="captain-title">
-          <h2>{selectedProfile.name}</h2>
-          <p>{selectedProfile.tagline}</p>
-        </div>
-      </div>
-
-      <div className="captain-career-card">
-        <span className="captain-career-eyebrow">Kaptan Kariyeri</span>
-        <div className="captain-career-title">Kaptan Rütbesi</div>
-        <div className="captain-career-rank">{captainRankLabel}</div>
-        <div className="captain-career-text">{captainCareerText}</div>
-        <div className="captain-career-meta">
-          Seviye: {captainLevel} · XP: {captainXp} · Tamamlanan rota: {completedRoutesCount}
-        </div>
-      </div>
-
-      <div className="mini-skills-grid">
-        {Object.entries(selectedProfile.skills).map(([key, value]) => (
-          <div key={key} className="skill-box">
-            <span>{skillLabels[key] ?? key}</span>
-            <strong>{value}/5</strong>
-            <div className="skill-mini-bar">
-              <div className="skill-mini-fill" style={{ width: `${value * 20}%` }}></div>
-            </div>
+    <div className="tab-content kp-tab-v2 fade-in">
+      {/* ── Captain hero ── */}
+      <div className="kp-hero glass-card">
+        <div className="kp-hero-glow" aria-hidden="true" />
+        <div className="kp-hero-row">
+          <div className="kp-avatar-wrap">
+            <span className="kp-avatar-halo" aria-hidden="true" />
+            <span className="kp-avatar-ring" aria-hidden="true" />
+            <span className="kp-avatar">{profileIcons[selectedProfile.id]}</span>
           </div>
-        ))}
-      </div>
-
-      <div className="career-goals">
-        <h3>Kariyer Hedefleri</h3>
-        <div className="goal-item">
-          <span>Dünya Turu</span>
-          <div className="goal-bar">
-            <div className="goal-fill" style={{ width: `${worldProgress}%` }}></div>
+          <div className="kp-hero-id">
+            <span className="kp-hero-eyebrow">⚓ KAPTAN DOSYASI</span>
+            <h2 className="kp-hero-name">{selectedProfile.name}</h2>
+            <p className="kp-hero-tagline">{selectedProfile.tagline}</p>
           </div>
         </div>
-        <div className="goal-item">
-          <span>Takipçi Hedefi (1M)</span>
-          <div className="goal-bar">
-            <div className="goal-fill" style={{ width: `${Math.min(followers / 10000, 100)}%` }}></div>
+        <div className="kp-rank-row">
+          <span className="kp-rank-pill">{captainRankLabel}</span>
+          <span className="kp-rank-meta">Lv.{captainLevel} · {captainXp.toLocaleString("tr-TR")} XP</span>
+        </div>
+      </div>
+
+      {/* ── Level / XP card ── */}
+      <div className="kp-level-card glass-card">
+        <div className="kp-level-head">
+          <div className="kp-level-num">
+            <span className="kp-level-tag">SEVİYE</span>
+            <strong className="kp-level-val">{captainLevel}</strong>
+          </div>
+          <div className="kp-level-info">
+            <span className="kp-level-rank">{captainRankLabel}</span>
+            <p className="kp-level-text">{captainCareerText}</p>
+          </div>
+        </div>
+        <div className="kp-xp-track">
+          <div className="kp-xp-fill" style={{ width: `${xpProgressPct}%` }} />
+        </div>
+        <div className="kp-xp-meta">
+          {isMaxLevel ? (
+            <span className="kp-xp-max">★ Maksimum seviye</span>
+          ) : (
+            <>
+              <span>{xpIntoLevel.toLocaleString("tr-TR")} / {xpSpan.toLocaleString("tr-TR")} XP</span>
+              <span className="kp-xp-next">Lv.{captainLevel + 1}'e {xpToNext.toLocaleString("tr-TR")} XP</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── Career goals ── */}
+      <div className="kp-goals-card glass-card">
+        <span className="kp-goals-eyebrow">◐ KARİYER HEDEFLERİ</span>
+        <div className="kp-goal-row">
+          <div className="kp-goal-label-row">
+            <span className="kp-goal-icon">🌍</span>
+            <span className="kp-goal-label">Dünya Turu</span>
+            <span className="kp-goal-val">%{worldProgress}</span>
+          </div>
+          <div className="kp-goal-track">
+            <div className="kp-goal-fill kp-goal-fill--gold" style={{ width: `${worldProgress}%` }} />
+          </div>
+        </div>
+        <div className="kp-goal-row">
+          <div className="kp-goal-label-row">
+            <span className="kp-goal-icon">👥</span>
+            <span className="kp-goal-label">Takipçi Hedefi (1M)</span>
+            <span className="kp-goal-val">{formatFollowers(followers)}</span>
+          </div>
+          <div className="kp-goal-track">
+            <div className="kp-goal-fill kp-goal-fill--cyan" style={{ width: `${followerPct}%` }} />
+          </div>
+        </div>
+        <div className="kp-goal-row">
+          <div className="kp-goal-label-row">
+            <span className="kp-goal-icon">🗺️</span>
+            <span className="kp-goal-label">Tamamlanan Rota</span>
+            <span className="kp-goal-val">{completedRoutesCount}</span>
           </div>
         </div>
       </div>
 
-      <div className="achievements-showcase-card mt-20">
-        <span className="achievements-showcase-eyebrow">Rozet Vitrini</span>
-        <div className="achievements-showcase-title">Başarı Yolculuğu</div>
-        <div className="achievements-showcase-text">
-          {unlockedCount > 0
-            ? "Açılan rozetler, dünya turu kariyerindeki gerçek ilerlemeyi gösterir."
-            : "İlk rozetini açmak için içerik üret, rota tamamla ve kaptanlığını geliştir."}
-        </div>
-        <div className="achievements-showcase-meta">
-          {unlockedCount}/{totalCount} rozet açıldı
-        </div>
-        <div className="achievement-badge-list">
-          {allBadgesSorted.map((achievement) => (
-            <div
-              key={achievement.id}
-              className={`achievement-badge-chip${achievement.unlocked ? "" : " locked"}`}
-              title={achievement.description}
-            >
-              {achievement.unlocked ? "🏅" : "○"} {achievement.title}
+      {/* ── Skills ── */}
+      <div className="kp-skills-card glass-card">
+        <span className="kp-skills-eyebrow">⚙ KAPTAN YETENEKLERİ</span>
+        <div className="kp-skills-grid">
+          {Object.entries(selectedProfile.skills).map(([key, value]) => (
+            <div key={key} className="kp-skill-cell">
+              <span className="kp-skill-label">{skillLabels[key] ?? key}</span>
+              <strong className="kp-skill-val">{value}/5</strong>
+              <div className="kp-skill-track">
+                <div className="kp-skill-fill" style={{ width: `${value * 20}%` }} />
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="event-log-compact mt-20">
-        <span className="card-label">Son Olaylar</span>
-        {logs.map((log, i) => <div key={log + i} className="log-entry">{log}</div>)}
+      {/* ── Achievements ── */}
+      <div className="kp-ach-card glass-card">
+        <div className="kp-ach-head">
+          <div>
+            <span className="kp-ach-eyebrow">🏆 ROZET VİTRİNİ</span>
+            <div className="kp-ach-title">Başarı Yolculuğu</div>
+          </div>
+          <span className="kp-ach-count">{unlockedCount}/{totalCount}</span>
+        </div>
+        <div className="kp-ach-track">
+          <div className="kp-ach-fill" style={{ width: totalCount === 0 ? "0%" : `${(unlockedCount / totalCount) * 100}%` }} />
+        </div>
+        <p className="kp-ach-text">
+          {unlockedCount > 0
+            ? "Açılan rozetler, dünya turu kariyerindeki gerçek ilerlemeyi gösterir."
+            : "İlk rozetini açmak için içerik üret, rota tamamla ve kaptanlığını geliştir."}
+        </p>
+        <div className="kp-ach-grid">
+          {allBadgesSorted.map((achievement) => (
+            <div
+              key={achievement.id}
+              className={`kp-ach-chip${achievement.unlocked ? " is-unlocked" : " is-locked"}`}
+              title={achievement.description}
+            >
+              <span className="kp-ach-chip-icon">{achievement.unlocked ? "🏅" : "🔒"}</span>
+              <span className="kp-ach-chip-label">{achievement.title}</span>
+            </div>
+          ))}
+        </div>
       </div>
+
+      {/* ── Event log (compact, secondary) ── */}
+      {logs.length > 0 && (
+        <div className="kp-log-card glass-card">
+          <span className="kp-log-eyebrow">📋 SON OLAYLAR</span>
+          <div className="kp-log-list">
+            {logs.slice(0, 5).map((log, i) => (
+              <div key={log + i} className="kp-log-entry">{log}</div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1962,17 +1962,6 @@ function App() {
   );
   };
 
-  const upgradeCategoryHints: Record<string, string> = {
-    energy: "Uzun rotalarda güç üretimini ve dayanıklılığı artırır.",
-    navigation: "Daha zorlu rotalarda yön bulma ve seyir güvenliğini güçlendirir.",
-    safety: "Açık denizde beklenmedik koşullarda hayatta kalmayı destekler.",
-    sail_speed: "Rota sürelerini kısaltır, seyir verimliliğini artırır.",
-    engine_mechanical: "Motor güvenilirliğini ve yakıt verimliliğini iyileştirir.",
-    water_life: "Uzun geçişlerde su ve yaşam sistemlerini güçlendirir.",
-    comfort: "Mürettebat enerjisini korur, seyir boyunca tükenmeyi yavaşlatır.",
-    content_equipment: "İçerik kalitesini ve takipçi büyümesini doğrudan destekler.",
-  };
-
   const renderTekneTab = () => {
     const filteredUpgrades = BOAT_UPGRADES.filter(u => u.categoryId === selectedUpgradeCategory);
     const currentInstallingUpgrade = upgradeInProgress
@@ -1982,110 +1971,150 @@ function App() {
       ? formatRemainingInstallTime(upgradeInProgress.completesAt)
       : "";
 
-    return (
-      <div className="tab-content fade-in">
-        <div className="boat-summary-card">
-          <div className="boat-summary-header">
-             <div className="boat-summary-visual">{getBoatSvg(selectedBoat.id)}</div>
-             <div>
-                <h2>{boatName}</h2>
-                <p>{selectedBoat.name} · {selectedBoat.lengthFt} ft</p>
-             </div>
-             <div className="boat-summary-credits">
-                <strong>{credits.toLocaleString("tr-TR")} TL</strong>
-                <small>Bütçe</small>
-             </div>
-          </div>
-          
-          <div className="ocean-readiness-box">
-             <div className="or-header">
-                <span>Okyanus Hazırlığı</span>
-                <strong>{currentOceanReadiness}%</strong>
-             </div>
-             <div className="progress-bar-container mt-10">
-                <div className="progress-fill" style={{width: `${currentOceanReadiness}%`}}></div>
-             </div>
-          </div>
-          
-          <div className="boat-stats-grid">
-             <div className="stat-box-small"><span>Enerji Puanı</span><strong>{upgradeEnergyBonus}</strong></div>
-             <div className="stat-box-small"><span>Su / Yaşam</span><strong>{upgradeWaterBonus}</strong></div>
-             <div className="stat-box-small"><span>Güvenlik</span><strong>{upgradeSafetyBonus}</strong></div>
-             <div className="stat-box-small"><span>Navigasyon</span><strong>{upgradeNavigationBonus}</strong></div>
-          </div>
-        </div>
-        <p className="helper-hint">Upgrade'ler uzun rotalarda hayatta kalmanı ve daha verimli ilerlemeni kolaylaştırır.</p>
+    const tkStats: Array<{ key: "energy" | "water" | "safety" | "nav"; icon: string; label: string; value: number }> = [
+      { key: "energy", icon: "⚡", label: "Enerji", value: upgradeEnergyBonus },
+      { key: "water", icon: "💧", label: "Su", value: upgradeWaterBonus },
+      { key: "safety", icon: "🛟", label: "Güvenlik", value: upgradeSafetyBonus },
+      { key: "nav", icon: "🧭", label: "Navigasyon", value: upgradeNavigationBonus },
+    ];
 
-        <div className="upgrade-categories-scroll">
-           {UPGRADE_CATEGORIES.map(cat => (
-              <button 
-                key={cat.id} 
-                className={`category-pill ${selectedUpgradeCategory === cat.id ? "active" : ""}`}
-                onClick={() => setSelectedUpgradeCategory(cat.id)}
-              >
-                 {cat.name}
-              </button>
-           ))}
+    return (
+      <div className="tab-content tk-tab-v2 fade-in">
+        {/* ── Boat hero ── */}
+        <div className="tk-hero glass-card">
+          <div className="tk-hero-glow" aria-hidden="true" />
+          <div className="tk-hero-top">
+            <div className="tk-hero-boat">
+              <span className="tk-hero-boat-halo" aria-hidden="true" />
+              <span className="tk-hero-boat-svg">{getBoatSvg(selectedBoat.id)}</span>
+            </div>
+            <div className="tk-hero-id">
+              <span className="tk-hero-eyebrow">⚙ TERSANE</span>
+              <h2 className="tk-hero-name">{boatName}</h2>
+              <p className="tk-hero-class">{selectedBoat.name} · {selectedBoat.lengthFt} ft</p>
+            </div>
+            <div className="tk-hero-credits">
+              <strong>{credits.toLocaleString("tr-TR")} TL</strong>
+              <small>Bütçe</small>
+            </div>
+          </div>
+
+          <div className="tk-readiness-box">
+            <div className="tk-readiness-row">
+              <span className="tk-readiness-label">Okyanus Hazırlığı</span>
+              <strong className="tk-readiness-val">{currentOceanReadiness}%</strong>
+            </div>
+            <div className="tk-readiness-track">
+              <div className="tk-readiness-fill" style={{ width: `${currentOceanReadiness}%` }} />
+            </div>
+          </div>
+
+          <div className="tk-stats-grid">
+            {tkStats.map(s => (
+              <div key={s.key} className="tk-stat-chip" data-stat={s.key}>
+                <span className="tk-stat-icon">{s.icon}</span>
+                <div className="tk-stat-body">
+                  <span className="tk-stat-label">{s.label}</span>
+                  <strong className="tk-stat-val">{s.value}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {currentInstallingUpgrade && (
-          <div className="detail-box">
-            <strong>Kurulum devam ediyor: {currentInstallingUpgrade.name}</strong>
-            <div>{currentInstallLabel}</div>
+          <div className="tk-install-card glass-card">
+            <span className="tk-install-pulse" aria-hidden="true" />
+            <div className="tk-install-icon">🔧</div>
+            <div className="tk-install-body">
+              <span className="tk-install-eyebrow">KURULUM SÜRÜYOR</span>
+              <strong className="tk-install-name">{currentInstallingUpgrade.name}</strong>
+              <span className="tk-install-time">{currentInstallLabel}</span>
+            </div>
           </div>
         )}
 
-        <div className="upgrade-list-v2">
+        <div className="tk-cat-strip">
+          {UPGRADE_CATEGORIES.map(cat => (
+            <button
+              key={cat.id}
+              className={`tk-cat-pill${selectedUpgradeCategory === cat.id ? " is-active" : ""}`}
+              onClick={() => setSelectedUpgradeCategory(cat.id)}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="tk-upgrade-list">
           {filteredUpgrades.map(upgrade => {
             const isPurchased = purchasedUpgradeIds.includes(upgrade.id);
             const isInstalling = upgradeInProgress?.upgradeId === upgrade.id;
             const comp = upgrade.compatibility.find(c => c.boatId === selectedBoat.id);
             const isCompatible = comp ? comp.compatible : false;
             const hasWarning = comp && (comp.efficiency === "poor" || comp.efficiency === "limited");
+            const cantAfford = credits < upgrade.cost;
+            const buyDisabled = cantAfford || !!upgradeInProgress;
 
             return (
-              <div key={upgrade.id} className={`upgrade-card-v2 ${!isCompatible ? "incompatible" : ""}`}>
-                <div className="upg-header">
-                  <strong>{upgrade.name}</strong>
-                  {isPurchased && <span className="badge-purchased">ALINDI</span>}
+              <div
+                key={upgrade.id}
+                className={`tk-upg-card glass-card${!isCompatible ? " is-incompat" : ""}${isPurchased ? " is-owned" : ""}`}
+              >
+                <div className="tk-upg-head">
+                  <div className="tk-upg-title-row">
+                    <strong className="tk-upg-name">{upgrade.name}</strong>
+                    {isPurchased && <span className="tk-upg-badge tk-upg-badge--owned">✓ ALINDI</span>}
+                    {!isCompatible && <span className="tk-upg-badge tk-upg-badge--incompat">UYUMSUZ</span>}
+                  </div>
+                  {!isPurchased && (
+                    <span className={`tk-upg-cost${cantAfford ? " is-low" : ""}`}>
+                      {upgrade.cost.toLocaleString("tr-TR")} TL
+                    </span>
+                  )}
                 </div>
-                <p className="upg-desc">{upgrade.description}</p>
-                {upgradeCategoryHints[upgrade.categoryId] && (
-                  <p className="upg-strategy-hint">{upgradeCategoryHints[upgrade.categoryId]}</p>
-                )}
 
-                <div className="upg-details-grid">
-                   <div><small>Süre:</small> {upgrade.installDays} Gün</div>
-                   <div><small>Marina:</small> {upgrade.marinaRequirement.toUpperCase()}</div>
+                <p className="tk-upg-desc">{upgrade.description}</p>
+
+                <div className="tk-upg-meta">
+                  <span className="tk-upg-meta-pill">⏱ {upgrade.installDays} gün</span>
+                  <span className="tk-upg-meta-pill">⚓ {upgrade.marinaRequirement.toUpperCase()}</span>
+                </div>
+
+                <div className="tk-upg-effects">
+                  {Object.entries(upgrade.effects).map(([key, val]) => {
+                    if (!val) return null;
+                    return (
+                      <span key={key} className="tk-upg-effect-chip">
+                        {upgradeEffectLabels[key] ?? key} <strong>+{val}</strong>
+                      </span>
+                    );
+                  })}
                 </div>
 
                 {hasWarning && !isPurchased && isCompatible && (
-                  <div className="upg-warning">⚠️ Bu teknede verimi sınırlı: {comp.note}</div>
+                  <div className="tk-upg-note tk-upg-note--warn">⚠️ Bu teknede verimi sınırlı: {comp.note}</div>
                 )}
                 {!isCompatible && (
-                  <div className="upg-error">❌ Bu tekne için uygun değil.</div>
+                  <div className="tk-upg-note tk-upg-note--error">❌ Bu tekne için uygun değil.</div>
                 )}
 
-                <div className="upg-effects">
-                  {Object.entries(upgrade.effects).map(([key, val]) => {
-                     if (!val) return null;
-                     return <span key={key} className="effect-badge">{upgradeEffectLabels[key] ?? key}: +{val}</span>;
-                  })}
-                </div>
-                
                 {!isPurchased && isCompatible && (
-                  <button 
-                    className={`btn-primary full-width mt-10 ${credits < upgrade.cost || !!upgradeInProgress ? "disabled" : ""}`}
+                  <button
+                    className={`tk-upg-cta${buyDisabled ? " is-disabled" : ""}`}
                     onClick={() => handleBuyUpgrade(upgrade.id)}
-                    disabled={credits < upgrade.cost || !!upgradeInProgress}
+                    disabled={buyDisabled}
                   >
-                    {isInstalling
-                      ? "Kurulumda"
-                      : upgradeInProgress
-                        ? "Kurulum Bekleniyor"
-                        : credits < upgrade.cost
-                          ? "Yetersiz Bütçe"
-                          : `${upgrade.cost.toLocaleString("tr-TR")} TL - Satın Al`}
+                    <span className="tk-upg-cta-icon">{isInstalling ? "🔧" : upgradeInProgress ? "⏳" : cantAfford ? "✕" : "⚙"}</span>
+                    <span className="tk-upg-cta-label">
+                      {isInstalling
+                        ? "Kurulumda"
+                        : upgradeInProgress
+                          ? "Kurulum Bekleniyor"
+                          : cantAfford
+                            ? "Yetersiz Bütçe"
+                            : "Satın Al"}
+                    </span>
                   </button>
                 )}
               </div>

@@ -6400,3 +6400,168 @@ button {
 .ar-cta-btn {
   width: 100%;
 }
+
+/* ─── BATCH 5-B: LEVEL-UP + ACHIEVEMENT CELEBRATION ─── */
+
+.cel-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 var(--space-4) var(--space-6);
+}
+
+.cel-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 8, 20, 0.80);
+  backdrop-filter: blur(10px);
+}
+
+.cel-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 400px;
+  padding: var(--space-7) var(--space-5) var(--space-6);
+  text-align: center;
+  animation: cel-card-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cel-card-in {
+  from { opacity: 0; transform: translateY(40px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.cel-card--levelup {
+  border-color: rgba(255, 217, 130, 0.35);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(255, 217, 130, 0.12) inset;
+}
+
+.cel-card--achievement {
+  border-color: rgba(94, 234, 248, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(94, 234, 248, 0.1) inset;
+}
+
+.cel-eyebrow {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: var(--space-4);
+}
+
+.cel-eyebrow--gold {
+  color: var(--gold-bright);
+  text-shadow: 0 0 16px rgba(255, 217, 130, 0.7);
+  animation: cel-glow-gold 2s ease-in-out infinite;
+}
+
+.cel-eyebrow--cyan {
+  color: var(--cyan-glow);
+  text-shadow: 0 0 16px rgba(94, 234, 248, 0.6);
+  animation: cel-glow-cyan 2s ease-in-out infinite;
+}
+
+@keyframes cel-glow-gold {
+  0%, 100% { text-shadow: 0 0 12px rgba(255, 217, 130, 0.6); }
+  50%       { text-shadow: 0 0 24px rgba(255, 217, 130, 1);   }
+}
+
+@keyframes cel-glow-cyan {
+  0%, 100% { text-shadow: 0 0 12px rgba(94, 234, 248, 0.5); }
+  50%       { text-shadow: 0 0 24px rgba(94, 234, 248, 0.9); }
+}
+
+/* Level-up specific */
+
+.cel-level-badge {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  margin: 0 auto var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(255, 217, 130, 0.2) 0%, rgba(255, 217, 130, 0.06) 70%);
+  border: 2px solid rgba(255, 217, 130, 0.5);
+  box-shadow: 0 0 32px rgba(255, 217, 130, 0.35);
+  animation: cel-badge-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes cel-badge-pulse {
+  0%, 100% { box-shadow: 0 0 32px rgba(255, 217, 130, 0.35); }
+  50%       { box-shadow: 0 0 48px rgba(255, 217, 130, 0.65); }
+}
+
+.cel-level-num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--gold-bright);
+  text-shadow: 0 0 16px rgba(255, 217, 130, 0.6);
+}
+
+.cel-rank {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.cel-bonus {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--success-green);
+  background: rgba(75, 232, 163, 0.1);
+  border: 1px solid rgba(75, 232, 163, 0.25);
+  border-radius: var(--radius-pill);
+  padding: 5px 16px;
+  display: inline-block;
+  margin-bottom: var(--space-5);
+}
+
+/* Achievement specific */
+
+.cel-achievement-icon {
+  font-size: 52px;
+  margin-bottom: var(--space-4);
+  display: block;
+  animation: cel-icon-pop 0.4s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cel-icon-pop {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.cel-achievement-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.cel-achievement-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-5);
+}
+
+/* Shared dismiss button */
+
+.cel-dismiss-btn {
+  width: 100%;
+  min-height: 52px;
+}

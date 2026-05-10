@@ -22,6 +22,8 @@ import { RotaTab } from "./components/RotaTab";
 import { SeaModeTab } from "./components/SeaModeTab";
 import { KaptanTab } from "./components/KaptanTab";
 import { ArrivalScreen } from "./components/ArrivalScreen";
+import { CelebrationModal } from "./components/CelebrationModal";
+import type { CelebrationItem } from "./components/CelebrationModal";
 
 const SAVE_KEY = "yelkenli_save";
 const SAVE_VERSION = 2;
@@ -461,6 +463,31 @@ const upgradeEffectLabels: Record<string, string> = {
   engine: "Motor",
 };
 
+const getCaptainRankLabel = (level: number): string => {
+  if (level >= 13) return "Dünya Turu Kaptanı";
+  if (level >= 9)  return "Okyanus Yolcusu";
+  if (level >= 6)  return "Deneyimli Kaptan";
+  if (level >= 4)  return "Açık Deniz Adayı";
+  if (level >= 2)  return "Kıyı Seyircisi";
+  return "Acemi Kaptan";
+};
+
+const ACHIEVEMENT_ICONS: Record<string, string> = {
+  first_content:    "🎬",
+  first_route:      "⚓",
+  first_upgrade:    "🔧",
+  first_sponsor:    "🤝",
+  followers_1k:     "👥",
+  rising_captain:   "⭐",
+  locked_in:        "🎯",
+  sea_dog:          "🌊",
+  steady_creator:   "📱",
+  followers_10k:    "🌟",
+  content_machine:  "📹",
+  atlantic_done:    "🌊",
+  world_tour_done:  "🏆",
+};
+
 const getRouteCompletionRewards = (route: (typeof WORLD_ROUTES)[number]) => {
   const contentPotentialMultipliers: Record<string, number> = {
     low: 0.75,
@@ -589,6 +616,11 @@ function App() {
   const [toastQueue, setToastQueue] = useState<ToastItem[]>([]);
   const [activeToast, setActiveToast] = useState<ToastItem | null>(null);
   const [isToastLeaving, setIsToastLeaving] = useState(false);
+
+  const [celebrationQueue, setCelebrationQueue] = useState<CelebrationItem[]>([]);
+  const [activeCelebration, setActiveCelebration] = useState<CelebrationItem | null>(null);
+  const prevCaptainLevelRef = useRef<number | null>(null);
+
   const previousUnlockedAchievementIdsRef = useRef<string[]>([]);
   const hasInitializedAchievementBannerRef = useRef(false);
   const previousSponsorOfferIdsRef = useRef<string[]>([]);
@@ -676,7 +708,12 @@ function App() {
     previousUnlockedAchievementIdsRef.current = unlockedAchievementIds;
 
     if (newlyUnlockedAchievement) {
-      pushToast("achievement", "Rozet Kazanıldı!", `${newlyUnlockedAchievement.title} açıldı.`);
+      setCelebrationQueue(q => [...q, {
+        type: "achievement" as const,
+        title: newlyUnlockedAchievement.title,
+        description: newlyUnlockedAchievement.description,
+        icon: ACHIEVEMENT_ICONS[newlyUnlockedAchievement.id] ?? "🏅",
+      }]);
     }
   }, [achievementStatuses]);
 
@@ -761,6 +798,29 @@ function App() {
       return prev;
     });
   }, [captainXp]);
+
+  useEffect(() => {
+    if (prevCaptainLevelRef.current === null) {
+      prevCaptainLevelRef.current = captainLevel;
+      return;
+    }
+    if (captainLevel > prevCaptainLevelRef.current) {
+      const bonus = captainLevel * 500;
+      setCelebrationQueue(q => [...q, {
+        type: "levelup" as const,
+        level: captainLevel,
+        rank: getCaptainRankLabel(captainLevel),
+        bonus,
+      }]);
+    }
+    prevCaptainLevelRef.current = captainLevel;
+  }, [captainLevel]);
+
+  useEffect(() => {
+    if (activeCelebration || celebrationQueue.length === 0) return;
+    setActiveCelebration(celebrationQueue[0]);
+    setCelebrationQueue(prev => prev.slice(1));
+  }, [activeCelebration, celebrationQueue]);
 
   useEffect(() => {
     if (step === "HUB") {
@@ -2167,6 +2227,12 @@ function App() {
       )}
       {(step === "HUB" || step === "SEA_MODE") && renderMainGame()}
       {step === "ARRIVAL_SCREEN" && renderArrivalScreen()}
+      {activeCelebration && (
+        <CelebrationModal
+          celebration={activeCelebration}
+          onDismiss={() => setActiveCelebration(null)}
+        />
+      )}
     </div>
   );
 }

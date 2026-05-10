@@ -91,6 +91,8 @@ const getBoatUpgradeDurationMs = (captainLevel: number): number => {
   return 20 * 60 * 1000;
 };
 
+const MAX_PARALLEL_UPGRADES = 3;
+
 const makeDailyGoals = (dateKey: string = new Date().toISOString().slice(0, 10)): DailyGoal[] => {
   const theme = getDailyGoalTheme(dateKey);
 
@@ -101,9 +103,12 @@ const makeDailyGoals = (dateKey: string = new Date().toISOString().slice(0, 10))
   ];
 };
 
-type UpgradeInProgress = {
+type UpgradeInProgressItem = {
   upgradeId: string;
   completesAt: number;
+  startedAt: number;
+  durationMs: number;
+  slot: 0 | 1 | 2;
 };
 
 type SeaDecisionEffect = {
@@ -577,7 +582,7 @@ function App() {
   const [logs, setLogs] = useState<string[]>([]);
   const [firstContentDone, setFirstContentDone] = useState(false);
   const [purchasedUpgradeIds, setPurchasedUpgradeIds] = useState<string[]>([]);
-  const [upgradeInProgress, setUpgradeInProgress] = useState<UpgradeInProgress | null>(null);
+  const [upgradesInProgress, setUpgradesInProgress] = useState<UpgradeInProgressItem[]>([]);
 
   // Sea Mode MVP states
   const [currentLocationName, setCurrentLocationName] = useState("");
@@ -692,7 +697,7 @@ function App() {
   const currentRouteReadinessGapCount = currentRouteReadinessItems.filter(item => item.current < item.required).length;
   const hasRouteReadinessGap = currentRouteReadinessGapCount > 0;
   const totalRoutesCompleted = completedRouteIds.length;
-  const totalUpgradesStarted = purchasedUpgradeIds.length + (upgradeInProgress ? 1 : 0);
+  const totalUpgradesStarted = purchasedUpgradeIds.length + upgradesInProgress.length;
   const achievementStatuses = ACHIEVEMENTS.map((achievement) => ({
     ...achievement,
     unlocked: achievement.isUnlocked({
@@ -777,23 +782,24 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!upgradeInProgress) return;
+    if (upgradesInProgress.length === 0) return;
 
-    if (purchasedUpgradeIds.includes(upgradeInProgress.upgradeId)) {
-      setUpgradeInProgress(null);
+    const sanitizedUpgrades = upgradesInProgress.filter((item) => !purchasedUpgradeIds.includes(item.upgradeId));
+    if (sanitizedUpgrades.length !== upgradesInProgress.length) {
+      setUpgradesInProgress(sanitizedUpgrades);
       return;
     }
 
     const checkInstallation = () => {
-      if (upgradeInProgress.completesAt <= Date.now()) {
-        completeUpgradeInstallation(upgradeInProgress.upgradeId);
-      }
+      const completedUpgrades = sanitizedUpgrades.filter((item) => item.completesAt <= Date.now());
+      if (completedUpgrades.length === 0) return;
+      completedUpgrades.forEach((item) => completeUpgradeInstallation(item.upgradeId));
     };
 
     checkInstallation();
     const intervalId = window.setInterval(checkInstallation, UPGRADE_INSTALL_CHECK_INTERVAL_MS);
     return () => window.clearInterval(intervalId);
-  }, [upgradeInProgress, purchasedUpgradeIds]);
+  }, [upgradesInProgress, purchasedUpgradeIds]);
 
   useEffect(() => {
     if (!lastContentAt) return;
@@ -895,7 +901,7 @@ function App() {
         firstContentDone,
         logs,
         purchasedUpgradeIds,
-        upgradeInProgress,
+        upgradesInProgress,
         step,
         activeTab,
         currentLocationName,
@@ -937,7 +943,7 @@ function App() {
     }
   }, [
     step, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone,
-    logs, purchasedUpgradeIds, upgradeInProgress, activeTab, currentLocationName, worldProgress, energy, water,
+    logs, purchasedUpgradeIds, upgradesInProgress, activeTab, currentLocationName, worldProgress, energy, water,
     fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining,
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
     brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt,
@@ -955,7 +961,7 @@ function App() {
     setCredits(STARTING_BUDGET - selectedBoat.purchaseCost);
     setFollowers(0);
     setPurchasedUpgradeIds([]);
-    setUpgradeInProgress(null);
+    setUpgradesInProgress([]);
     setLogs(["Kariyer başladı. Limana giriş yapıldı."]);
     setCurrentLocationName(selectedMarina.name);
     setWorldProgress(0);
@@ -996,6 +1002,7 @@ function App() {
       if (!parsed) return;
 
       const savedPurchasedUpgradeIds = parsed.purchasedUpgradeIds ?? [];
+      const savedUpgradesInProgress = Array.isArray(parsed.upgradesInProgress) ? parsed.upgradesInProgress : null;
       const savedUpgradeInProgress = parsed.upgradeInProgress ?? null;
       const savedCredits = parsed.credits ?? 0;
       const savedLogs = parsed.logs ?? [];
@@ -1004,14 +1011,8 @@ function App() {
       let offlineMinutes = 0;
       let offlineCredits = 0;
       let nextPurchasedUpgradeIds = savedPurchasedUpgradeIds;
-      let nextUpgradeInProgress =
-        savedUpgradeInProgress &&
-        typeof savedUpgradeInProgress.upgradeId === "string" &&
-        typeof savedUpgradeInProgress.completesAt === "number" &&
-        Number.isFinite(savedUpgradeInProgress.completesAt)
-          ? savedUpgradeInProgress
-          : null;
-      let installationCompleteUpgrade: (typeof BOAT_UPGRADES)[number] | null = null;
+      let nextUpgradesInProgress: UpgradeInProgressItem[] = [];
+      const completedUpgradeIds: string[] = [];
 
       if (typeof savedLastSavedAt === "number" && Number.isFinite(savedLastSavedAt)) {
         const offlineMs = Math.max(0, Date.now() - savedLastSavedAt);
@@ -1019,23 +1020,74 @@ function App() {
         offlineCredits = Math.max(0, offlineMinutes * OFFLINE_CREDITS_PER_MINUTE);
       }
 
-      if (nextUpgradeInProgress) {
-        const installingUpgrade = BOAT_UPGRADES.find(u => u.id === nextUpgradeInProgress.upgradeId);
+      const isValidUpgradeId = (upgradeId: string) => BOAT_UPGRADES.some((upgrade) => upgrade.id === upgradeId);
+      const usedSlots = new Set<number>();
+      const registerSavedUpgrade = (rawItem: unknown, fallbackSlot: 0 | 1 | 2) => {
+        if (!rawItem || typeof rawItem !== "object") return;
+        const item = rawItem as Partial<UpgradeInProgressItem> & { upgradeId?: unknown; completesAt?: unknown };
+        if (typeof item.upgradeId !== "string" || !isValidUpgradeId(item.upgradeId)) return;
+        if (nextPurchasedUpgradeIds.includes(item.upgradeId)) return;
+        if (nextUpgradesInProgress.some((existing) => existing.upgradeId === item.upgradeId)) return;
+        if (typeof item.completesAt !== "number" || !Number.isFinite(item.completesAt)) return;
 
-        if (!installingUpgrade || nextPurchasedUpgradeIds.includes(nextUpgradeInProgress.upgradeId)) {
-          nextUpgradeInProgress = null;
-        } else if (nextUpgradeInProgress.completesAt <= Date.now()) {
-          nextPurchasedUpgradeIds = [...nextPurchasedUpgradeIds, nextUpgradeInProgress.upgradeId];
-          installationCompleteUpgrade = installingUpgrade;
-          nextUpgradeInProgress = null;
+        if (item.completesAt <= Date.now()) {
+          completedUpgradeIds.push(item.upgradeId);
+          return;
         }
+
+        let slot = fallbackSlot;
+        if (typeof item.slot === "number" && item.slot >= 0 && item.slot < MAX_PARALLEL_UPGRADES && !usedSlots.has(item.slot)) {
+          slot = item.slot as 0 | 1 | 2;
+        } else {
+          const nextSlot = ([0, 1, 2] as const).find((candidate) => !usedSlots.has(candidate));
+          if (nextSlot === undefined) return;
+          slot = nextSlot;
+        }
+
+        const startedAt =
+          typeof item.startedAt === "number" && Number.isFinite(item.startedAt)
+            ? item.startedAt
+            : Math.min(Date.now(), item.completesAt);
+        const durationMs =
+          typeof item.durationMs === "number" && Number.isFinite(item.durationMs)
+            ? item.durationMs
+            : Math.max(0, item.completesAt - startedAt);
+
+        usedSlots.add(slot);
+        nextUpgradesInProgress.push({
+          upgradeId: item.upgradeId,
+          completesAt: item.completesAt,
+          startedAt,
+          durationMs,
+          slot,
+        });
+      };
+
+      if (savedUpgradesInProgress) {
+        savedUpgradesInProgress.forEach((item: unknown, index: number) => {
+          const fallbackSlot = (index < MAX_PARALLEL_UPGRADES ? index : 0) as 0 | 1 | 2;
+          registerSavedUpgrade(item, fallbackSlot);
+        });
+      } else if (savedUpgradeInProgress) {
+        registerSavedUpgrade(savedUpgradeInProgress, 0);
       }
+
+      const completedUpgradeObjects = completedUpgradeIds
+        .map((upgradeId) => BOAT_UPGRADES.find((upgrade) => upgrade.id === upgradeId))
+        .filter(Boolean) as typeof BOAT_UPGRADES;
+      const installationCompleteUpgrade = completedUpgradeObjects[0] ?? null;
+
+      completedUpgradeObjects.forEach((upgrade) => {
+        if (!nextPurchasedUpgradeIds.includes(upgrade.id)) {
+          nextPurchasedUpgradeIds = [...nextPurchasedUpgradeIds, upgrade.id];
+        }
+      });
 
       const passiveIncomeMessage =
         offlineCredits > 0
           ? `Pasif gelir: ${offlineMinutes} dakika içinde +${offlineCredits.toLocaleString("tr-TR")} TL birikti.`
           : "";
-      const installationCompleteMessage = installationCompleteUpgrade
+      const installationCompleteMessage = completedUpgradeObjects.length > 0
         ? `Kurulum tamamlandı: ${installationCompleteUpgrade.name} aktif edildi.`
         : "";
       const nextLogs = [installationCompleteMessage, passiveIncomeMessage, ...savedLogs]
@@ -1053,7 +1105,7 @@ function App() {
       setFirstContentDone(parsed.firstContentDone ?? false);
       setLogs(nextLogs);
       setPurchasedUpgradeIds(nextPurchasedUpgradeIds);
-      setUpgradeInProgress(nextUpgradeInProgress);
+      setUpgradesInProgress(nextUpgradesInProgress);
       setCurrentLocationName(parsed.currentLocationName ?? "");
       setWorldProgress(parsed.worldProgress ?? 0);
       setEnergy(parsed.energy ?? 100);
@@ -1093,6 +1145,10 @@ function App() {
         applyUpgradeEffects(installationCompleteUpgrade);
         pushToast("upgrade", "Upgrade Tamamlandı!", `${installationCompleteUpgrade.name} kurulumu tamamlandı!`);
       }
+      completedUpgradeObjects.slice(1).forEach((upgrade) => {
+        applyUpgradeEffects(upgrade);
+        pushToast("upgrade", "Upgrade Tamamlandı!", `${upgrade.name} kurulumu tamamlandı!`);
+      });
     } catch (e) {
       console.error("Load error", e);
     }
@@ -1517,19 +1573,19 @@ function App() {
   ) => {
     const upgrade = BOAT_UPGRADES.find(u => u.id === upgradeId);
     if (!upgrade) {
-      setUpgradeInProgress(null);
+      setUpgradesInProgress(prev => prev.filter((item) => item.upgradeId !== upgradeId));
       return;
     }
 
     const purchasedIds = existingPurchasedIds ?? purchasedUpgradeIds;
     if (purchasedIds.includes(upgradeId)) {
-      setUpgradeInProgress(null);
+      setUpgradesInProgress(prev => prev.filter((item) => item.upgradeId !== upgradeId));
       return;
     }
 
     setPurchasedUpgradeIds(prev => [...prev, upgradeId]);
     applyUpgradeEffects(upgrade);
-    setUpgradeInProgress(null);
+    setUpgradesInProgress(prev => prev.filter((item) => item.upgradeId !== upgradeId));
     setLogs(prev => [`Kurulum tamamlandı: ${upgrade.name} aktif edildi.`, ...prev.slice(0, 4)]);
     pushToast("upgrade", "Upgrade Tamamlandı!", `${upgrade.name} kurulumu tamamlandı!`);
   };
@@ -1563,8 +1619,13 @@ function App() {
     const upgrade = BOAT_UPGRADES.find(u => u.id === upgradeId);
     if (!upgrade) return;
 
-    if (upgradeInProgress) {
-      setLogs(prev => ["Kurulum devam ediyor. Yeni upgrade için mevcut kurulumun bitmesini bekle.", ...prev.slice(0, 4)]);
+    if (upgradesInProgress.some((item) => item.upgradeId === upgradeId)) {
+      setLogs(prev => ["Bu upgrade zaten kurulumda. Ayni gelistirme iki kez baslatilamaz.", ...prev.slice(0, 4)]);
+      return;
+    }
+
+    if (upgradesInProgress.length >= MAX_PARALLEL_UPGRADES) {
+      setLogs(prev => ["Tum kurulum slotlari dolu. Yeni upgrade icin aktif kurulumlardan birinin bitmesini bekle.", ...prev.slice(0, 4)]);
       return;
     }
 
@@ -1578,11 +1639,17 @@ function App() {
     }
 
     const installMs = getUpgradeInstallMs(upgrade);
-    const completesAt = Date.now() + installMs;
+    const startedAt = Date.now();
+    const completesAt = startedAt + installMs;
     const installMinutes = Math.max(1, Math.ceil(installMs / 60000));
+    const slot = ([0, 1, 2] as const).find((candidate) => !upgradesInProgress.some((item) => item.slot === candidate));
+    if (slot === undefined) {
+      setLogs(prev => ["Tum kurulum slotlari dolu. Yeni upgrade icin aktif kurulumlardan birinin bitmesini bekle.", ...prev.slice(0, 4)]);
+      return;
+    }
 
     setCredits(prev => prev - upgrade.cost);
-    setUpgradeInProgress({ upgradeId, completesAt });
+    setUpgradesInProgress(prev => [...prev, { upgradeId, completesAt, startedAt, durationMs: installMs, slot }]);
     triggerFlash("credits");
     setLogs(prev => [`Kurulum başladı: ${upgrade.name}. Tahmini tamamlanma: ${installMinutes} dakika.`, ...prev.slice(0, 4)]);
     completeGoal("buy_upgrade");
@@ -2003,12 +2070,14 @@ function App() {
 
   const renderTekneTab = () => {
     const filteredUpgrades = BOAT_UPGRADES.filter(u => u.categoryId === selectedUpgradeCategory);
-    const currentInstallingUpgrade = upgradeInProgress
-      ? BOAT_UPGRADES.find(u => u.id === upgradeInProgress.upgradeId) ?? null
-      : null;
-    const currentInstallLabel = upgradeInProgress
-      ? formatRemainingInstallTime(upgradeInProgress.completesAt)
-      : "";
+    const activeInstallRows = upgradesInProgress
+      .slice()
+      .sort((a, b) => a.slot - b.slot)
+      .map((item) => ({
+        ...item,
+        upgrade: BOAT_UPGRADES.find((upgrade) => upgrade.id === item.upgradeId) ?? null,
+      }))
+      .filter((item) => item.upgrade !== null);
 
     const tkStats: Array<{ key: "energy" | "water" | "safety" | "nav"; icon: string; label: string; value: number }> = [
       { key: "energy", icon: "⚡", label: "Enerji", value: upgradeEnergyBonus },
@@ -2061,14 +2130,18 @@ function App() {
           </div>
         </div>
 
-        {currentInstallingUpgrade && (
+        {activeInstallRows.length > 0 && (
           <div className="tk-install-card glass-card">
             <span className="tk-install-pulse" aria-hidden="true" />
             <div className="tk-install-icon">🔧</div>
             <div className="tk-install-body">
               <span className="tk-install-eyebrow">KURULUM SÜRÜYOR</span>
-              <strong className="tk-install-name">{currentInstallingUpgrade.name}</strong>
-              <span className="tk-install-time">{currentInstallLabel}</span>
+              {activeInstallRows.map((item) => (
+                <div key={item.upgradeId} className="tk-install-row">
+                  <strong className="tk-install-name">Slot {item.slot + 1} · {item.upgrade?.name}</strong>
+                  <span className="tk-install-time">{formatRemainingInstallTime(item.completesAt)}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -2088,12 +2161,13 @@ function App() {
         <div className="tk-upgrade-list">
           {filteredUpgrades.map(upgrade => {
             const isPurchased = purchasedUpgradeIds.includes(upgrade.id);
-            const isInstalling = upgradeInProgress?.upgradeId === upgrade.id;
+            const isInstalling = upgradesInProgress.some((item) => item.upgradeId === upgrade.id);
             const comp = upgrade.compatibility.find(c => c.boatId === selectedBoat.id);
             const isCompatible = comp ? comp.compatible : false;
             const hasWarning = comp && (comp.efficiency === "poor" || comp.efficiency === "limited");
             const cantAfford = credits < upgrade.cost;
-            const buyDisabled = cantAfford || !!upgradeInProgress;
+            const slotsFull = upgradesInProgress.length >= MAX_PARALLEL_UPGRADES;
+            const buyDisabled = cantAfford || isInstalling || slotsFull;
             const installDurationLabel = formatInstallDuration(getUpgradeInstallMs(upgrade));
 
             return (
@@ -2145,12 +2219,12 @@ function App() {
                     onClick={() => handleBuyUpgrade(upgrade.id)}
                     disabled={buyDisabled}
                   >
-                    <span className="tk-upg-cta-icon">{isInstalling ? "🔧" : upgradeInProgress ? "⏳" : cantAfford ? "✕" : "⚙"}</span>
+                    <span className="tk-upg-cta-icon">{isInstalling ? "🔧" : slotsFull ? "⏳" : cantAfford ? "✕" : "⚙"}</span>
                     <span className="tk-upg-cta-label">
                       {isInstalling
                         ? "Kurulumda"
-                        : upgradeInProgress
-                          ? "Kurulum Bekleniyor"
+                        : slotsFull
+                          ? "Slot Dolu"
                           : cantAfford
                             ? "Yetersiz Bütçe"
                             : "Satın Al"}
@@ -2216,7 +2290,7 @@ function App() {
       const compatibility = upgrade.compatibility.find((item) => item.boatId === selectedBoat.id);
       return compatibility?.compatible ?? false;
     });
-    const canStartAnyUpgrade = !upgradeInProgress && BOAT_UPGRADES.some((upgrade) => {
+    const canStartAnyUpgrade = upgradesInProgress.length < MAX_PARALLEL_UPGRADES && BOAT_UPGRADES.some((upgrade) => {
       if (purchasedUpgradeIds.includes(upgrade.id)) return false;
       const compatibility = upgrade.compatibility.find((item) => item.boatId === selectedBoat.id);
       return (compatibility?.compatible ?? false) && credits >= upgrade.cost;

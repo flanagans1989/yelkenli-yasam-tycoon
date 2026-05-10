@@ -590,6 +590,9 @@ function App() {
   // Upgrade V2 State
   const [selectedUpgradeCategory, setSelectedUpgradeCategory] = useState<UpgradeCategoryId>("energy");
 
+  // UI dismissal state (session-only, not persisted)
+  const [tavsiyeDismissed, setTavsiyeDismissed] = useState(false);
+
   // Sponsor MVP States
   const [brandTrust, setBrandTrust] = useState(10);
   const [sponsorOffers, setSponsorOffers] = useState<any[]>([]);
@@ -1957,6 +1960,10 @@ function App() {
         completedRouteIds={completedRouteIds}
         onStartVoyage={handleStartVoyage}
         onGoTekne={() => setActiveTab("tekne")}
+        onGoUpgradeCategory={(cat) => {
+          setActiveTab("tekne");
+          setSelectedUpgradeCategory(cat as UpgradeCategoryId);
+        }}
       />
     </>
   );
@@ -2208,22 +2215,31 @@ function App() {
 
         </div>
 
-        <div className="next-action-card">
-          <div className="next-action-content">
-            <span className="next-action-eyebrow">Kaptan Tavsiyesi</span>
-            <div className="next-action-title">{nextActionTitle}</div>
+        {!tavsiyeDismissed && (
+          <div className="next-action-card">
+            <div className="next-action-content">
+              <span className="next-action-eyebrow">Kaptan Tavsiyesi</span>
+              <div className="next-action-title">{nextActionTitle}</div>
+            </div>
+            <button
+              className="next-action-cta primary-button"
+              onClick={() => setActiveTab(
+                (!contentGoalDoneToday || followers < 800) ? "icerik" :
+                (firstContentDone && completedRouteIds.length < 2) ? "rota" :
+                (canStartAnyUpgrade || hasAnyCompatibleUpgrade) ? "tekne" : "icerik"
+              )}
+            >
+              Git →
+            </button>
+            <button
+              className="next-action-dismiss"
+              onClick={() => setTavsiyeDismissed(true)}
+              aria-label="Kapat"
+            >
+              ×
+            </button>
           </div>
-          <button
-            className="next-action-cta primary-button"
-            onClick={() => setActiveTab(
-              (!contentGoalDoneToday || followers < 800) ? "icerik" :
-              (firstContentDone && completedRouteIds.length < 2) ? "rota" :
-              (canStartAnyUpgrade || hasAnyCompatibleUpgrade) ? "tekne" : "icerik"
-            )}
-          >
-            Git →
-          </button>
-        </div>
+        )}
       </>
     );
   };

@@ -223,28 +223,28 @@ export function Onboarding({
     };
 
     const MARINA_COORDS: Record<string, { cx: number; cy: number }> = {
-      cesme:    { cx: 42,  cy: 58  },
-      kusadasi: { cx: 58,  cy: 80  },
-      bodrum:   { cx: 82,  cy: 104 },
-      gocek:    { cx: 108, cy: 118 },
-      marmaris: { cx: 128, cy: 125 },
-      fethiye:  { cx: 148, cy: 122 },
-      kas:      { cx: 182, cy: 132 },
-      antalya:  { cx: 245, cy: 148 },
+      cesme:    { cx: 38,  cy: 54  },
+      kusadasi: { cx: 52,  cy: 78  },
+      bodrum:   { cx: 74,  cy: 106 },
+      gocek:    { cx: 100, cy: 122 },
+      marmaris: { cx: 126, cy: 134 },
+      fethiye:  { cx: 154, cy: 126 },
+      kas:      { cx: 182, cy: 138 },
+      antalya:  { cx: 248, cy: 152 },
       istanbul: { cx: 310, cy: 24  },
       yalova:   { cx: 328, cy: 40  },
     };
 
     const ROUTE_PATHS: Array<{ d: string; key: string }> = [
       { key: "ist-yalova",   d: "M 310 24  Q 320 32  328 40" },
-      { key: "ist-cesme",    d: "M 310 24  Q 220 30  120 36  Q 75 42  42 58" },
-      { key: "cesme-kus",    d: "M 42  58  Q 48 70   58 80" },
-      { key: "kus-bodrum",   d: "M 58  80  Q 68 92   82 104" },
-      { key: "bodrum-gocek", d: "M 82  104 Q 96 112  108 118" },
-      { key: "gocek-marm",   d: "M 108 118 Q 118 122 128 125" },
-      { key: "marm-fethiye", d: "M 128 125 Q 138 124 148 122" },
-      { key: "fethiye-kas",  d: "M 148 122 Q 165 128 182 132" },
-      { key: "kas-antalya",  d: "M 182 132 Q 215 142 245 148" },
+      { key: "ist-cesme",    d: "M 310 24  Q 220 28  120 34  Q 72 40  38 54" },
+      { key: "cesme-kus",    d: "M 38  54  Q 44 66   52 78" },
+      { key: "kus-bodrum",   d: "M 52  78  Q 62 92   74 106" },
+      { key: "bodrum-gocek", d: "M 74  106 Q 88 116  100 122" },
+      { key: "gocek-marm",   d: "M 100 122 Q 112 130 126 134" },
+      { key: "marm-fethiye", d: "M 126 134 Q 140 132 154 126" },
+      { key: "fethiye-kas",  d: "M 154 126 Q 168 132 182 138" },
+      { key: "kas-antalya",  d: "M 182 138 Q 216 146 248 152" },
     ];
 
     const filteredIndices = STARTING_MARINAS
@@ -456,7 +456,7 @@ export function Onboarding({
 
           <div className="ob-sheet-v3-perks">
             <span className="ob-sheet-v3-perks-label">Yerel İmkanlar</span>
-            {selectedMarina.firstRouteOptions.slice(0, 3).map((route, i) => (
+            {selectedMarina.firstRouteOptions.slice(0, 2).map((route, i) => (
               <div key={i} className="ob-sheet-perk">
                 <span className="ob-sheet-perk-check">✓</span>
                 <span className="ob-sheet-perk-text">{route}</span>

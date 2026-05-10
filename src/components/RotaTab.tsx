@@ -51,6 +51,7 @@ interface RotaTabProps {
   completedRouteIds: string[];
   onStartVoyage: () => void;
   onGoTekne: () => void;
+  onGoUpgradeCategory?: (categoryId: string) => void;
 }
 
 const RISK_LABELS: Record<string, string> = {
@@ -87,6 +88,14 @@ function getRiskClass(risk: string): string {
   return "rt-risk-pill--medium";
 }
 
+const READINESS_UPGRADE_CATEGORY: Record<string, string> = {
+  "Enerji": "energy",
+  "Su": "water_life",
+  "Güvenlik": "safety",
+  "Navigasyon": "navigation",
+  "Bakım": "engine_mechanical",
+};
+
 export function RotaTab({
   currentRoute,
   nextRoute,
@@ -95,6 +104,7 @@ export function RotaTab({
   completedRouteIds,
   onStartVoyage,
   onGoTekne,
+  onGoUpgradeCategory,
 }: RotaTabProps) {
   const [readinessOpen, setReadinessOpen] = useState(false);
 
@@ -204,20 +214,25 @@ export function RotaTab({
               <div className="rt-readiness-detail">
                 {readinessItems.map(({ label, value }) => {
                   const ok = value.current >= value.required;
+                  const categoryId = READINESS_UPGRADE_CATEGORY[label];
+                  const isClickable = !ok && categoryId && onGoUpgradeCategory;
                   return (
                     <div
                       key={label}
-                      className={`rt-readiness-item ${ok ? "rt-readiness-item--ok" : "rt-readiness-item--fail"}`}
+                      className={`rt-readiness-item ${ok ? "rt-readiness-item--ok" : "rt-readiness-item--fail"}${isClickable ? " rt-readiness-item--link" : ""}`}
+                      onClick={isClickable ? () => onGoUpgradeCategory!(categoryId) : undefined}
+                      role={isClickable ? "button" : undefined}
                     >
                       <span className="rt-readiness-item-check">{ok ? "✓" : "✗"}</span>
                       <span className="rt-readiness-item-label">{label}</span>
                       <span className="rt-readiness-item-val">{value.current} / {value.required}</span>
+                      {isClickable && <span className="rt-readiness-item-go">→</span>}
                     </div>
                   );
                 })}
                 {!isReady && (
                   <p className="rt-readiness-hint">
-                    Tekne sekmesinden upgrade alarak eksikleri tamamlayabilirsin.
+                    Eksik alanlara tıklayarak ilgili upgrade kategorisine git.
                   </p>
                 )}
               </div>

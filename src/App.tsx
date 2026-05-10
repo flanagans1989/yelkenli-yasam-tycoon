@@ -14,6 +14,7 @@ import { SOCIAL_PLATFORMS } from "../game-data/socialPlatforms";
 import { BOAT_UPGRADES, UPGRADE_CATEGORIES } from "../game-data/upgrades";
 import type { UpgradeCategoryId } from "../game-data/upgrades";
 import { getSponsorTierByFollowers, SPONSOR_TIERS } from "../game-data/economy";
+import { AppBackground } from "./components/AppBackground";
 import { Onboarding, getBoatSvg } from "./components/Onboarding";
 import { HubScreen } from "./components/HubScreen";
 import { LimanTab } from "./components/LimanTab";
@@ -2166,6 +2167,7 @@ function App() {
 
   return (
     <div className="game-wrapper">
+      <AppBackground />
       {activeToast && (
         <div
           className={`game-toast game-toast--${activeToast.type}${isToastLeaving ? " leaving" : ""}`}

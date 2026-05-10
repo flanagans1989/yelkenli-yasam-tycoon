@@ -1,0 +1,65 @@
+/* ── Design Tokens — Yelkenli Yaşam Tycoon ── */
+:root {
+  /* ── Color Palette ── */
+  --ocean-deep:     #06182c;
+  --ocean-mid:      #0c2a47;
+  --ocean-rim:      #0f3a5c;
+
+  --cyan-glow:      #5eeaf8;
+  --cyan-soft:      #3ec7e0;
+  --cyan-deep:      #1d8aa8;
+
+  --gold-bright:    #ffd982;
+  --gold-warm:      #e8a651;
+
+  --success-green:  #4be8a3;
+  --warning-amber:  #ef8a4a;
+  --danger-red:     #ff6b6b;
+
+  --text-primary:   #f4f8ff;
+  --text-secondary: #9bbecf;
+  --text-muted:     #5e7a8e;
+
+  /* ── Spacing (4px grid) ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* ── Border Radius ── */
+  --radius-sm:   10px;
+  --radius-md:   14px;
+  --radius-lg:   18px;
+  --radius-xl:   20px;
+  --radius-pill: 999px;
+
+  /* ── Shadows ── */
+  --shadow-card:       0 8px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(94,234,248,0.06) inset;
+  --shadow-glow-sm:    0 0 12px rgba(94,234,248,0.35);
+  --shadow-glow-md:    0 0 24px rgba(94,234,248,0.45);
+  --shadow-glow-hero:  0 0 64px rgba(94,234,248,0.55);
+  --shadow-button:     0 0 0 1px rgba(94,234,248,0.45) inset, 0 4px 24px rgba(94,234,248,0.25);
+
+  /* ── Gradients ── */
+  --gradient-app-bg:         radial-gradient(circle at 50% 0%, #0c1f35 0%, var(--ocean-deep) 70%);
+  --gradient-card:           linear-gradient(180deg, rgba(15,58,92,0.85) 0%, rgba(12,42,71,0.65) 100%);
+  --gradient-button-primary: linear-gradient(135deg, #0d3d5e 0%, #0a5878 100%);
+  --gradient-gold-text:      linear-gradient(135deg, #ffd982 0%, #e8a651 100%);
+
+  /* ── Card decoration ── */
+  --card-rim:    linear-gradient(90deg, transparent, rgba(94,234,248,0.35), transparent);
+  --card-border: rgba(94,234,248,0.18);
+
+  /* ── Typography ── */
+  --font-display: 'Sora', system-ui, -apple-system, sans-serif;
+  --font-body:    'Inter', system-ui, -apple-system, sans-serif;
+
+  /* ── Transitions ── */
+  --transition-fast:   0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow:   0.4s  cubic-bezier(0.16, 1, 0.3, 1);
+}

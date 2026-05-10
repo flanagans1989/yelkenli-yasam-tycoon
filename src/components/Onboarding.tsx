@@ -78,7 +78,7 @@ export function Onboarding({
   const prevProfile = () => setProfileIndex((i) => (i - 1 + PLAYER_PROFILES.length) % PLAYER_PROFILES.length);
 
   const renderMainMenu = () => (
-    <div className="ob-main-menu">
+    <div className="ob-main-menu ob-main-menu-v2">
       <div className="ob-corners">
         <button className="ob-corner-btn" aria-label="Ayarlar" onClick={() => console.log("settings")}>
           <span className="ob-corner-icon">⚙</span>
@@ -102,6 +102,11 @@ export function Onboarding({
         <div className="ob-menu-eyebrow">⚓ YENİ MACERA SENİ BEKLİYOR</div>
         <div className="ob-menu-boat-stage">
           <div className="ob-menu-boat-glow" aria-hidden="true" />
+          <div className="ob-ring-stack" aria-hidden="true">
+            <span className="ob-ring ob-ring--outer-gold" />
+            <span className="ob-ring ob-ring--mid-cyan" />
+            <span className="ob-ring ob-ring--inner-dot" />
+          </div>
           <div className="ob-menu-boat-svg ob-boat-bob">
             {getBoatSvg("denizkusu_34")}
           </div>
@@ -141,7 +146,7 @@ export function Onboarding({
       .slice(0, 3);
 
     return (
-      <div className="ob-profile-screen">
+      <div className="ob-profile-screen ob-profile-screen-v2">
         <div className="ob-step-header">
           <div className="ob-step-eyebrow">ADIM 1 / 4</div>
           <h2 className="ob-step-title">KAPTANINI SEÇ</h2>
@@ -153,8 +158,10 @@ export function Onboarding({
 
           <div className="ob-captain-card fade-in" key={selectedProfile.id}>
             <div className="ob-portrait-stage">
+              <span className="ob-ring-halo" aria-hidden="true" />
               <div className="ob-portrait-ring-outer" aria-hidden="true" />
               <div className="ob-portrait-ring-inner" aria-hidden="true" />
+              <span className="ob-ring ob-ring--inner-dot ob-ring--dot-on-portrait" aria-hidden="true" />
               <div className="ob-portrait-circle">
                 <span className="ob-portrait-emoji">{profileIcons[selectedProfile.id] || "👤"}</span>
               </div>
@@ -230,7 +237,7 @@ export function Onboarding({
     };
 
     return (
-      <div className="ob-marina-screen">
+      <div className="ob-marina-screen ob-marina-screen-v2">
         <div className="ob-step-header">
           <div className="ob-step-eyebrow">ADIM 2 / 4</div>
           <h2 className="ob-step-title">ÇIKIŞ LİMANINI SEÇ</h2>
@@ -350,7 +357,7 @@ export function Onboarding({
     ];
 
     return (
-      <div className="ob-boat-screen">
+      <div className="ob-boat-screen ob-boat-screen-v2">
         <div className="ob-step-header">
           <div className="ob-step-eyebrow">ADIM 3 / 4</div>
           <h2 className="ob-step-title">TEKNENİ SEÇ</h2>
@@ -380,7 +387,12 @@ export function Onboarding({
           </div>
           <div className="ob-boat-visual-col">
             <div className="ob-boat-hero-glow" aria-hidden="true" />
-            <div className="ob-boat-hero-svg">{getBoatSvg(selectedBoat.id)}</div>
+            <div className="ob-ring-stack ob-ring-stack--boat" aria-hidden="true">
+              <span className="ob-ring ob-ring--outer-gold" />
+              <span className="ob-ring ob-ring--mid-cyan" />
+              <span className="ob-ring ob-ring--inner-dot" />
+            </div>
+            <div className="ob-boat-hero-svg ob-boat-bob">{getBoatSvg(selectedBoat.id)}</div>
             <span className="ob-boat-age-chip">{selectedBoat.ageCondition}</span>
           </div>
         </div>

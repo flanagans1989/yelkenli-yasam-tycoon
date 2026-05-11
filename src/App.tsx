@@ -793,7 +793,17 @@ function App() {
     const checkInstallation = () => {
       const completedUpgrades = sanitizedUpgrades.filter((item) => item.completesAt <= Date.now());
       if (completedUpgrades.length === 0) return;
-      completedUpgrades.forEach((item) => completeUpgradeInstallation(item.upgradeId));
+
+      const resolvedPurchasedIds = [...purchasedUpgradeIds];
+      completedUpgrades.forEach((item) => {
+        if (resolvedPurchasedIds.includes(item.upgradeId)) {
+          setUpgradesInProgress((prev) => prev.filter((activeItem) => activeItem.upgradeId !== item.upgradeId));
+          return;
+        }
+
+        completeUpgradeInstallation(item.upgradeId, resolvedPurchasedIds);
+        resolvedPurchasedIds.push(item.upgradeId);
+      });
     };
 
     checkInstallation();
@@ -1072,10 +1082,9 @@ function App() {
         registerSavedUpgrade(savedUpgradeInProgress, 0);
       }
 
-      const completedUpgradeObjects = completedUpgradeIds
+      const completedUpgradeObjects = [...new Set(completedUpgradeIds)]
         .map((upgradeId) => BOAT_UPGRADES.find((upgrade) => upgrade.id === upgradeId))
         .filter(Boolean) as typeof BOAT_UPGRADES;
-      const installationCompleteUpgrade = completedUpgradeObjects[0] ?? null;
 
       completedUpgradeObjects.forEach((upgrade) => {
         if (!nextPurchasedUpgradeIds.includes(upgrade.id)) {
@@ -1088,7 +1097,9 @@ function App() {
           ? `Pasif gelir: ${offlineMinutes} dakika içinde +${offlineCredits.toLocaleString("tr-TR")} TL birikti.`
           : "";
       const installationCompleteMessage = completedUpgradeObjects.length > 0
-        ? `Kurulum tamamlandı: ${installationCompleteUpgrade.name} aktif edildi.`
+        ? completedUpgradeObjects.length === 1
+          ? `Kurulum tamamlandı: ${completedUpgradeObjects[0].name} aktif edildi.`
+          : `${completedUpgradeObjects.length} upgrade tamamlandı: ${completedUpgradeObjects.map((upgrade) => upgrade.name).join(", ")}.`
         : "";
       const nextLogs = [installationCompleteMessage, passiveIncomeMessage, ...savedLogs]
         .filter(Boolean)
@@ -1141,11 +1152,7 @@ function App() {
       setStep(safeStep === "SEA_MODE" && !routeValid ? "HUB" : safeStep);
       setActiveTab(parsed.activeTab ?? "liman");
 
-      if (installationCompleteUpgrade) {
-        applyUpgradeEffects(installationCompleteUpgrade);
-        pushToast("upgrade", "Upgrade Tamamlandı!", `${installationCompleteUpgrade.name} kurulumu tamamlandı!`);
-      }
-      completedUpgradeObjects.slice(1).forEach((upgrade) => {
+      completedUpgradeObjects.forEach((upgrade) => {
         applyUpgradeEffects(upgrade);
         pushToast("upgrade", "Upgrade Tamamlandı!", `${upgrade.name} kurulumu tamamlandı!`);
       });
@@ -1583,7 +1590,7 @@ function App() {
       return;
     }
 
-    setPurchasedUpgradeIds(prev => [...prev, upgradeId]);
+    setPurchasedUpgradeIds(prev => (prev.includes(upgradeId) ? prev : [...prev, upgradeId]));
     applyUpgradeEffects(upgrade);
     setUpgradesInProgress(prev => prev.filter((item) => item.upgradeId !== upgradeId));
     setLogs(prev => [`Kurulum tamamlandı: ${upgrade.name} aktif edildi.`, ...prev.slice(0, 4)]);

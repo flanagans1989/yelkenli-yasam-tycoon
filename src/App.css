@@ -4019,7 +4019,7 @@ button {
   width: 100%;
   min-height: 100%;
   padding: 20px 16px max(24px, env(safe-area-inset-bottom));
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .ob-step-header {
@@ -4074,8 +4074,10 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: auto;
+  touch-action: pan-y;
+  overscroll-behavior-x: contain;
 }
 
 .ob-tap-zone {
@@ -4089,12 +4091,114 @@ button {
 .ob-tap-zone--left  { left: 0; }
 .ob-tap-zone--right { right: 0; }
 
+
+.ob-profile-screen {
+  height: 100%;
+  overflow: hidden;
+}
+
 .ob-captain-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 0 8px;
   width: 100%;
+  position: relative;
+  transform: translate3d(0, 0, 0) scale(0.986);
+  opacity: 0.97;
+  filter: saturate(0.95) brightness(0.98);
+  transition:
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 280ms ease,
+    filter 320ms ease;
+  animation: ob-captain-card-enter 440ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ob-captain-card--active {
+  transform: translate3d(0, 0, 0) scale(1);
+  opacity: 1;
+  filter: saturate(1) brightness(1);
+}
+
+.ob-captain-card::after {
+  content: "";
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  width: min(92%, 280px);
+  height: 72%;
+  transform: translateX(-50%);
+  border-radius: 28px;
+  background: radial-gradient(circle at 50% 24%, rgba(94, 234, 248, 0.09), rgba(94, 234, 248, 0) 68%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 340ms ease;
+}
+
+.ob-captain-card--active::after {
+  opacity: 1;
+}
+
+.ob-captain-card--active .ob-portrait-ring-outer {
+  border-color: rgba(255, 217, 130, 0.52);
+  box-shadow: 0 0 18px rgba(255, 217, 130, 0.22);
+}
+
+.ob-captain-card--active .ob-portrait-ring-inner {
+  border-color: rgba(94, 234, 248, 0.72);
+  box-shadow:
+    0 0 26px rgba(94, 234, 248, 0.38),
+    inset 0 0 24px rgba(94, 234, 248, 0.26);
+}
+
+.ob-captain-card--active .ob-portrait-circle {
+  box-shadow:
+    inset 0 0 24px rgba(94, 234, 248, 0.22),
+    0 0 24px rgba(94, 234, 248, 0.22);
+  transform: translateY(0) scale(1);
+}
+
+.ob-captain-card .ob-portrait-stage,
+.ob-captain-card .ob-captain-name,
+.ob-captain-card .ob-captain-tagline,
+.ob-captain-card .ob-skills,
+.ob-captain-card .ob-chips {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: ob-captain-content-enter 360ms ease-out forwards;
+}
+
+.ob-captain-card .ob-captain-name { animation-delay: 70ms; }
+.ob-captain-card .ob-captain-tagline { animation-delay: 110ms; }
+.ob-captain-card .ob-skills { animation-delay: 150ms; }
+.ob-captain-card .ob-chips { animation-delay: 190ms; }
+
+.ob-captain-card .ob-portrait-circle {
+  transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 380ms ease;
+  transform: translateY(2px) scale(0.985);
+}
+
+@keyframes ob-captain-card-enter {
+  from {
+    transform: translate3d(0, 14px, 0) scale(0.972);
+    opacity: 0.78;
+    filter: saturate(0.9) brightness(0.95) blur(0.4px);
+  }
+  to {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+    filter: saturate(1) brightness(1) blur(0);
+  }
+}
+
+@keyframes ob-captain-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .ob-portrait-stage {
@@ -4248,13 +4352,73 @@ button {
   height: 6px;
   border-radius: var(--radius-pill);
   background: rgba(94, 234, 248, 0.25);
-  transition: all var(--transition-fast);
+  transform: scale(1);
+  transition:
+    width 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 220ms ease,
+    box-shadow 240ms ease,
+    transform 220ms ease;
 }
 
 .ob-dot--active {
-  width: 20px;
+  width: 18px;
   background: var(--cyan-glow);
-  box-shadow: 0 0 6px rgba(94, 234, 248, 0.5);
+  box-shadow: 0 0 7px rgba(94, 234, 248, 0.46);
+  transform: scale(1.04);
+  animation: ob-dot-pulse 240ms ease-out;
+}
+
+@keyframes ob-dot-pulse {
+  0% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 rgba(94, 234, 248, 0.15);
+  }
+  100% {
+    transform: scale(1.04);
+    box-shadow: 0 0 7px rgba(94, 234, 248, 0.46);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ob-captain-card,
+  .ob-captain-card .ob-portrait-stage,
+  .ob-captain-card .ob-captain-name,
+  .ob-captain-card .ob-captain-tagline,
+  .ob-captain-card .ob-skills,
+  .ob-captain-card .ob-chips,
+  .ob-dot--active {
+    animation: none;
+    transition: none;
+  }
+}
+
+.ob-profile-screen-v2 {
+  overflow-y: hidden;
+  justify-content: space-between;
+}
+
+.ob-profile-screen-v2 .ob-step-header {
+  margin-bottom: 10px;
+}
+
+.ob-profile-screen-v2 .ob-captain-carousel {
+  margin-bottom: 6px;
+}
+
+.ob-profile-screen-v2 .ob-pagination-dots {
+  margin: 8px 0 10px;
+}
+
+.ob-profile-screen-v2 .ob-screen-actions {
+  margin-top: 0;
+  padding-top: 10px;
+}
+
+.ob-marina-screen-v2,
+.ob-boat-screen-v2,
+.ob-naming-screen {
+  justify-content: space-between;
+  overflow: hidden;
 }
 
 /* ── Marina selection ── */
@@ -5038,6 +5202,8 @@ button {
   padding: 16px;
   margin-bottom: 12px;
   overflow: visible;
+  touch-action: pan-y;
+  overscroll-behavior-x: contain;
 }
 
 .ob-boat-info-col {
@@ -9751,6 +9917,24 @@ button {
     radial-gradient(circle at 0% 100%, rgba(255, 217, 130, 0.07) 0%, transparent 55%),
     linear-gradient(160deg, rgba(12, 42, 71, 0.85) 0%, rgba(8, 25, 42, 0.85) 100%);
   position: relative;
+  transform: translate3d(0, 0, 0) scale(0.986);
+  opacity: 0.97;
+  filter: saturate(0.95) brightness(0.98);
+  animation: ob-captain-card-enter 440ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ob-boat-screen-v2 .ob-boat-hero-card::after {
+  content: "";
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  width: min(94%, 300px);
+  height: 78%;
+  transform: translateX(-50%);
+  border-radius: 26px;
+  background: radial-gradient(circle at 70% 28%, rgba(94, 234, 248, 0.11), rgba(94, 234, 248, 0) 70%);
+  opacity: 0;
+  pointer-events: none;
+  animation: ob-boat-card-halo-in 420ms ease-out 90ms forwards;
 }
 .ob-boat-screen-v2 .ob-boat-hero-card::before {
   content: "";
@@ -9759,6 +9943,29 @@ button {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255, 217, 130, 0.55), transparent);
 }
+.ob-boat-screen-v2 .ob-boat-info-col,
+.ob-boat-screen-v2 .ob-boat-visual-col {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: ob-captain-content-enter 360ms ease-out forwards;
+}
+.ob-boat-screen-v2 .ob-boat-visual-col {
+  animation-delay: 90ms;
+}
+.ob-boat-screen-v2 .ob-boat-badges,
+.ob-boat-screen-v2 .ob-boat-name,
+.ob-boat-screen-v2 .ob-boat-tagline,
+.ob-boat-screen-v2 .ob-boat-summary,
+.ob-boat-screen-v2 .ob-boat-age-chip {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: ob-captain-content-enter 360ms ease-out forwards;
+}
+.ob-boat-screen-v2 .ob-boat-badges { animation-delay: 50ms; }
+.ob-boat-screen-v2 .ob-boat-name { animation-delay: 90ms; }
+.ob-boat-screen-v2 .ob-boat-tagline { animation-delay: 125ms; }
+.ob-boat-screen-v2 .ob-boat-summary { animation-delay: 160ms; }
+.ob-boat-screen-v2 .ob-boat-age-chip { animation-delay: 180ms; }
 .ob-boat-screen-v2 .ob-boat-name {
   background: var(--gradient-gold-text);
   -webkit-background-clip: text;
@@ -9820,6 +10027,15 @@ button {
   font-weight: 800;
   color: var(--gold-bright);
 }
+
+@keyframes ob-boat-card-halo-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 .ob-boat-screen-v2 .ob-stat-fill {
   background: linear-gradient(90deg, var(--cyan-glow), var(--gold-bright));
   box-shadow: 0 0 8px rgba(94, 234, 248, 0.45);
@@ -9842,6 +10058,8 @@ button {
 
 .ob-marina-screen-v3 .ob-marina-map-wrap {
   position: relative;
+  touch-action: pan-y;
+  overscroll-behavior-x: contain;
   border: 1px solid rgba(94, 234, 248, 0.28);
   background:
     radial-gradient(circle at 20% 0%, rgba(94, 234, 248, 0.10) 0%, transparent 50%),
@@ -9854,36 +10072,9 @@ button {
 
 /* Floating left/right map nav arrows */
 .ob-marina-screen-v3 .ob-map-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 3;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--cyan-glow);
-  background: rgba(8, 22, 38, 0.78);
-  border: 1.5px solid rgba(94, 234, 248, 0.42);
-  box-shadow:
-    0 0 14px rgba(94, 234, 248, 0.30),
-    inset 0 0 10px rgba(94, 234, 248, 0.18);
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  display: none;
+  pointer-events: none;
 }
-.ob-marina-screen-v3 .ob-map-arrow:hover {
-  transform: translateY(-50%) scale(1.06);
-  box-shadow:
-    0 0 18px rgba(94, 234, 248, 0.50),
-    inset 0 0 12px rgba(94, 234, 248, 0.25);
-}
-.ob-marina-screen-v3 .ob-map-arrow--left  { left: 6px; }
-.ob-marina-screen-v3 .ob-map-arrow--right { right: 6px; }
 
 /* SVG route lines connecting marinas */
 .ob-marina-screen-v3 .ob-map-routes .ob-map-route {
@@ -9997,6 +10188,7 @@ button {
     radial-gradient(circle at 100% 0%, rgba(94, 234, 248, 0.08) 0%, transparent 55%),
     radial-gradient(circle at 0% 100%, rgba(255, 217, 130, 0.06) 0%, transparent 55%),
     linear-gradient(160deg, rgba(12, 42, 71, 0.85) 0%, rgba(8, 25, 42, 0.85) 100%);
+  animation: ob-captain-card-enter 440ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .ob-marina-screen-v3 .ob-marina-sheet-v3::before {
   content: "";

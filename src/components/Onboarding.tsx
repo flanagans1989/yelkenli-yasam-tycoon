@@ -1,4 +1,5 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useRef } from "react";
+import type { Dispatch, SetStateAction, TouchEvent as ReactTouchEvent } from "react";
 import type { Step, MarinaFilter } from "../types/game";
 import { PLAYER_PROFILES } from "../../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../../game-data/marinas";
@@ -72,9 +73,95 @@ export function Onboarding({
   const selectedProfile = PLAYER_PROFILES[profileIndex];
   const selectedMarina = STARTING_MARINAS[marinaIndex];
   const selectedBoat = STARTING_BOATS[boatIndex];
-
   const nextProfile = () => setProfileIndex((i) => (i + 1) % PLAYER_PROFILES.length);
   const prevProfile = () => setProfileIndex((i) => (i - 1 + PLAYER_PROFILES.length) % PLAYER_PROFILES.length);
+  const captainSwipeStart = useRef<{ x: number; y: number } | null>(null);
+  const marinaSwipeStart = useRef<{ x: number; y: number } | null>(null);
+  const boatSwipeStart = useRef<{ x: number; y: number } | null>(null);
+
+  const handleCaptainTouchStart = (e: ReactTouchEvent<HTMLDivElement>) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    captainSwipeStart.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleCaptainTouchEnd = (e: ReactTouchEvent<HTMLDivElement>) => {
+    const start = captainSwipeStart.current;
+    captainSwipeStart.current = null;
+    if (!start) return;
+
+    const touch = e.changedTouches[0];
+    if (!touch) return;
+
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    if (absDx < 40 || absDx <= absDy) return;
+    if (dx < 0) nextProfile();
+    else prevProfile();
+  };
+
+  const handleMarinaTouchStart = (e: ReactTouchEvent<HTMLDivElement>) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    marinaSwipeStart.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleMarinaTouchEnd = (
+    e: ReactTouchEvent<HTMLDivElement>,
+    onPrev: () => void,
+    onNext: () => void,
+  ) => {
+    const start = marinaSwipeStart.current;
+    marinaSwipeStart.current = null;
+    if (!start) return;
+
+    const touch = e.changedTouches[0];
+    if (!touch) return;
+
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    if (absDx < 40 || absDx <= absDy) return;
+    if (dx < 0) onNext();
+    else onPrev();
+  };
+
+  const updateMarinaSelection = (index: number) => {
+    setMarinaIndex(index);
+  };
+
+  const handleBoatTouchStart = (e: ReactTouchEvent<HTMLDivElement>) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    boatSwipeStart.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleBoatTouchEnd = (
+    e: ReactTouchEvent<HTMLDivElement>,
+    onPrev: () => void,
+    onNext: () => void,
+  ) => {
+    const start = boatSwipeStart.current;
+    boatSwipeStart.current = null;
+    if (!start) return;
+
+    const touch = e.changedTouches[0];
+    if (!touch) return;
+
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    if (absDx < 40 || absDx <= absDy) return;
+    if (dx < 0) onNext();
+    else onPrev();
+  };
 
   const renderMainMenu = () => (
     <div className="ob-main-menu ob-main-menu-v2">
@@ -151,11 +238,16 @@ export function Onboarding({
           <h2 className="ob-step-title">KAPTANINI SEÇ</h2>
         </div>
 
-        <div className="ob-captain-carousel">
+        <div
+          className="ob-captain-carousel"
+          onTouchStart={handleCaptainTouchStart}
+          onTouchEnd={handleCaptainTouchEnd}
+          onTouchCancel={() => { captainSwipeStart.current = null; }}
+        >
           <button className="ob-tap-zone ob-tap-zone--left" onClick={prevProfile} aria-label="Önceki kaptan" />
           <button className="ob-tap-zone ob-tap-zone--right" onClick={nextProfile} aria-label="Sonraki kaptan" />
 
-          <div className="ob-captain-card fade-in" key={selectedProfile.id}>
+          <div className="ob-captain-card ob-captain-card--active fade-in" key={selectedProfile.id}>
             <div className="ob-portrait-stage">
               <span className="ob-ring-halo" aria-hidden="true" />
               <div className="ob-portrait-ring-outer" aria-hidden="true" />
@@ -197,7 +289,6 @@ export function Onboarding({
             <span key={i} className={`ob-dot ${i === profileIndex ? "ob-dot--active" : ""}`} />
           ))}
         </div>
-
         <div className="ob-screen-actions">
           <button className="secondary-button" onClick={() => setStep("MAIN_MENU")}>Geri</button>
           <button className="primary-button" onClick={() => setStep("PICK_MARINA")}>LİMANLARA BAK →</button>
@@ -219,7 +310,7 @@ export function Onboarding({
       const nextMarina = STARTING_MARINAS.find((marina) => getMarinaFilterCategory(marina.region) === filter);
       if (!nextMarina) return;
       const nextIndex = STARTING_MARINAS.findIndex((marina) => marina.id === nextMarina.id);
-      if (nextIndex >= 0) setMarinaIndex(nextIndex);
+      if (nextIndex >= 0) updateMarinaSelection(nextIndex);
     };
 
     const MARINA_COORDS: Record<string, { cx: number; cy: number }> = {
@@ -255,13 +346,13 @@ export function Onboarding({
       if (filteredIndices.length === 0) return;
       const cur = filteredIndices.findIndex(({ idx }) => idx === marinaIndex);
       const prev = cur <= 0 ? filteredIndices.length - 1 : cur - 1;
-      setMarinaIndex(filteredIndices[prev].idx);
+      updateMarinaSelection(filteredIndices[prev].idx);
     };
     const cycleNext = () => {
       if (filteredIndices.length === 0) return;
       const cur = filteredIndices.findIndex(({ idx }) => idx === marinaIndex);
       const next = cur < 0 || cur >= filteredIndices.length - 1 ? 0 : cur + 1;
-      setMarinaIndex(filteredIndices[next].idx);
+      updateMarinaSelection(filteredIndices[next].idx);
     };
 
     const score = (rating: string): number => {
@@ -303,7 +394,12 @@ export function Onboarding({
           ))}
         </div>
 
-        <div className="ob-marina-map-wrap">
+        <div
+          className="ob-marina-map-wrap"
+          onTouchStart={handleMarinaTouchStart}
+          onTouchEnd={(e) => handleMarinaTouchEnd(e, cyclePrev, cycleNext)}
+          onTouchCancel={() => { marinaSwipeStart.current = null; }}
+        >
           <button
             className="ob-map-arrow ob-map-arrow--left"
             onClick={cyclePrev}
@@ -361,11 +457,11 @@ export function Onboarding({
                 <g
                   key={marina.id}
                   className={`ob-map-pin-group${isActive ? " ob-map-pin-group--active" : ""}${!isVisible ? " ob-map-pin-group--hidden" : ""}${isRecommended ? " ob-map-pin-group--rec" : ""}`}
-                  onClick={() => setMarinaIndex(idx)}
+                  onClick={() => updateMarinaSelection(idx)}
                   role="button"
                   aria-label={marina.name}
                   tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setMarinaIndex(idx); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") updateMarinaSelection(idx); }}
                 >
                   {isActive && (
                     <circle cx={coords.cx} cy={coords.cy - 6} r={12} className="ob-map-pin-ring" />
@@ -404,7 +500,13 @@ export function Onboarding({
           </svg>
         </div>
 
-        <div className="ob-marina-sheet-v3 glass-card">
+        <div
+          className="ob-marina-sheet-v3 glass-card"
+          onTouchStart={handleMarinaTouchStart}
+          onTouchEnd={(e) => handleMarinaTouchEnd(e, cyclePrev, cycleNext)}
+          onTouchCancel={() => { marinaSwipeStart.current = null; }}
+          key={selectedMarina.id}
+        >
           <div className="ob-sheet-v3-row">
             <div className="ob-sheet-photo" aria-hidden="true">
               <span className="ob-sheet-photo-sky" />
@@ -476,6 +578,8 @@ export function Onboarding({
   const renderBoatSelection = () => {
     const selectedBoatClass = boatClassMeta[selectedBoat.sizeClass];
     const remainingBudget = STARTING_BUDGET - selectedBoat.purchaseCost;
+    const prevBoat = () => setBoatIndex((boatIndex - 1 + STARTING_BOATS.length) % STARTING_BOATS.length);
+    const nextBoat = () => setBoatIndex((boatIndex + 1) % STARTING_BOATS.length);
     const budgetTier =
       remainingBudget >= 50000 ? "Rahat upgrade alanı"
       : remainingBudget >= 25000 ? "Dengeli upgrade alanı"
@@ -507,7 +611,13 @@ export function Onboarding({
           ))}
         </div>
 
-        <div className="ob-boat-hero-card glass-card fade-in" key={selectedBoat.id}>
+        <div
+          className="ob-boat-hero-card glass-card"
+          key={selectedBoat.id}
+          onTouchStart={handleBoatTouchStart}
+          onTouchEnd={(e) => handleBoatTouchEnd(e, prevBoat, nextBoat)}
+          onTouchCancel={() => { boatSwipeStart.current = null; }}
+        >
           <div className="ob-boat-info-col">
             <div className="ob-boat-badges">
               <span className="ob-badge ob-badge--class">{selectedBoatClass.label}</span>

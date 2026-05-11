@@ -6043,6 +6043,30 @@ button {
   animation: sm-modal-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.sm-decision-card--danger {
+  border-color: rgba(255, 107, 107, 0.4);
+  box-shadow: 0 0 16px rgba(255, 107, 107, 0.15);
+}
+.sm-decision-card--danger .sm-decision-tag {
+  color: var(--danger-red);
+}
+
+.sm-decision-card--opportunity {
+  border-color: rgba(75, 232, 163, 0.4);
+  box-shadow: 0 0 16px rgba(75, 232, 163, 0.15);
+}
+.sm-decision-card--opportunity .sm-decision-tag {
+  color: var(--success-green);
+}
+
+.sm-decision-card--technical {
+  border-color: rgba(255, 160, 60, 0.4);
+  box-shadow: 0 0 16px rgba(255, 160, 60, 0.15);
+}
+.sm-decision-card--technical .sm-decision-tag {
+  color: #ffa03c;
+}
+
 @keyframes sm-modal-in {
   from { opacity: 0; transform: scale(0.94); }
   to   { opacity: 1; transform: scale(1);    }

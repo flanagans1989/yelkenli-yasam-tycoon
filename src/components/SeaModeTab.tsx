@@ -59,6 +59,14 @@ export function SeaModeTab({
   const dotsCount = Math.min(voyageTotalDays, MAX_DOTS);
   const dotsPerDay = voyageTotalDays / dotsCount;
 
+  const getEventCategory = (title: string, desc: string) => {
+    const text = (title + " " + desc).toLowerCase();
+    if (text.includes("içerik") || text.includes("çekim") || text.includes("hazine") || text.includes("fırsat") || text.includes("yunus") || text.includes("rüzgar") || text.includes("manzara") || text.includes("ada") || text.includes("ticaret") || text.includes("kurtarma")) return "opportunity";
+    if (text.includes("fırtına") || text.includes("korsan") || text.includes("tehlike") || text.includes("hasar") || text.includes("kaza") || text.includes("kayalık") || text.includes("hastalık")) return "danger";
+    if (text.includes("motor") || text.includes("arıza") || text.includes("yakıt") || text.includes("sızıntı") || text.includes("teknik") || text.includes("telsiz")) return "technical";
+    return "neutral";
+  };
+
   return (
     <div className="sm-tab fade-in">
       {/* ── Critical Banner ── */}
@@ -143,11 +151,31 @@ export function SeaModeTab({
       )}
 
       {/* ── Decision Modal ── */}
-      {pendingDecision && (
+      {pendingDecision && (() => {
+        const decisionCategory = getEventCategory(pendingDecision.title, pendingDecision.description);
+        let decisionTagIcon = "⚓";
+        let decisionTagLabel = "KARAR ANI";
+        let decisionCardClass = "sm-decision-card glass-card";
+        
+        if (decisionCategory === "danger") {
+          decisionTagIcon = "⛈";
+          decisionTagLabel = "TEHLİKE";
+          decisionCardClass += " sm-decision-card--danger";
+        } else if (decisionCategory === "opportunity") {
+          decisionTagIcon = "✨";
+          decisionTagLabel = "FIRSAT";
+          decisionCardClass += " sm-decision-card--opportunity";
+        } else if (decisionCategory === "technical") {
+          decisionTagIcon = "🔧";
+          decisionTagLabel = "SORUN";
+          decisionCardClass += " sm-decision-card--technical";
+        }
+
+        return (
         <div className="sm-decision-modal" role="dialog" aria-modal="true">
           <div className="sm-decision-backdrop" aria-hidden="true" />
-          <div className="sm-decision-card glass-card">
-            <span className="sm-decision-tag">⚓ KARAR ANI</span>
+          <div className={decisionCardClass}>
+            <span className="sm-decision-tag">{decisionTagIcon} {decisionTagLabel}</span>
             <h3 className="sm-decision-title">{pendingDecision.title}</h3>
             <p className="sm-decision-desc">{pendingDecision.description}</p>
             <div className="sm-decision-choices">
@@ -168,7 +196,8 @@ export function SeaModeTab({
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

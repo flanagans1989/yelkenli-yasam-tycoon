@@ -29,6 +29,7 @@ const SAVE_KEY = "yelkenli_save";
 const SAVE_VERSION = 2;
 const MAX_OFFLINE_MINUTES = 480;
 const OFFLINE_CREDITS_PER_MINUTE = 15;
+const OFFLINE_FOLLOWERS_PER_MINUTE = 1;
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
 const MARINA_REST_DURATION_MS = 2 * 60 * 1000;
 
@@ -77,7 +78,7 @@ const getCaptainLevel = (xp: number): number => {
 };
 
 const getContentCooldownMs = (captainLevel: number): number => {
-  if (captainLevel <= 1) return 5 * 60 * 1000;
+  if (captainLevel <= 1) return 90 * 1000;
   if (captainLevel === 2) return 8 * 60 * 1000;
   if (captainLevel === 3) return 12 * 60 * 1000;
   if (captainLevel === 4) return 18 * 60 * 1000;
@@ -85,7 +86,7 @@ const getContentCooldownMs = (captainLevel: number): number => {
 };
 
 const getBoatUpgradeDurationMs = (captainLevel: number): number => {
-  if (captainLevel <= 1) return 3 * 60 * 1000;
+  if (captainLevel <= 1) return 60 * 1000;
   if (captainLevel === 2) return 5 * 60 * 1000;
   if (captainLevel === 3) return 8 * 60 * 1000;
   if (captainLevel === 4) return 12 * 60 * 1000;
@@ -606,6 +607,7 @@ function App() {
   const [voyageDaysRemaining, setVoyageDaysRemaining] = useState(0);
   const [currentSeaEvent, setCurrentSeaEvent] = useState("");
   const [pendingDecisionId, setPendingDecisionId] = useState<string | null>(null);
+  const [firstVoyageEventTriggered, setFirstVoyageEventTriggered] = useState(false);
 
   // Content V2 States
   const [selectedPlatformId, setSelectedPlatformId] = useState<string | null>(null);
@@ -971,6 +973,7 @@ function App() {
         lastSavedAt: Date.now(),
         saveVersion: SAVE_VERSION,
         hasSave: true,
+        firstVoyageEventTriggered,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveObj));
       setHasSave(true);
@@ -983,7 +986,7 @@ function App() {
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
     brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt, marinaRestInProgress,
     captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
-    hasCompletedDailyGoalsOnce
+    hasCompletedDailyGoalsOnce, firstVoyageEventTriggered
   ]);
 
   const finalizeGame = () => {
@@ -1046,6 +1049,7 @@ function App() {
 
       let offlineMinutes = 0;
       let offlineCredits = 0;
+      let offlineFollowers = 0;
       let nextPurchasedUpgradeIds = savedPurchasedUpgradeIds;
       let nextUpgradesInProgress: UpgradeInProgressItem[] = [];
       const completedUpgradeIds: string[] = [];
@@ -1056,6 +1060,7 @@ function App() {
         const offlineMs = Math.max(0, Date.now() - savedLastSavedAt);
         offlineMinutes = Math.min(Math.floor(offlineMs / 60000), MAX_OFFLINE_MINUTES);
         offlineCredits = Math.max(0, offlineMinutes * OFFLINE_CREDITS_PER_MINUTE);
+        offlineFollowers = Math.max(0, offlineMinutes * OFFLINE_FOLLOWERS_PER_MINUTE);
       }
 
       const isValidUpgradeId = (upgradeId: string) => BOAT_UPGRADES.some((upgrade) => upgrade.id === upgradeId);
@@ -1141,8 +1146,8 @@ function App() {
       });
 
       const passiveIncomeMessage =
-        offlineCredits > 0
-          ? `Pasif gelir: ${offlineMinutes} dakika içinde +${offlineCredits.toLocaleString("tr-TR")} TL birikti.`
+        (offlineCredits > 0 || offlineFollowers > 0)
+          ? `Sen yokken içeriklerin izlenmeye devam etti: +${offlineCredits.toLocaleString("tr-TR")} TL, +${offlineFollowers.toLocaleString("tr-TR")} takipçi.`
           : "";
       const installationCompleteMessage = completedUpgradeObjects.length > 0
         ? completedUpgradeObjects.length === 1
@@ -1163,7 +1168,7 @@ function App() {
       setBoatIndex(parsed.boatIndex ?? 0);
       setBoatName(parsed.boatName ?? "");
       setCredits(savedCredits + offlineCredits);
-      setFollowers(parsed.followers ?? 0);
+      setFollowers((parsed.followers ?? 0) + offlineFollowers);
       setFirstContentDone(parsed.firstContentDone ?? false);
       setLogs(nextLogs);
       setPurchasedUpgradeIds(nextPurchasedUpgradeIds);
@@ -1188,6 +1193,7 @@ function App() {
       setSponsorOffers(parsed.sponsorOffers ?? []);
       setAcceptedSponsors(parsed.acceptedSponsors ?? []);
       setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
+      setFirstVoyageEventTriggered(parsed.firstVoyageEventTriggered ?? false);
       setIcerikSubTab(parsed.icerikSubTab ?? "produce");
       setLastContentAt(parsed.lastContentAt ?? null);
       setMarinaRestInProgress(nextMarinaRestInProgress);
@@ -1291,8 +1297,20 @@ function App() {
   const advanceDay = () => {
     if (step !== "SEA_MODE" || !currentRoute || pendingDecisionId) return;
 
-    if (Math.random() < 0.3) {
-      const nextDecision = SEA_DECISION_EVENTS[Math.floor(Math.random() * SEA_DECISION_EVENTS.length)];
+    const isFirstVoyage = completedRouteIds.length === 0;
+    const isEarlyInFirstVoyage = isFirstVoyage && voyageDaysRemaining === voyageTotalDays - 1 && !firstVoyageEventTriggered;
+    let shouldTriggerEvent = Math.random() < 0.3;
+
+    if (isEarlyInFirstVoyage) {
+      shouldTriggerEvent = true;
+    }
+
+    if (shouldTriggerEvent) {
+      let nextDecision = SEA_DECISION_EVENTS[Math.floor(Math.random() * SEA_DECISION_EVENTS.length)];
+      if (isEarlyInFirstVoyage) {
+        nextDecision = SEA_DECISION_EVENTS.find(e => e.id === "content_opportunity") || nextDecision;
+        setFirstVoyageEventTriggered(true);
+      }
       setPendingDecisionId(nextDecision.id);
       setCurrentSeaEvent(nextDecision.description);
       return;
@@ -1976,6 +1994,9 @@ function App() {
                 )}
 
                 <div className="cs-cta-block">
+                  <div style={{ marginBottom: '16px', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', opacity: 0.9, padding: '0 12px', fontStyle: 'italic' }}>
+                    Kaptan seviyesi arttıkça içerikler daha kaliteli prodüksiyon ister; hazırlık süresi uzar ama kariyer etkisi büyür.
+                  </div>
                   {selectedPlatformId && selectedContentType && !onContentCooldown && (
                     <div className="cs-cta-preview">
                       <span className="cs-cta-preview-icon">{PLATFORM_VISUALS[selectedPlatformId]?.icon ?? "●"}</span>

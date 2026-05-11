@@ -3449,6 +3449,35 @@ button {
 .game-toast--sea_decision .game-toast-title { color: #a6f0ff; }
 .game-toast--sea_decision .game-toast-text  { color: #ebfcff; }
 
+.game-toast--warning        { background: rgba(255,80,80,0.18); border: 1px solid rgba(255,80,80,0.45); }
+.game-toast--warning .game-toast-title { color: #ff9e9e; }
+.game-toast--warning .game-toast-text  { color: #ffe8e8; }
+
+/* ── Tekne back-to-rota contextual button (Bug 3 fix) ── */
+.tk-back-to-rota-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  background: rgba(70,198,222,0.1);
+  border: 1px solid rgba(70,198,222,0.35);
+  border-radius: 12px;
+  color: #9decff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+  text-align: left;
+}
+.tk-back-to-rota-btn:hover {
+  background: rgba(70,198,222,0.2);
+  border-color: rgba(70,198,222,0.55);
+}
+
+
 /* ── PROGRESS STRIP ── */
 .progress-strip {
   display: flex;
@@ -5970,7 +5999,12 @@ button {
   color: var(--danger-red);
   border-color: rgba(255, 107, 107, 0.4);
   background: rgba(255, 107, 107, 0.1);
-  animation: lh-crit-pulse 1.5s ease-in-out infinite;
+  animation: sm-crit-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes sm-crit-pulse {
+  0%, 100% { box-shadow: inset 0 0 0px rgba(255, 107, 107, 0); background: rgba(255, 107, 107, 0.1); }
+  50%      { box-shadow: inset 0 0 8px rgba(255, 107, 107, 0.3); background: rgba(255, 107, 107, 0.25); }
 }
 
 /* Event Log */
@@ -6163,6 +6197,12 @@ button {
   background: var(--ocean-deep);
   display: flex;
   flex-direction: column;
+  animation: ar-screen-enter 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes ar-screen-enter {
+  0% { opacity: 0; transform: scale(1.05); filter: brightness(1.5); }
+  100% { opacity: 1; transform: scale(1); filter: brightness(1); }
 }
 
 /* Particle drift */
@@ -6467,6 +6507,64 @@ button {
   width: 100%;
 }
 
+/* ─── BATCH 2: RETENTION & JUICE ─── */
+
+.global-floaters {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.floating-reward {
+  font-family: var(--font-display, sans-serif);
+  font-size: 18px;
+  font-weight: 800;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 0 8px currentColor;
+  animation: float-up-fade 1.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+.floating-reward--credits { color: #4ade80; }
+.floating-reward--followers { color: #facc15; }
+.floating-reward--xp { color: #60a5fa; }
+
+@keyframes float-up-fade {
+  0% { opacity: 0; transform: translateY(15px) scale(0.8); }
+  15% { opacity: 1; transform: translateY(0) scale(1.1); }
+  30% { opacity: 1; transform: translateY(-5px) scale(1); }
+  80% { opacity: 1; transform: translateY(-30px) scale(1); }
+  100% { opacity: 0; transform: translateY(-40px) scale(0.9); }
+}
+
+.cel-particles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.cel-particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: particle-burst 1.2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+.cel-particle--0 { background: var(--gold-bright); box-shadow: 0 0 8px var(--gold-bright); }
+.cel-particle--1 { background: var(--cyan-glow); box-shadow: 0 0 8px var(--cyan-glow); }
+.cel-particle--2 { background: var(--success-green); box-shadow: 0 0 8px var(--success-green); }
+
+@keyframes particle-burst {
+  0% { opacity: 1; transform: translate(0, 0) scale(0.5); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.2); }
+}
+
 /* ─── BATCH 5-B: LEVEL-UP + ACHIEVEMENT CELEBRATION ─── */
 
 .cel-modal {
@@ -6515,6 +6613,13 @@ button {
     0 0 40px rgba(94, 234, 248, 0.1) inset;
 }
 
+.cel-card--sponsor {
+  border-color: rgba(255, 105, 180, 0.35);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(255, 105, 180, 0.15) inset;
+}
+
 .cel-eyebrow {
   display: block;
   font-family: var(--font-display);
@@ -6537,6 +6642,12 @@ button {
   animation: cel-glow-cyan 2s ease-in-out infinite;
 }
 
+.cel-eyebrow--sponsor {
+  color: #ff69b4;
+  text-shadow: 0 0 16px rgba(255, 105, 180, 0.6);
+  animation: cel-glow-sponsor 2s ease-in-out infinite;
+}
+
 @keyframes cel-glow-gold {
   0%, 100% { text-shadow: 0 0 12px rgba(255, 217, 130, 0.6); }
   50%       { text-shadow: 0 0 24px rgba(255, 217, 130, 1);   }
@@ -6545,6 +6656,11 @@ button {
 @keyframes cel-glow-cyan {
   0%, 100% { text-shadow: 0 0 12px rgba(94, 234, 248, 0.5); }
   50%       { text-shadow: 0 0 24px rgba(94, 234, 248, 0.9); }
+}
+
+@keyframes cel-glow-sponsor {
+  0%, 100% { text-shadow: 0 0 12px rgba(255, 105, 180, 0.5); }
+  50%       { text-shadow: 0 0 24px rgba(255, 105, 180, 0.9); }
 }
 
 /* Level-up specific */

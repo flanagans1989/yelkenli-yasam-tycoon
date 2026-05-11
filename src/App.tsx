@@ -152,7 +152,7 @@ type DailyGoal = {
   completed: boolean;
 };
 
-type ToastType = "upgrade" | "achievement" | "sponsor" | "content" | "voyage" | "sea_decision";
+type ToastType = "upgrade" | "achievement" | "sponsor" | "content" | "voyage" | "sea_decision" | "warning";
 
 type ToastItem = {
   id: number;
@@ -622,6 +622,8 @@ function App() {
 
   // Upgrade V2 State
   const [selectedUpgradeCategory, setSelectedUpgradeCategory] = useState<UpgradeCategoryId>("energy");
+  // BUG 3 FIX: session-only flag set when player navigates to Tekne from a missing route requirement
+  const [comingFromRotaMissing, setComingFromRotaMissing] = useState(false);
 
   // UI dismissal state (session-only, not persisted)
   const [tavsiyeDismissed, setTavsiyeDismissed] = useState(false);
@@ -636,6 +638,18 @@ function App() {
   const [hasSave, setHasSave] = useState(false);
   const [saveBoatName, setSaveBoatName] = useState("");
   const [testMode, setTestMode] = useState(false);
+  const [hasReceivedFirstSponsor, setHasReceivedFirstSponsor] = useState(false);
+
+  type FloaterType = 'credits' | 'followers' | 'xp';
+  interface RewardFloater { id: number; text: string; type: FloaterType; }
+  const [rewardFloaters, setRewardFloaters] = useState<RewardFloater[]>([]);
+  const addFloater = (text: string, type: FloaterType) => {
+    const id = Date.now() + Math.random();
+    setRewardFloaters(prev => [...prev, { id, text, type }]);
+    setTimeout(() => {
+      setRewardFloaters(prev => prev.filter(f => f.id !== id));
+    }, 1600);
+  };
 
   // Flash animation states
   const [flashCredits, setFlashCredits] = useState(false);
@@ -779,6 +793,19 @@ function App() {
       );
     }
   }, [sponsorOffers]);
+
+  // BUG 2 FIX: Automatically trigger first sponsor celebration when followers cross the first tier
+  // This fires regardless of which tab is open — does not require opening the Sponsor screen
+  useEffect(() => {
+    if (hasReceivedFirstSponsor) return;
+    const firstTierMin = SPONSOR_TIERS[0]?.minFollowers ?? 800;
+    if (followers >= firstTierMin) {
+      const tier = SPONSOR_TIERS[0];
+      setHasReceivedFirstSponsor(true);
+      setActiveCelebration({ type: "sponsor", brandName: tier?.name ?? "İlk Marka" });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [followers]);
 
   useEffect(() => {
     const saved = localStorage.getItem(SAVE_KEY);
@@ -978,6 +1005,7 @@ function App() {
         hasSave: true,
         firstVoyageEventTriggered,
         testMode,
+        hasReceivedFirstSponsor,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveObj));
       setHasSave(true);
@@ -990,7 +1018,7 @@ function App() {
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
     brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt, marinaRestInProgress,
     captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
-    hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode
+    hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor
   ]);
 
   const finalizeGame = () => {
@@ -1199,6 +1227,7 @@ function App() {
       setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
       setFirstVoyageEventTriggered(parsed.firstVoyageEventTriggered ?? false);
       setTestMode(parsed.testMode ?? false);
+      setHasReceivedFirstSponsor(parsed.hasReceivedFirstSponsor ?? false);
       setIcerikSubTab(parsed.icerikSubTab ?? "produce");
       setLastContentAt(parsed.lastContentAt ?? null);
       setMarinaRestInProgress(nextMarinaRestInProgress);
@@ -1301,6 +1330,27 @@ function App() {
 
   const advanceDay = () => {
     if (step !== "SEA_MODE" || !currentRoute || pendingDecisionId) return;
+
+    // BUG 1 FIX: Block day advance if any critical resource is already depleted
+    const isCriticallyDepleted = energy <= 0 || water <= 0 || fuel <= 0 || boatCondition <= 0;
+    if (isCriticallyDepleted) {
+      // Emergency abort — return to port without route rewards
+      setStep("HUB");
+      setActiveTab("liman");
+      setVoyageDaysRemaining(0);
+      setCurrentSeaEvent("");
+      setPendingDecisionId(null);
+      // Restore resources to minimal safe values so player isn't stuck
+      setEnergy(e => Math.max(e, 5));
+      setWater(w => Math.max(w, 5));
+      setFuel(f => Math.max(f, 5));
+      pushToast(
+        "warning",
+        "Seyir Yarıda Kesildi",
+        "Kaynaklar tükendi. Acil limana dönüş yapıldı. Ödül verilmedi."
+      );
+      return;
+    }
 
     const isFirstVoyage = completedRouteIds.length === 0;
     const isEarlyInFirstVoyage = isFirstVoyage && voyageDaysRemaining === voyageTotalDays - 1 && !firstVoyageEventTriggered;
@@ -1471,6 +1521,9 @@ function App() {
     setCurrentLocationName(currentRoute.to);
     setCredits(prev => prev + reward.credits);
     setFollowers(prev => prev + reward.followers);
+    addFloater(`+${reward.credits.toLocaleString("tr-TR")} TL`, "credits");
+    setTimeout(() => addFloater(`+${reward.followers.toLocaleString("tr-TR")} Takipçi`, "followers"), 200);
+    setTimeout(() => addFloater(`+80 XP`, "xp"), 400);
     triggerFlash("credits");
     triggerFlash("followers");
 
@@ -1576,6 +1629,8 @@ function App() {
     setFollowers(prev => prev + gainFollowers);
     setFirstContentDone(true);
     setTotalContentProduced(prev => prev + 1);
+    addFloater(`+${gainCredits.toLocaleString("tr-TR")} TL`, "credits");
+    setTimeout(() => addFloater(`+${gainFollowers.toLocaleString("tr-TR")} Takipçi`, "followers"), 200);
     triggerFlash("credits");
     triggerFlash("followers");
 
@@ -1613,6 +1668,11 @@ function App() {
     };
     
     setSponsorOffers(prev => [...prev, newOffer]);
+
+    if (!hasReceivedFirstSponsor) {
+      setHasReceivedFirstSponsor(true);
+      setActiveCelebration({ type: "sponsor", brandName: newOffer.brandName });
+    }
   };
 
   const handleAcceptSponsor = (offerId: string) => {
@@ -2182,10 +2242,11 @@ function App() {
         isSeaMode={step === "SEA_MODE"}
         completedRouteIds={completedRouteIds}
         onStartVoyage={handleStartVoyage}
-        onGoTekne={() => setActiveTab("tekne")}
+        onGoTekne={() => { setActiveTab("tekne"); setComingFromRotaMissing(false); }}
         onGoUpgradeCategory={(cat) => {
           setActiveTab("tekne");
           setSelectedUpgradeCategory(cat as UpgradeCategoryId);
+          setComingFromRotaMissing(true);  // BUG 3 FIX: mark contextual navigation
         }}
       />
     </>
@@ -2213,6 +2274,16 @@ function App() {
     return (
       <div className="tab-content tk-tab-v2 fade-in">
         {/* ── Boat hero ── */}
+        {/* BUG 3 FIX: Contextual back button when entering Tekne from a missing route requirement */}
+        {comingFromRotaMissing && (
+          <button
+            className="tk-back-to-rota-btn"
+            onClick={() => { setActiveTab("rota"); setComingFromRotaMissing(false); }}
+            aria-label="Rota eksiklerine dön"
+          >
+            ← Rota Eksiklerine Dön
+          </button>
+        )}
         <div className="tk-hero glass-card">
           <div className="tk-hero-glow" aria-hidden="true" />
           <div className="tk-hero-top">
@@ -2585,6 +2656,13 @@ function App() {
           onDismiss={() => setActiveCelebration(null)}
         />
       )}
+      <div className="global-floaters">
+        {rewardFloaters.map(f => (
+          <div key={f.id} className={`floating-reward floating-reward--${f.type}`}>
+            {f.text}
+          </div>
+        ))}
+      </div>
       <button
         onClick={() => setTestMode(!testMode)}
         style={{

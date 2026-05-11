@@ -61,9 +61,11 @@ export function SeaModeTab({
 
   const getEventCategory = (title: string, desc: string) => {
     const text = (title + " " + desc).toLowerCase();
-    if (text.includes("içerik") || text.includes("çekim") || text.includes("hazine") || text.includes("fırsat") || text.includes("yunus") || text.includes("rüzgar") || text.includes("manzara") || text.includes("ada") || text.includes("ticaret") || text.includes("kurtarma")) return "opportunity";
+    // Opportunity checked first (prevents "kazandırır" matching "kaza")
+    if (text.includes("içerik") || text.includes("çekim") || text.includes("hazine") || text.includes("fırsat") || text.includes("yunus") || text.includes("manzara") || text.includes("ada") || text.includes("ticaret") || text.includes("kurtarma")) return "opportunity";
+    // Technical checked BEFORE danger (prevents "hasar" in technical events triggering danger)
+    if (text.includes("motor") || text.includes("arıza") || text.includes("yakıt") || text.includes("sızıntı") || text.includes("teknik") || text.includes("telsiz") || text.includes("ekipman") || text.includes("sabitle")) return "technical";
     if (text.includes("fırtına") || text.includes("korsan") || text.includes("tehlike") || text.includes("hasar") || text.includes("kaza") || text.includes("kayalık") || text.includes("hastalık")) return "danger";
-    if (text.includes("motor") || text.includes("arıza") || text.includes("yakıt") || text.includes("sızıntı") || text.includes("teknik") || text.includes("telsiz")) return "technical";
     return "neutral";
   };
 

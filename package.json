@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "audit:game": "node scripts/audit-game-logic.mjs",
     "assets:android": "npx @capacitor/assets generate --android --assetPath assets --iconBackgroundColor \"#0E3A5F\" --iconBackgroundColorDark \"#0E3A5F\" --splashBackgroundColor \"#0E3A5F\" --splashBackgroundColorDark \"#0E3A5F\"",
     "mobile:sync": "npm run build && npx cap sync android",
     "mobile:debug": "npm run mobile:sync && cd android && gradlew.bat assembleDebug"

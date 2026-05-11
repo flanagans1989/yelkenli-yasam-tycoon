@@ -1,7 +1,8 @@
 export type CelebrationItem =
   | { type: "levelup"; level: number; rank: string; bonus: number }
   | { type: "achievement"; title: string; description: string; icon: string }
-  | { type: "daily_goals" };
+  | { type: "daily_goals" }
+  | { type: "sponsor"; brandName: string };
 
 interface CelebrationModalProps {
   celebration: CelebrationItem;
@@ -9,11 +10,30 @@ interface CelebrationModalProps {
 }
 
 export function CelebrationModal({ celebration, onDismiss }: CelebrationModalProps) {
+  const renderParticles = () => (
+    <div className="cel-particles" aria-hidden="true">
+      {Array.from({ length: 16 }).map((_, i) => {
+        const angle = (i / 16) * Math.PI * 2;
+        const dist = 80 + Math.random() * 60;
+        const dx = Math.cos(angle) * dist + "px";
+        const dy = Math.sin(angle) * dist + "px";
+        return (
+          <div 
+            key={i} 
+            className={`cel-particle cel-particle--${i % 3}`} 
+            style={{ '--dx': dx, '--dy': dy } as any}
+          />
+        );
+      })}
+    </div>
+  );
+
   if (celebration.type === "levelup") {
     return (
       <div className="cel-modal" role="dialog" aria-modal="true" aria-label="Seviye atladın">
         <div className="cel-backdrop" aria-hidden="true" onClick={onDismiss} />
         <div className="cel-card glass-card cel-card--levelup">
+          {renderParticles()}
           <span className="cel-eyebrow cel-eyebrow--gold">SEVİYE ATLADIN!</span>
           <div className="cel-level-badge">
             <span className="cel-level-num">Lv.{celebration.level}</span>
@@ -33,6 +53,7 @@ export function CelebrationModal({ celebration, onDismiss }: CelebrationModalPro
       <div className="cel-modal" role="dialog" aria-modal="true" aria-label="Günlük görevler tamamlandı">
         <div className="cel-backdrop" aria-hidden="true" onClick={onDismiss} />
         <div className="cel-card glass-card cel-card--daily">
+          {renderParticles()}
           <span className="cel-eyebrow cel-eyebrow--green">GÜNLÜK GÖREVLER TAMAMLANDI</span>
           <div className="cel-daily-icon">✅</div>
           <div className="cel-daily-title">Harika İş!</div>
@@ -45,10 +66,29 @@ export function CelebrationModal({ celebration, onDismiss }: CelebrationModalPro
     );
   }
 
+  if (celebration.type === "sponsor") {
+    return (
+      <div className="cel-modal" role="dialog" aria-modal="true" aria-label="İlk sponsorunu buldun">
+        <div className="cel-backdrop" aria-hidden="true" onClick={onDismiss} />
+        <div className="cel-card glass-card cel-card--sponsor">
+          {renderParticles()}
+          <span className="cel-eyebrow cel-eyebrow--sponsor">İLK SPONSOR ANLAŞMASI</span>
+          <div className="cel-achievement-icon">🤝</div>
+          <div className="cel-achievement-title">{celebration.brandName}</div>
+          <div className="cel-achievement-desc">Bu senin ilk büyük marka anlaşman! Dünya turu için artık güçlü bir destekçin var.</div>
+          <button className="primary-button cel-dismiss-btn" onClick={onDismiss}>
+            Harika!
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="cel-modal" role="dialog" aria-modal="true" aria-label="Başarım açıldı">
       <div className="cel-backdrop" aria-hidden="true" onClick={onDismiss} />
       <div className="cel-card glass-card cel-card--achievement">
+        {renderParticles()}
         <span className="cel-eyebrow cel-eyebrow--cyan">BAŞARIM AÇILDI</span>
         <div className="cel-achievement-icon">{celebration.icon}</div>
         <div className="cel-achievement-title">{celebration.title}</div>

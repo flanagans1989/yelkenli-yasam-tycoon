@@ -6091,6 +6091,15 @@ button {
   min-height: 56px;
 }
 
+/* Keep sea-decision option cards flexible even when one option also carries .primary-button */
+.sm-decision-card .sm-choice-btn {
+  height: auto;
+  min-height: 64px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow: visible;
+}
+
 .sm-choice-btn:active { transform: scale(0.98); }
 
 .sm-choice-btn--a {
@@ -6115,6 +6124,9 @@ button {
   display: block;
   font-style: italic;
   line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* ─── BATCH 5-A: ARRIVAL / REWARD SCREEN ─── */

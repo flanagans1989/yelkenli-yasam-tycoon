@@ -197,6 +197,20 @@ A batch of changes is considered **done** when:
 **Run:** `npm run audit:game`  
 **Exit codes:** `0` = pass (may have warnings), `1` = at least one failure
 
+## 11. Encoding / Mojibake Audit
+
+Turkish text and emoji integrity is mandatory. Any mojibake corruption must fail audit before commit.
+
+### Rules
+- Corrupted UTF-8/CP1252 mojibake sequences (for Turkish letters and emoji arrows/icons) are not allowed.
+- If any relevant source/doc file contains these patterns, fix encoding first, then continue.
+
+### Commands
+- `npm run audit:encoding`
+- `npm run audit:game`
+
+`npm run audit:game` now runs encoding audit first, then game logic audit.
+
 ### What It Checks
 | Section | Checks |
 |---|---|

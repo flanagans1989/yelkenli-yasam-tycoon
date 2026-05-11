@@ -3454,28 +3454,55 @@ button {
 .game-toast--warning .game-toast-text  { color: #ffe8e8; }
 
 /* ── Tekne back-to-rota contextual button (Bug 3 fix) ── */
+/* Task 1: Contextual "Rota Eksiklerine Dön" banner — prominent, noticeable */
 .tk-back-to-rota-btn {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   width: 100%;
-  padding: 10px 16px;
-  margin-bottom: 12px;
-  background: rgba(70,198,222,0.1);
-  border: 1px solid rgba(70,198,222,0.35);
+  padding: 10px 12px;
+  margin: 10px 0 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(70,198,222,0.12) 0%,
+    rgba(46,180,200,0.06) 100%
+  );
+  border: 1px solid rgba(70,198,222,0.45);
   border-radius: 12px;
-  color: #9decff;
+  color: #a8f0ff;
   font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
   cursor: pointer;
-  transition: background 0.18s, border-color 0.18s;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
   text-align: left;
+  box-shadow: 0 0 14px rgba(70,198,222,0.1), inset 0 1px 0 rgba(255,255,255,0.04);
+  animation: tk-back-btn-in 0.35s cubic-bezier(0.16,1,0.3,1);
 }
 .tk-back-to-rota-btn:hover {
-  background: rgba(70,198,222,0.2);
-  border-color: rgba(70,198,222,0.55);
+  background: linear-gradient(135deg, rgba(70,198,222,0.2) 0%, rgba(46,180,200,0.12) 100%);
+  border-color: rgba(70,198,222,0.7);
+  box-shadow: 0 0 22px rgba(70,198,222,0.2);
 }
+.tk-back-to-rota-btn:active { transform: scale(0.98); }
+.tk-back-to-rota-title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.25px;
+  color: #b9f7ff;
+}
+.tk-back-to-rota-sub {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(185, 247, 255, 0.72);
+  line-height: 1.35;
+}
+@keyframes tk-back-btn-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 
 
 /* ── PROGRESS STRIP ── */
@@ -6078,19 +6105,70 @@ button {
 }
 
 .sm-decision-card--danger {
-  border-color: rgba(255, 107, 107, 0.4);
-  box-shadow: 0 0 16px rgba(255, 107, 107, 0.15);
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(255, 98, 78, 0.72);
+  box-shadow:
+    0 0 20px rgba(255, 98, 78, 0.35),
+    0 0 48px rgba(195, 48, 45, 0.16),
+    inset 0 0 0 1px rgba(255, 132, 80, 0.25);
+  background: linear-gradient(
+    155deg,
+    rgba(41, 13, 18, 0.95) 0%,
+    rgba(24, 10, 14, 0.97) 100%
+  );
+}
+.sm-decision-card--danger::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 98, 78, 0.2) 0%, transparent 52%),
+    radial-gradient(circle at 16% 100%, rgba(255, 140, 70, 0.13) 0%, transparent 46%),
+    radial-gradient(circle at 85% 90%, rgba(142, 21, 21, 0.25) 0%, transparent 45%);
 }
 .sm-decision-card--danger .sm-decision-tag {
-  color: var(--danger-red);
+  color: #ff8f78;
+  text-shadow: 0 0 10px rgba(255, 98, 78, 0.5);
 }
 
 .sm-decision-card--opportunity {
-  border-color: rgba(75, 232, 163, 0.4);
-  box-shadow: 0 0 16px rgba(75, 232, 163, 0.15);
+  border-color: rgba(75, 232, 163, 0.55);
+  box-shadow:
+    0 0 28px rgba(75, 232, 163, 0.25),
+    0 0 60px rgba(75, 232, 163, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  background: linear-gradient(
+    160deg,
+    rgba(10, 40, 30, 0.92) 0%,
+    rgba(6, 28, 22, 0.96) 100%
+  );
+  animation: sm-modal-in 0.3s cubic-bezier(0.16, 1, 0.3, 1), sm-opp-shimmer 3s ease-in-out infinite 0.4s;
 }
 .sm-decision-card--opportunity .sm-decision-tag {
-  color: var(--success-green);
+  color: #4be8a3;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 12px rgba(75, 232, 163, 0.7);
+}
+/* Opportunity primary action button — positive/rewarding style */
+.sm-decision-card--opportunity .sm-choice-btn--b {
+  background: linear-gradient(135deg, #1a9e6a 0%, #0ed47e 100%);
+  border-color: rgba(75, 232, 163, 0.7);
+  color: #001a0f;
+  font-weight: 800;
+  box-shadow: 0 4px 18px rgba(75, 232, 163, 0.35);
+}
+.sm-decision-card--opportunity .sm-choice-btn--b:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 6px 24px rgba(75, 232, 163, 0.5);
+}
+/* Shimmer sweep for opportunity card */
+@keyframes sm-opp-shimmer {
+  0%   { box-shadow: 0 0 28px rgba(75,232,163,0.22), 0 0 60px rgba(75,232,163,0.07); }
+  50%  { box-shadow: 0 0 40px rgba(75,232,163,0.38), 0 0 80px rgba(75,232,163,0.14); }
+  100% { box-shadow: 0 0 28px rgba(75,232,163,0.22), 0 0 60px rgba(75,232,163,0.07); }
 }
 
 .sm-decision-card--technical {
@@ -6108,12 +6186,16 @@ button {
 
 .sm-decision-tag {
   display: block;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
   text-transform: uppercase;
   color: var(--gold-bright);
   margin-bottom: var(--space-3);
+}
+.sm-decision-card--danger .sm-decision-tag {
+  font-size: 12px;
+  letter-spacing: 2.1px;
 }
 
 .sm-decision-title {
@@ -6169,6 +6251,31 @@ button {
 .sm-choice-btn--a:hover { border-color: rgba(94, 234, 248, 0.4); }
 
 .sm-choice-btn--b { animation: none; }
+
+.sm-decision-card--danger .sm-choice-btn--safe {
+  border: 1px solid rgba(94, 234, 248, 0.52);
+  background: linear-gradient(135deg, rgba(20, 84, 107, 0.95) 0%, rgba(17, 61, 82, 0.95) 100%);
+  color: #e8fbff;
+  box-shadow: 0 0 14px rgba(94, 234, 248, 0.2);
+}
+.sm-decision-card--danger .sm-choice-btn--safe .sm-choice-result {
+  color: rgba(216, 247, 255, 0.82);
+}
+
+.sm-decision-card--danger .sm-choice-btn--risk {
+  border: 1px solid rgba(255, 119, 88, 0.62);
+  background: linear-gradient(135deg, rgba(75, 24, 24, 0.95) 0%, rgba(56, 17, 17, 0.95) 100%);
+  color: #ffd3c8;
+  box-shadow: 0 0 12px rgba(190, 52, 42, 0.22);
+}
+.sm-decision-card--danger .sm-choice-btn--risk .sm-choice-result {
+  color: rgba(255, 198, 184, 0.74);
+}
+.sm-decision-card--danger .sm-choice-btn--risk.primary-button {
+  min-height: 64px;
+  box-shadow: 0 0 12px rgba(190, 52, 42, 0.22);
+  transform: none;
+}
 
 .sm-choice-label {
   font-size: 14px;

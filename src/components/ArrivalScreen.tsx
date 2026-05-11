@@ -126,7 +126,7 @@ export function ArrivalScreen({
             className="primary-button primary-button--pulse ar-cta-btn"
             onClick={onDone}
           >
-            ⚓ Limana Dön
+            ⚓ Marinaya Giriş Yap
           </button>
         </div>
       </div>

@@ -622,8 +622,9 @@ function App() {
 
   // Upgrade V2 State
   const [selectedUpgradeCategory, setSelectedUpgradeCategory] = useState<UpgradeCategoryId>("energy");
-  // BUG 3 FIX: session-only flag set when player navigates to Tekne from a missing route requirement
+  // BUG 3 FIX: session-only flags for route → tekne → route contextual navigation
   const [comingFromRotaMissing, setComingFromRotaMissing] = useState(false);
+  const [shouldOpenRotaReadiness, setShouldOpenRotaReadiness] = useState(false);
 
   // UI dismissal state (session-only, not persisted)
   const [tavsiyeDismissed, setTavsiyeDismissed] = useState(false);
@@ -2246,8 +2247,10 @@ function App() {
         onGoUpgradeCategory={(cat) => {
           setActiveTab("tekne");
           setSelectedUpgradeCategory(cat as UpgradeCategoryId);
-          setComingFromRotaMissing(true);  // BUG 3 FIX: mark contextual navigation
+          setComingFromRotaMissing(true);
         }}
+        openReadiness={shouldOpenRotaReadiness}
+        onReadinessOpened={() => setShouldOpenRotaReadiness(false)}
       />
     </>
   );
@@ -2274,16 +2277,6 @@ function App() {
     return (
       <div className="tab-content tk-tab-v2 fade-in">
         {/* ── Boat hero ── */}
-        {/* BUG 3 FIX: Contextual back button when entering Tekne from a missing route requirement */}
-        {comingFromRotaMissing && (
-          <button
-            className="tk-back-to-rota-btn"
-            onClick={() => { setActiveTab("rota"); setComingFromRotaMissing(false); }}
-            aria-label="Rota eksiklerine dön"
-          >
-            ← Rota Eksiklerine Dön
-          </button>
-        )}
         <div className="tk-hero glass-card">
           <div className="tk-hero-glow" aria-hidden="true" />
           <div className="tk-hero-top">
@@ -2350,8 +2343,23 @@ function App() {
             >
               {cat.name}
             </button>
-          ))}
+            ))}
         </div>
+
+        {comingFromRotaMissing && (
+          <button
+            className="tk-back-to-rota-btn"
+            onClick={() => {
+              setActiveTab("rota");
+              setComingFromRotaMissing(false);
+              setShouldOpenRotaReadiness(true);
+            }}
+            aria-label="Rota eksiklerine dön"
+          >
+            <span className="tk-back-to-rota-title">← Rota Eksiklerine Dön</span>
+            <span className="tk-back-to-rota-sub">Eksik hazırlıkları kontrol etmeye geri dön.</span>
+          </button>
+        )}
 
         <div className="tk-upgrade-list">
           {filteredUpgrades.map(upgrade => {

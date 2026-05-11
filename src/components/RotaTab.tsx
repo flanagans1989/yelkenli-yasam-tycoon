@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WORLD_ROUTES } from "../../game-data/routes";
 
 interface RouteReadinessValue {
@@ -52,6 +52,8 @@ interface RotaTabProps {
   onStartVoyage: () => void;
   onGoTekne: () => void;
   onGoUpgradeCategory?: (categoryId: string) => void;
+  openReadiness?: boolean;          // Task 2: caller can force-open the accordion
+  onReadinessOpened?: () => void;   // Task 2: called after accordion opens so caller can reset the flag
 }
 
 const RISK_LABELS: Record<string, string> = {
@@ -105,8 +107,18 @@ export function RotaTab({
   onStartVoyage,
   onGoTekne,
   onGoUpgradeCategory,
+  openReadiness,
+  onReadinessOpened,
 }: RotaTabProps) {
   const [readinessOpen, setReadinessOpen] = useState(false);
+
+  // Task 2: when the caller signals us to open, do it once then notify
+  useEffect(() => {
+    if (openReadiness) {
+      setReadinessOpen(true);
+      onReadinessOpened?.();
+    }
+  }, [openReadiness]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const readinessItems = [
     { label: "Okyanus Hazırlığı", value: routeReadiness.oceanReadiness },

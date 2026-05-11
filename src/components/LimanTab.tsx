@@ -17,6 +17,8 @@ interface LimanTabProps {
   currentRouteName?: string;
   logs: string[];
   onMarinaRest: () => void;
+  marinaRestActionLabel: string;
+  marinaRestActionDisabled: boolean;
   onRepairBoat: () => void;
   onGoContent: () => void;
   onGoRoute: () => void;
@@ -49,6 +51,8 @@ export function LimanTab({
   currentRouteName,
   logs,
   onMarinaRest,
+  marinaRestActionLabel,
+  marinaRestActionDisabled,
   onRepairBoat,
   onGoContent,
   onGoRoute,
@@ -236,8 +240,8 @@ export function LimanTab({
               </div>
             </div>
             <div className="lh-service-actions">
-              <button className="secondary-button lh-service-btn" onClick={onMarinaRest}>
-                Marina'da Dinlen
+              <button className="secondary-button lh-service-btn" onClick={onMarinaRest} disabled={marinaRestActionDisabled}>
+                {marinaRestActionLabel}
               </button>
               <button className="secondary-button lh-service-btn" onClick={onRepairBoat} disabled={credits < 250}>
                 Onar – 250 TL

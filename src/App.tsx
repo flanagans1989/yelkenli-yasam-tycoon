@@ -30,6 +30,7 @@ const SAVE_VERSION = 2;
 const MAX_OFFLINE_MINUTES = 480;
 const OFFLINE_CREDITS_PER_MINUTE = 15;
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
+const MARINA_REST_DURATION_MS = 2 * 60 * 1000;
 
 const CAPTAIN_LEVEL_THRESHOLDS = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 6000, 8200, 11000, 14500, 19000, 25000];
 
@@ -109,6 +110,12 @@ type UpgradeInProgressItem = {
   startedAt: number;
   durationMs: number;
   slot: 0 | 1 | 2;
+};
+
+type MarinaRestInProgress = {
+  startedAt: number;
+  completesAt: number;
+  durationMs: number;
 };
 
 type SeaDecisionEffect = {
@@ -606,6 +613,8 @@ function App() {
   const [contentResult, setContentResult] = useState<ContentResult | null>(null);
   const [lastContentAt, setLastContentAt] = useState<number | null>(null);
   const [, setContentCooldownTick] = useState(0);
+  const [marinaRestInProgress, setMarinaRestInProgress] = useState<MarinaRestInProgress | null>(null);
+  const [marinaRestCooldownTick, setMarinaRestCooldownTick] = useState(0);
 
   // Upgrade V2 State
   const [selectedUpgradeCategory, setSelectedUpgradeCategory] = useState<UpgradeCategoryId>("energy");
@@ -818,6 +827,21 @@ function App() {
   }, [lastContentAt]);
 
   useEffect(() => {
+    if (!marinaRestInProgress) return;
+
+    const checkRest = () => {
+      setMarinaRestCooldownTick(Date.now());
+      if (marinaRestInProgress.completesAt <= Date.now()) {
+        completeMarinaRestService();
+      }
+    };
+
+    checkRest();
+    const tickId = window.setInterval(checkRest, 30000);
+    return () => window.clearInterval(tickId);
+  }, [marinaRestInProgress]);
+
+  useEffect(() => {
     setCaptainLevel(prev => {
       const newLevel = getCaptainLevel(captainXp);
       if (newLevel > prev) {
@@ -936,6 +960,7 @@ function App() {
         sponsoredContentCount,
         icerikSubTab,
         lastContentAt,
+        marinaRestInProgress,
         captainXp,
         captainLevel,
         dailyGoals,
@@ -956,7 +981,7 @@ function App() {
     logs, purchasedUpgradeIds, upgradesInProgress, activeTab, currentLocationName, worldProgress, energy, water,
     fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining,
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
-    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt,
+    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt, marinaRestInProgress,
     captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
     hasCompletedDailyGoalsOnce
   ]);
@@ -992,6 +1017,7 @@ function App() {
     setSponsoredContentCount(0);
     setIcerikSubTab("produce");
     setLastContentAt(null);
+    setMarinaRestInProgress(null);
     setCaptainXp(0);
     setCaptainLevel(1);
     setDailyGoals(makeDailyGoals());
@@ -1023,6 +1049,8 @@ function App() {
       let nextPurchasedUpgradeIds = savedPurchasedUpgradeIds;
       let nextUpgradesInProgress: UpgradeInProgressItem[] = [];
       const completedUpgradeIds: string[] = [];
+      let nextMarinaRestInProgress: MarinaRestInProgress | null = null;
+      let marinaRestCompletedOffline = false;
 
       if (typeof savedLastSavedAt === "number" && Number.isFinite(savedLastSavedAt)) {
         const offlineMs = Math.max(0, Date.now() - savedLastSavedAt);
@@ -1082,6 +1110,26 @@ function App() {
         registerSavedUpgrade(savedUpgradeInProgress, 0);
       }
 
+      const savedMarinaRest = parsed.marinaRestInProgress;
+      if (savedMarinaRest && typeof savedMarinaRest === "object") {
+        const startedAtRaw = (savedMarinaRest as { startedAt?: unknown }).startedAt;
+        const completesAtRaw = (savedMarinaRest as { completesAt?: unknown }).completesAt;
+        const durationMsRaw = (savedMarinaRest as { durationMs?: unknown }).durationMs;
+        const startedAt = typeof startedAtRaw === "number" && Number.isFinite(startedAtRaw) ? startedAtRaw : Date.now();
+        const completesAt = typeof completesAtRaw === "number" && Number.isFinite(completesAtRaw) ? completesAtRaw : NaN;
+        const durationMs = typeof durationMsRaw === "number" && Number.isFinite(durationMsRaw)
+          ? durationMsRaw
+          : Math.max(0, completesAt - startedAt);
+
+        if (Number.isFinite(completesAt)) {
+          if (completesAt <= Date.now()) {
+            marinaRestCompletedOffline = true;
+          } else {
+            nextMarinaRestInProgress = { startedAt, completesAt, durationMs };
+          }
+        }
+      }
+
       const completedUpgradeObjects = [...new Set(completedUpgradeIds)]
         .map((upgradeId) => BOAT_UPGRADES.find((upgrade) => upgrade.id === upgradeId))
         .filter(Boolean) as typeof BOAT_UPGRADES;
@@ -1101,11 +1149,14 @@ function App() {
           ? `Kurulum tamamlandı: ${completedUpgradeObjects[0].name} aktif edildi.`
           : `${completedUpgradeObjects.length} upgrade tamamlandı: ${completedUpgradeObjects.map((upgrade) => upgrade.name).join(", ")}.`
         : "";
-      const nextLogs = [installationCompleteMessage, passiveIncomeMessage, ...savedLogs]
+      const marinaRestMessage = marinaRestCompletedOffline
+        ? "Marina dinlenme hizmeti siz yokken tamamlandi. Kaynaklar toparlandi."
+        : "";
+      const nextLogs = [installationCompleteMessage, marinaRestMessage, passiveIncomeMessage, ...savedLogs]
         .filter(Boolean)
         .slice(0, 5) as string[];
       const nextSeaEvent =
-        installationCompleteMessage || passiveIncomeMessage || (parsed.currentSeaEvent ?? "");
+        installationCompleteMessage || marinaRestMessage || passiveIncomeMessage || (parsed.currentSeaEvent ?? "");
 
       setProfileIndex(parsed.profileIndex ?? 0);
       setMarinaIndex(parsed.marinaIndex ?? 0);
@@ -1139,6 +1190,8 @@ function App() {
       setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
       setIcerikSubTab(parsed.icerikSubTab ?? "produce");
       setLastContentAt(parsed.lastContentAt ?? null);
+      setMarinaRestInProgress(nextMarinaRestInProgress);
+      setMarinaRestCooldownTick(Date.now());
       setCaptainXp(parsed.captainXp ?? 0);
       setCaptainLevel(parsed.captainLevel ?? 1);
       setDailyGoals(Array.isArray(parsed.dailyGoals) ? parsed.dailyGoals : makeDailyGoals());
@@ -1156,6 +1209,13 @@ function App() {
         applyUpgradeEffects(upgrade);
         pushToast("upgrade", "Upgrade Tamamlandı!", `${upgrade.name} kurulumu tamamlandı!`);
       });
+      if (marinaRestCompletedOffline) {
+        setEnergy((prev) => Math.min(100, prev + 30));
+        setWater((prev) => Math.min(100, prev + 30));
+        setFuel((prev) => Math.min(100, prev + 20));
+        setBoatCondition((prev) => Math.min(100, prev + 10));
+        pushToast("voyage", "Dinlenme Tamamlandı", "Marina hizmeti bitti. Kaynaklar toparlandı.");
+      }
     } catch (e) {
       console.error("Load error", e);
     }
@@ -1175,13 +1235,41 @@ function App() {
     if (conditionBoost > 0) setBoatCondition(prev => Math.min(100, prev + conditionBoost));
   };
 
-  const handleMarinaRest = () => {
-    setEnergy(prev => Math.min(100, prev + 30));
-    setWater(prev => Math.min(100, prev + 30));
-    setFuel(prev => Math.min(100, prev + 20));
-    setBoatCondition(prev => Math.min(100, prev + 10));
-    setLogs(prev => ["Marina’da dinlenildi. Enerji, su, yakıt ve tekne durumu toparlandı.", ...prev.slice(0, 4)]);
+  const completeMarinaRestService = () => {
+    setMarinaRestInProgress((current) => {
+      if (!current) return null;
+      setEnergy((prev) => Math.min(100, prev + 30));
+      setWater((prev) => Math.min(100, prev + 30));
+      setFuel((prev) => Math.min(100, prev + 20));
+      setBoatCondition((prev) => Math.min(100, prev + 10));
+      setLogs((prev) => ["Marina hizmeti tamamlandı. Enerji, su, yakıt ve tekne durumu toparlandı.", ...prev.slice(0, 4)]);
+      pushToast("voyage", "Dinlenme Tamamlandı", "Marina hizmeti bitti. Kaynaklar toparlandı.");
+      return null;
+    });
   };
+
+  const handleMarinaRest = () => {
+    if (marinaRestInProgress) {
+      setLogs((prev) => ["Marina dinlenme hizmeti zaten sürüyor.", ...prev.slice(0, 4)]);
+      return;
+    }
+
+    const startedAt = Date.now();
+    const durationMs = MARINA_REST_DURATION_MS;
+    const completesAt = startedAt + durationMs;
+    setMarinaRestInProgress({ startedAt, completesAt, durationMs });
+    setMarinaRestCooldownTick(startedAt);
+    setLogs((prev) => ["Marina dinlenme hizmeti başlatıldı.", ...prev.slice(0, 4)]);
+  };
+
+  const getMarinaRestLabel = () => {
+    if (!marinaRestInProgress) return "Marina'da Dinlen";
+    const remainingMs = Math.max(0, marinaRestInProgress.completesAt - marinaRestCooldownTick);
+    const remainingMinutes = Math.max(1, Math.ceil(remainingMs / 60000));
+    return `Dinlenme Sürüyor: ${remainingMinutes} dk kaldı`;
+  };
+
+  const isMarinaRestActive = Boolean(marinaRestInProgress);
 
   const handleRepairBoat = () => {
     if (credits < 250) {
@@ -1677,6 +1765,8 @@ function App() {
       completedRouteIds={completedRouteIds}
       currentRouteName={currentRoute?.name}
       logs={logs}
+      marinaRestActionLabel={getMarinaRestLabel()}
+      marinaRestActionDisabled={isMarinaRestActive}
       onMarinaRest={handleMarinaRest}
       onRepairBoat={handleRepairBoat}
       onGoContent={() => setActiveTab("icerik")}

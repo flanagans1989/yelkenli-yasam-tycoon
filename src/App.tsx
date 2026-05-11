@@ -77,7 +77,8 @@ const getCaptainLevel = (xp: number): number => {
   return 1;
 };
 
-const getContentCooldownMs = (captainLevel: number): number => {
+const getContentCooldownMs = (captainLevel: number, isTestMode: boolean = false): number => {
+  if (isTestMode) return 3000;
   if (captainLevel <= 1) return 90 * 1000;
   if (captainLevel === 2) return 8 * 60 * 1000;
   if (captainLevel === 3) return 12 * 60 * 1000;
@@ -85,7 +86,8 @@ const getContentCooldownMs = (captainLevel: number): number => {
   return 30 * 60 * 1000;
 };
 
-const getBoatUpgradeDurationMs = (captainLevel: number): number => {
+const getBoatUpgradeDurationMs = (captainLevel: number, isTestMode: boolean = false): number => {
+  if (isTestMode) return 5000;
   if (captainLevel <= 1) return 60 * 1000;
   if (captainLevel === 2) return 5 * 60 * 1000;
   if (captainLevel === 3) return 8 * 60 * 1000;
@@ -633,6 +635,7 @@ function App() {
 
   const [hasSave, setHasSave] = useState(false);
   const [saveBoatName, setSaveBoatName] = useState("");
+  const [testMode, setTestMode] = useState(false);
 
   // Flash animation states
   const [flashCredits, setFlashCredits] = useState(false);
@@ -974,6 +977,7 @@ function App() {
         saveVersion: SAVE_VERSION,
         hasSave: true,
         firstVoyageEventTriggered,
+        testMode,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveObj));
       setHasSave(true);
@@ -986,7 +990,7 @@ function App() {
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
     brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt, marinaRestInProgress,
     captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
-    hasCompletedDailyGoalsOnce, firstVoyageEventTriggered
+    hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode
   ]);
 
   const finalizeGame = () => {
@@ -1194,6 +1198,7 @@ function App() {
       setAcceptedSponsors(parsed.acceptedSponsors ?? []);
       setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
       setFirstVoyageEventTriggered(parsed.firstVoyageEventTriggered ?? false);
+      setTestMode(parsed.testMode ?? false);
       setIcerikSubTab(parsed.icerikSubTab ?? "produce");
       setLastContentAt(parsed.lastContentAt ?? null);
       setMarinaRestInProgress(nextMarinaRestInProgress);
@@ -1261,7 +1266,7 @@ function App() {
     }
 
     const startedAt = Date.now();
-    const durationMs = MARINA_REST_DURATION_MS;
+    const durationMs = testMode ? 3000 : MARINA_REST_DURATION_MS;
     const completesAt = startedAt + durationMs;
     setMarinaRestInProgress({ startedAt, completesAt, durationMs });
     setMarinaRestCooldownTick(startedAt);
@@ -1485,7 +1490,7 @@ function App() {
   const handleProduceContentV2 = () => {
     if (!selectedPlatformId || !selectedContentType) return;
 
-    const contentCooldownMs = getContentCooldownMs(captainLevel);
+    const contentCooldownMs = getContentCooldownMs(captainLevel, testMode);
 
     if (lastContentAt && Date.now() - lastContentAt < contentCooldownMs) {
       const remainingMs = contentCooldownMs - (Date.now() - lastContentAt);
@@ -1636,6 +1641,7 @@ function App() {
   };
 
   const getUpgradeInstallMs = (upgrade: (typeof BOAT_UPGRADES)[number], captainLevelForDuration: number = captainLevel) => {
+    if (testMode) return 5000;
     const baseDurationMs = getBoatUpgradeDurationMs(captainLevelForDuration);
 
     if (typeof upgrade.installDays === "number" && upgrade.installDays > 0) {
@@ -1858,7 +1864,7 @@ function App() {
     const selectedPlatform = selectedPlatformId
       ? SOCIAL_PLATFORMS.find((platform) => platform.id === selectedPlatformId) ?? null
       : null;
-    const contentCooldownMs = getContentCooldownMs(captainLevel);
+    const contentCooldownMs = getContentCooldownMs(captainLevel, testMode);
     const contentCooldownRemaining = lastContentAt
       ? Math.max(0, contentCooldownMs - (Date.now() - lastContentAt))
       : 0;
@@ -2578,6 +2584,42 @@ function App() {
           celebration={activeCelebration}
           onDismiss={() => setActiveCelebration(null)}
         />
+      )}
+      <button
+        onClick={() => setTestMode(!testMode)}
+        style={{
+          position: 'fixed', bottom: 4, left: 4, zIndex: 9999,
+          background: testMode ? 'red' : 'transparent', color: testMode ? 'white' : 'rgba(255,255,255,0.1)',
+          border: 'none', fontSize: 10, padding: '2px 4px', cursor: 'pointer', borderRadius: '4px'
+        }}
+      >
+        {testMode ? "DEV MODE ON" : "v1.0"}
+      </button>
+      {testMode && (
+        <div style={{
+          position: 'fixed', bottom: 30, left: 4, zIndex: 9999,
+          background: 'rgba(0,0,0,0.85)', border: '1px solid red', padding: '8px', color: 'white',
+          display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px', borderRadius: '6px',
+          maxHeight: '70vh', overflowY: 'auto', width: '160px'
+        }}>
+          <strong style={{color:'red', textAlign:'center', borderBottom:'1px solid red', paddingBottom:'4px'}}>TEST ACTIONS</strong>
+          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setCredits(c => c + 10000)}>+10K TL</button>
+          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => { setFollowers(f => f + 1000); triggerFlash("followers"); }}>+1K Followers</button>
+          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => { setEnergy(100); setWater(100); setFuel(100); setBoatCondition(100); }}>Fill Resources</button>
+          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setLastContentAt(0)}>Reset Content CD</button>
+          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setUpgradesInProgress(prev => prev.map(u => ({ ...u, completesAt: 0 })))}>Finish Upgrades</button>
+          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setMarinaRestInProgress(null)}>Finish Marina Rest</button>
+          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => {
+             if (step === "SEA_MODE") {
+                const evt = SEA_DECISION_EVENTS[Math.floor(Math.random() * SEA_DECISION_EVENTS.length)];
+                setPendingDecisionId(evt.id);
+                setCurrentSeaEvent(evt.description);
+             } else {
+                pushToast("voyage", "Sea Mode", "You must be in Sea Mode to trigger an event.");
+             }
+          }}>Trigger Sea Event</button>
+          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setCaptainXp(prev => prev + 500)}>+500 XP</button>
+        </div>
       )}
     </div>
   );

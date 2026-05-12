@@ -179,11 +179,16 @@ Examples that must fail:
 
 ## 9. Mobile UI Consistency Checklist
 
+- [ ] `390x667` is a required manual smoke-test size.
 - [ ] Primary CTA must remain visible at `390x667` on critical onboarding and arrival screens.
+- [ ] Sticky CTAs must never cover the final readable content.
 - [ ] Helper copy should use shared helper styles instead of one-off text blocks.
 - [ ] Route not-ready helper block should match the premium navy/cyan/glass UI rhythm.
 - [ ] Arrival helper note should remain subtle and support `Marinaya Giriş Yap`.
 - [ ] `Tekneni Seç` must keep the selected boat CTA visible for `28 ft`, `34 ft`, and `40 ft`.
+- [ ] `Tekneni Seç` must keep the final summary readable and reachable above the CTA.
+- [ ] Sea event choices must show the expected outcome before tap.
+- [ ] `npm run audit:mobile-ui` is a static guardrail, manual visual testing is still required.
 
 ---
 

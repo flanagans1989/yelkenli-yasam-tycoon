@@ -4484,6 +4484,20 @@ button {
   gap: 10px;
 }
 
+.ob-boat-screen-v2 .ob-boat-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 2px;
+  padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+  scrollbar-width: none;
+}
+
+.ob-boat-screen-v2 .ob-boat-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Marina selection ── */
 
 .ob-region-filter {
@@ -5503,6 +5517,10 @@ button {
     padding-left: 12px;
     padding-right: 12px;
   }
+
+  .ob-boat-screen-v2 .ob-boat-scroll {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (max-height: 700px) {
@@ -5568,6 +5586,10 @@ button {
 
   .ob-boat-screen-v2 .ob-screen-actions {
     padding-top: 8px;
+  }
+
+  .ob-boat-screen-v2 .ob-boat-scroll {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -10273,6 +10295,7 @@ button {
   bottom: 0;
   z-index: 4;
   margin-top: auto;
+  flex-shrink: 0;
   padding-top: 10px;
   padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
   background:
@@ -11495,4 +11518,43 @@ button {
   color: var(--cyan-glow);
   opacity: 0.70;
   flex-shrink: 0;
+}
+
+.sea-choice-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sea-choice-effect-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1px solid rgba(201, 228, 242, 0.12);
+  background: rgba(8, 25, 42, 0.58);
+  color: rgba(226, 241, 249, 0.84);
+}
+
+.sea-choice-effect-pill--positive {
+  border-color: rgba(75, 232, 163, 0.28);
+  background: rgba(11, 60, 45, 0.64);
+  color: #bdf5df;
+}
+
+.sea-choice-effect-pill--negative {
+  border-color: rgba(255, 141, 113, 0.34);
+  background: rgba(65, 24, 24, 0.70);
+  color: #ffd1c3;
+}
+
+.sea-choice-effect-pill--neutral {
+  border-color: rgba(94, 234, 248, 0.24);
+  background: rgba(12, 42, 71, 0.64);
+  color: rgba(214, 244, 250, 0.84);
 }

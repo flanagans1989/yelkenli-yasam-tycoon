@@ -1,4 +1,4 @@
-import { useRef } from "react";
+﻿import { useRef } from "react";
 import type { Dispatch, SetStateAction, TouchEvent as ReactTouchEvent } from "react";
 import type { Step, MarinaFilter } from "../types/game";
 import { PLAYER_PROFILES } from "../../game-data/playerProfiles";
@@ -594,6 +594,7 @@ export function Onboarding({
 
     return (
       <div className="ob-boat-screen ob-boat-screen-v2">
+        <div className="ob-boat-scroll">
         <div className="ob-step-header">
           <div className="ob-step-eyebrow">ADIM 3 / 4</div>
           <h2 className="ob-step-title">TEKNENİ SEÇ</h2>
@@ -664,6 +665,7 @@ export function Onboarding({
         <div className="ob-budget-line">
           <span>{remainingBudget.toLocaleString("tr-TR")} TL ile başlarsın</span>
           <span className="ob-budget-tier">{budgetTier}</span>
+        </div>
         </div>
 
         <div className="ob-screen-actions">

@@ -3,6 +3,15 @@
 interface SeaDecisionChoiceView {
   label: string;
   resultText: string;
+  effect?: {
+    credits?: number;
+    followers?: number;
+    energy?: number;
+    water?: number;
+    fuel?: number;
+    boatCondition?: number;
+    remainingDays?: number;
+  };
 }
 
 interface SeaDecisionView {
@@ -30,6 +39,7 @@ interface SeaModeTabProps {
 }
 
 const MAX_DOTS = 20;
+const STORY_HOOK_EVENT_IDS = new Set(["content_opportunity", "risky_social_shot"]);
 
 export function SeaModeTab({
   selectedBoatId,
@@ -75,6 +85,49 @@ export function SeaModeTab({
     if (riskTerms.some((term) => text.includes(term))) return "risk";
     if (safeTerms.some((term) => text.includes(term))) return "safe";
     return "neutral";
+  };
+
+  const getChoiceEffectPills = (
+    decisionId: string,
+    choiceKey: "choiceA" | "choiceB",
+    choice: SeaDecisionChoiceView,
+    tone: "risk" | "safe" | "neutral",
+  ) => {
+    const effect = choice.effect ?? {};
+    const pills: Array<{ label: string; tone: "positive" | "negative" | "neutral" }> = [];
+    const addDelta = (value: number | undefined, label: string) => {
+      if (typeof value !== "number" || value === 0) return;
+      pills.push({
+        label: `${label} ${value > 0 ? "+" : ""}${value}`,
+        tone: value > 0 ? "positive" : "negative",
+      });
+    };
+
+    addDelta(effect.followers, "Takipçi");
+    addDelta(effect.credits, "TL");
+    addDelta(effect.energy, "Enerji");
+    addDelta(effect.water, "Su");
+    addDelta(effect.fuel, "Yakıt");
+    addDelta(effect.boatCondition, "Tekne");
+
+    if (typeof effect.remainingDays === "number" && effect.remainingDays !== 0) {
+      pills.push({
+        label: effect.remainingDays > 0 ? `Süre +${effect.remainingDays}g` : `Süre ${effect.remainingDays}g`,
+        tone: effect.remainingDays < 0 ? "positive" : "negative",
+      });
+    }
+
+    if (choiceKey === "choiceA" && STORY_HOOK_EVENT_IDS.has(decisionId)) {
+      pills.push({ label: "Hikâye fırsatı", tone: "positive" });
+    }
+
+    if (pills.length === 0) {
+      if (tone === "safe") pills.push({ label: "Güvenli seçim", tone: "neutral" });
+      else if (tone === "risk") pills.push({ label: "Riskli seçim", tone: "negative" });
+      else pills.push({ label: "Dengeli sonuç", tone: "neutral" });
+    }
+
+    return pills.slice(0, 4);
   };
 
   return (
@@ -145,6 +198,8 @@ export function SeaModeTab({
         const decisionCategory = getEventCategory(pendingDecision.title, pendingDecision.description);
         const choiceATone = getChoiceTone(pendingDecision.choiceA.label, pendingDecision.choiceA.resultText);
         const choiceBTone = getChoiceTone(pendingDecision.choiceB.label, pendingDecision.choiceB.resultText);
+        const choiceAEffects = getChoiceEffectPills(pendingDecision.id, "choiceA", pendingDecision.choiceA, choiceATone);
+        const choiceBEffects = getChoiceEffectPills(pendingDecision.id, "choiceB", pendingDecision.choiceB, choiceBTone);
         let decisionTagIcon = "⚓";
         let decisionTagLabel = "KARAR ANI";
         let decisionCardClass = "sm-decision-card glass-card";
@@ -181,6 +236,16 @@ export function SeaModeTab({
                 >
                   <span className="sm-choice-label">{pendingDecision.choiceA.label}</span>
                   <span className="sm-choice-result">{pendingDecision.choiceA.resultText}</span>
+                  <span className="sea-choice-effects">
+                    {choiceAEffects.map((item) => (
+                      <span
+                        key={`${pendingDecision.id}-a-${item.label}`}
+                        className={`sea-choice-effect-pill sea-choice-effect-pill--${item.tone}`}
+                      >
+                        {item.label}
+                      </span>
+                    ))}
+                  </span>
                 </button>
                 <button
                   className={`sm-choice-btn sm-choice-btn--b primary-button${decisionCategory === "danger" && choiceBTone === "safe" ? " sm-choice-btn--safe" : ""}${decisionCategory === "danger" && choiceBTone === "risk" ? " sm-choice-btn--risk" : ""}`}
@@ -188,6 +253,16 @@ export function SeaModeTab({
                 >
                   <span className="sm-choice-label">{pendingDecision.choiceB.label}</span>
                   <span className="sm-choice-result">{pendingDecision.choiceB.resultText}</span>
+                  <span className="sea-choice-effects">
+                    {choiceBEffects.map((item) => (
+                      <span
+                        key={`${pendingDecision.id}-b-${item.label}`}
+                        className={`sea-choice-effect-pill sea-choice-effect-pill--${item.tone}`}
+                      >
+                        {item.label}
+                      </span>
+                    ))}
+                  </span>
                 </button>
               </div>
             </div>

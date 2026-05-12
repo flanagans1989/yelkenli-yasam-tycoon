@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "audit:encoding": "node scripts/audit-encoding.mjs",
+    "audit:mobile-ui": "node scripts/audit-mobile-ui.mjs",
     "audit:game": "node scripts/audit-encoding.mjs && node scripts/audit-game-logic.mjs",
     "assets:android": "npx @capacitor/assets generate --android --assetPath assets --iconBackgroundColor \"#0E3A5F\" --iconBackgroundColorDark \"#0E3A5F\" --splashBackgroundColor \"#0E3A5F\" --splashBackgroundColorDark \"#0E3A5F\"",
     "mobile:sync": "npm run build && npx cap sync android",

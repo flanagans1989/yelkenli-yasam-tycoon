@@ -1758,15 +1758,63 @@ function App() {
   };
 
   const handleCheckSponsorOffers = () => {
+    const noOfferMessage =
+      "Şu an yeni teklif yok. Daha fazla içerik üret, takipçi kazan ve marka güvenini artır.";
+
     const tier = getSponsorTierByFollowers(followers, brandTrust);
     if (!tier) {
-      setLogs(prev => ["Şu an uygun sponsor teklifi yok. Takipçi ve marka güvenini artır.", ...prev.slice(0, 4)]);
+      setLogs(prev => [noOfferMessage, ...prev.slice(0, 4)]);
       return;
     }
-    
-    const sponsorBrands = ["BlueWave Kamera", "Marina Plus", "OceanSafe Güvenlik", "SolarDeck Enerji", "SailWear Outdoor", "DeepRoute Navigasyon"];
-    const randomBrand = sponsorBrands[Math.floor(Math.random() * sponsorBrands.length)];
-    
+
+    const sponsorBrands = [
+      "BlueWave Kamera",
+      "Marina Plus",
+      "OceanSafe Güvenlik",
+      "SolarDeck Enerji",
+      "SailWear Outdoor",
+      "DeepRoute Navigasyon",
+    ];
+
+    const activeSponsorSet = new Set(
+      acceptedSponsors
+        .map(name => String(name).trim())
+        .filter(Boolean)
+    );
+
+    const pendingSponsorSet = new Set(
+      sponsorOffers
+        .map(offer => String(offer?.brandName ?? "").trim())
+        .filter(Boolean)
+    );
+
+    const eligibleBrands = sponsorBrands.filter(
+      brand => !activeSponsorSet.has(brand) && !pendingSponsorSet.has(brand)
+    );
+
+    if (eligibleBrands.length === 0) {
+      setAcceptedSponsors(prev => Array.from(new Set(prev.map(name => String(name).trim()).filter(Boolean))));
+
+      setSponsorOffers(prev => {
+        const seenBrands = new Set<string>();
+
+        return prev.filter(offer => {
+          const brandName = String(offer?.brandName ?? "").trim();
+          if (!brandName) return false;
+          if (activeSponsorSet.has(brandName)) return false;
+          if (seenBrands.has(brandName)) return false;
+
+          seenBrands.add(brandName);
+          return true;
+        });
+      });
+
+      setLogs(prev => [noOfferMessage, ...prev.slice(0, 4)]);
+      return;
+    }
+
+    const randomBrand = eligibleBrands[Math.floor(Math.random() * eligibleBrands.length)];
+
     const newOffer = {
       id: "spo_" + Date.now(),
       brandName: randomBrand,
@@ -1775,8 +1823,26 @@ function App() {
       minReward: tier.rewardRange.min,
       maxReward: tier.rewardRange.max,
     };
-    
-    setSponsorOffers(prev => [...prev, newOffer]);
+
+    setSponsorOffers(prev => {
+      const seenBrands = new Set<string>();
+
+      const cleanedOffers = prev.filter(offer => {
+        const brandName = String(offer?.brandName ?? "").trim();
+        if (!brandName) return false;
+        if (activeSponsorSet.has(brandName)) return false;
+        if (seenBrands.has(brandName)) return false;
+
+        seenBrands.add(brandName);
+        return true;
+      });
+
+      if (seenBrands.has(randomBrand) || activeSponsorSet.has(randomBrand)) {
+        return cleanedOffers;
+      }
+
+      return [...cleanedOffers, newOffer];
+    });
 
     if (!hasReceivedFirstSponsor) {
       setHasReceivedFirstSponsor(true);
@@ -1787,25 +1853,66 @@ function App() {
   const handleAcceptSponsor = (offerId: string) => {
     const offer = sponsorOffers.find(o => o.id === offerId);
     if (!offer) return;
-    
+
+    const brandName = String(offer.brandName ?? "").trim();
+    if (!brandName) return;
+
+    const uniqueAcceptedSponsors = Array.from(
+      new Set(acceptedSponsors.map(name => String(name).trim()).filter(Boolean))
+    );
+
+    if (uniqueAcceptedSponsors.includes(brandName)) {
+      setAcceptedSponsors(uniqueAcceptedSponsors);
+      setSponsorOffers(prev => prev.filter(o => o.id !== offerId && o.brandName !== brandName));
+      setLogs(prev => [`${brandName} zaten aktif sponsor. Tekrar eklenmedi.`, ...prev.slice(0, 4)]);
+      return;
+    }
+
     let baseReward = Math.floor(Math.random() * (offer.maxReward - offer.minReward + 1)) + offer.minReward;
     if (selectedProfile.id === "social_entrepreneur") {
-      baseReward = Math.floor(baseReward * 1.1); 
+      baseReward = Math.floor(baseReward * 1.1);
     }
-    
+
     setCredits(prev => prev + baseReward);
-    setAcceptedSponsors(prev => [...prev, offer.brandName]);
-    setSponsorOffers(prev => prev.filter(o => o.id !== offerId));
+
+    setAcceptedSponsors(prev => {
+      const cleanedSponsors = Array.from(
+        new Set(prev.map(name => String(name).trim()).filter(Boolean))
+      );
+
+      if (cleanedSponsors.includes(brandName)) {
+        return cleanedSponsors;
+      }
+
+      return [...cleanedSponsors, brandName];
+    });
+
+    setSponsorOffers(prev => {
+      const seenBrands = new Set<string>();
+
+      return prev.filter(o => {
+        const offerBrandName = String(o?.brandName ?? "").trim();
+
+        if (o.id === offerId) return false;
+        if (offerBrandName === brandName) return false;
+        if (!offerBrandName) return false;
+        if (seenBrands.has(offerBrandName)) return false;
+
+        seenBrands.add(offerBrandName);
+        return true;
+      });
+    });
+
     triggerFlash("credits");
-    
+
     const newCount = sponsoredContentCount + 1;
     setSponsoredContentCount(newCount);
-    
+
     if (newCount % 3 === 0) {
-      setLogs(prev => [`${offer.brandName} teklifi kabul edildi (+${baseReward} TL). Ancak takipçiler sürekli sponsorlu içeriklerden sıkılmaya başladı.`, ...prev.slice(0, 4)]);
+      setLogs(prev => [`${brandName} teklifi kabul edildi (+${baseReward} TL). Ancak takipçiler sürekli sponsorlu içeriklerden sıkılmaya başladı.`, ...prev.slice(0, 4)]);
     } else {
       setBrandTrust(prev => prev + 2);
-      setLogs(prev => [`${offer.brandName} teklifi kabul edildi (+${baseReward} TL). Marka güveni arttı.`, ...prev.slice(0, 4)]);
+      setLogs(prev => [`${brandName} teklifi kabul edildi (+${baseReward} TL). Marka güveni arttı.`, ...prev.slice(0, 4)]);
     }
   };
 
@@ -2360,7 +2467,9 @@ function App() {
                <>
                   <h3 className="section-title mt-20">Aktif Sponsorlar</h3>
                   <div className="accepted-sponsors-list">
-                     {acceptedSponsors.map((name, i) => <span key={i} className="spo-badge">{name}</span>)}
+                     {Array.from(new Set(acceptedSponsors.filter(Boolean))).map((name) => (
+                        <span key={name} className="spo-badge">{name}</span>
+                     ))}
                   </div>
                </>
             )}

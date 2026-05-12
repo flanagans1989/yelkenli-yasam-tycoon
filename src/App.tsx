@@ -21,6 +21,7 @@ import { LimanTab } from "./components/LimanTab";
 import { RotaTab } from "./components/RotaTab";
 import { SeaModeTab } from "./components/SeaModeTab";
 import { KaptanTab } from "./components/KaptanTab";
+import { TekneTab } from "./components/TekneTab";
 import { ArrivalScreen } from "./components/ArrivalScreen";
 import { CelebrationModal } from "./components/CelebrationModal";
 import { IcerikTab } from "./components/IcerikTab";
@@ -2349,7 +2350,7 @@ function App() {
   };
 
   const renderTekneTab = () => {
-    const filteredUpgrades = BOAT_UPGRADES.filter(u => u.categoryId === selectedUpgradeCategory);
+    const filteredUpgrades = BOAT_UPGRADES.filter((u) => u.categoryId === selectedUpgradeCategory);
     const activeInstallRows = upgradesInProgress
       .slice()
       .sort((a, b) => a.slot - b.slot)
@@ -2360,177 +2361,76 @@ function App() {
       .filter((item) => item.upgrade !== null);
 
     const tkStats: Array<{ key: "energy" | "water" | "safety" | "nav"; icon: string; label: string; value: number }> = [
-      { key: "energy", icon: "⚡", label: "Enerji", value: upgradeEnergyBonus },
-      { key: "water", icon: "💧", label: "Su", value: upgradeWaterBonus },
-      { key: "safety", icon: "🛟", label: "Güvenlik", value: upgradeSafetyBonus },
-      { key: "nav", icon: "🧭", label: "Navigasyon", value: upgradeNavigationBonus },
+      { key: "energy", icon: "?", label: "Enerji", value: upgradeEnergyBonus },
+      { key: "water", icon: "??", label: "Su", value: upgradeWaterBonus },
+      { key: "safety", icon: "??", label: "G?venlik", value: upgradeSafetyBonus },
+      { key: "nav", icon: "??", label: "Navigasyon", value: upgradeNavigationBonus },
     ];
 
+    const upgradeCards = filteredUpgrades.map((upgrade) => {
+      const isPurchased = purchasedUpgradeIds.includes(upgrade.id);
+      const isInstalling = upgradesInProgress.some((item) => item.upgradeId === upgrade.id);
+      const comp = upgrade.compatibility.find((c) => c.boatId === selectedBoat.id);
+      const isCompatible = comp ? comp.compatible : false;
+      const hasWarning = Boolean(comp && (comp.efficiency === "poor" || comp.efficiency === "limited"));
+      const cantAfford = credits < upgrade.cost;
+      const slotsFull = upgradesInProgress.length >= MAX_PARALLEL_UPGRADES;
+      const buyDisabled = cantAfford || isInstalling || slotsFull;
+      const installDurationLabel = formatInstallDuration(getUpgradeInstallMs(upgrade));
+      const effects = Object.entries(upgrade.effects)
+        .filter(([, val]) => Boolean(val))
+        .map(([key, val]) => ({
+          key,
+          label: upgradeEffectLabels[key] ?? key,
+          value: Number(val),
+        }));
+
+      return {
+        id: upgrade.id,
+        name: upgrade.name,
+        description: upgrade.description,
+        cost: upgrade.cost,
+        marinaRequirementLabel: upgrade.marinaRequirement.toUpperCase(),
+        installDurationLabel,
+        isPurchased,
+        isCompatible,
+        hasWarning,
+        compatibilityNote: comp?.note,
+        cantAfford,
+        slotsFull,
+        isInstalling,
+        buyDisabled,
+        effects,
+      };
+    });
+
     return (
-      <div className="tab-content tk-tab-v2 fade-in">
-        {/* ── Boat hero ── */}
-        <div className="tk-hero glass-card">
-          <div className="tk-hero-glow" aria-hidden="true" />
-          <div className="tk-hero-top">
-            <div className="tk-hero-boat">
-              <span className="tk-hero-boat-halo" aria-hidden="true" />
-              <span className="tk-hero-boat-svg">{getBoatSvg(selectedBoat.id)}</span>
-            </div>
-            <div className="tk-hero-id">
-              <span className="tk-hero-eyebrow">⚙ TERSANE</span>
-              <h2 className="tk-hero-name">{boatName}</h2>
-              <p className="tk-hero-class">{selectedBoat.name} · {selectedBoat.lengthFt} ft</p>
-            </div>
-            <div className="tk-hero-credits">
-              <strong>{credits.toLocaleString("tr-TR")} TL</strong>
-              <small>Bütçe</small>
-            </div>
-          </div>
-
-          <div className="tk-readiness-box">
-            <div className="tk-readiness-row">
-              <span className="tk-readiness-label">Okyanus Hazırlığı</span>
-              <strong className="tk-readiness-val">{currentOceanReadiness}%</strong>
-            </div>
-            <div className="tk-readiness-track">
-              <div className="tk-readiness-fill" style={{ width: `${currentOceanReadiness}%` }} />
-            </div>
-          </div>
-
-          <div className="tk-stats-grid">
-            {tkStats.map(s => (
-              <div key={s.key} className="tk-stat-chip" data-stat={s.key}>
-                <span className="tk-stat-icon">{s.icon}</span>
-                <div className="tk-stat-body">
-                  <span className="tk-stat-label">{s.label}</span>
-                  <strong className="tk-stat-val">{s.value}</strong>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {activeInstallRows.length > 0 && (
-          <div className="tk-install-card glass-card">
-            <span className="tk-install-pulse" aria-hidden="true" />
-            <div className="tk-install-icon">🔧</div>
-            <div className="tk-install-body">
-              <span className="tk-install-eyebrow">KURULUM SÜRÜYOR</span>
-              {activeInstallRows.map((item) => (
-                <div key={item.upgradeId} className="tk-install-row">
-                  <strong className="tk-install-name">Slot {item.slot + 1} · {item.upgrade?.name}</strong>
-                  <span className="tk-install-time">{formatRemainingInstallTime(item.completesAt)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="tk-cat-strip">
-          {UPGRADE_CATEGORIES.map(cat => (
-            <button
-              key={cat.id}
-              className={`tk-cat-pill${selectedUpgradeCategory === cat.id ? " is-active" : ""}`}
-              onClick={() => setSelectedUpgradeCategory(cat.id)}
-            >
-              {cat.name}
-            </button>
-            ))}
-        </div>
-
-        {comingFromRotaMissing && (
-          <button
-            className="tk-back-to-rota-btn"
-            onClick={() => {
-              setActiveTab("rota");
-              setComingFromRotaMissing(false);
-              setShouldOpenRotaReadiness(true);
-            }}
-            aria-label="Rota eksiklerine dön"
-          >
-            <span className="tk-back-to-rota-title">← Rota Eksiklerine Dön</span>
-            <span className="tk-back-to-rota-sub">Eksik hazırlıkları kontrol etmeye geri dön.</span>
-          </button>
-        )}
-
-        <div className="tk-upgrade-list">
-          {filteredUpgrades.map(upgrade => {
-            const isPurchased = purchasedUpgradeIds.includes(upgrade.id);
-            const isInstalling = upgradesInProgress.some((item) => item.upgradeId === upgrade.id);
-            const comp = upgrade.compatibility.find(c => c.boatId === selectedBoat.id);
-            const isCompatible = comp ? comp.compatible : false;
-            const hasWarning = comp && (comp.efficiency === "poor" || comp.efficiency === "limited");
-            const cantAfford = credits < upgrade.cost;
-            const slotsFull = upgradesInProgress.length >= MAX_PARALLEL_UPGRADES;
-            const buyDisabled = cantAfford || isInstalling || slotsFull;
-            const installDurationLabel = formatInstallDuration(getUpgradeInstallMs(upgrade));
-
-            return (
-              <div
-                key={upgrade.id}
-                className={`tk-upg-card glass-card${!isCompatible ? " is-incompat" : ""}${isPurchased ? " is-owned" : ""}`}
-              >
-                <div className="tk-upg-head">
-                  <div className="tk-upg-title-row">
-                    <strong className="tk-upg-name">{upgrade.name}</strong>
-                    {isPurchased && <span className="tk-upg-badge tk-upg-badge--owned">✓ ALINDI</span>}
-                    {!isCompatible && <span className="tk-upg-badge tk-upg-badge--incompat">UYUMSUZ</span>}
-                  </div>
-                  {!isPurchased && (
-                    <span className={`tk-upg-cost${cantAfford ? " is-low" : ""}`}>
-                      {upgrade.cost.toLocaleString("tr-TR")} TL
-                    </span>
-                  )}
-                </div>
-
-                <p className="tk-upg-desc">{upgrade.description}</p>
-
-                <div className="tk-upg-meta">
-                  <span className="tk-upg-meta-pill">⏱ {installDurationLabel}</span>
-                  <span className="tk-upg-meta-pill">⚓ {upgrade.marinaRequirement.toUpperCase()}</span>
-                </div>
-
-                <div className="tk-upg-effects">
-                  {Object.entries(upgrade.effects).map(([key, val]) => {
-                    if (!val) return null;
-                    return (
-                      <span key={key} className="tk-upg-effect-chip">
-                        {upgradeEffectLabels[key] ?? key} <strong>+{val}</strong>
-                      </span>
-                    );
-                  })}
-                </div>
-
-                {hasWarning && !isPurchased && isCompatible && (
-                  <div className="tk-upg-note tk-upg-note--warn">⚠️ Bu teknede verimi sınırlı: {comp.note}</div>
-                )}
-                {!isCompatible && (
-                  <div className="tk-upg-note tk-upg-note--error">❌ Bu tekne için uygun değil.</div>
-                )}
-
-                {!isPurchased && isCompatible && (
-                  <button
-                    className={`tk-upg-cta${buyDisabled ? " is-disabled" : ""}`}
-                    onClick={() => handleBuyUpgrade(upgrade.id)}
-                    disabled={buyDisabled}
-                  >
-                    <span className="tk-upg-cta-icon">{isInstalling ? "🔧" : slotsFull ? "⏳" : cantAfford ? "✕" : "⚙"}</span>
-                    <span className="tk-upg-cta-label">
-                      {isInstalling
-                        ? "Kurulumda"
-                        : slotsFull
-                          ? "Slot Dolu"
-                          : cantAfford
-                            ? "Yetersiz Bütçe"
-                            : "Satın Al"}
-                    </span>
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <TekneTab
+        boatSvg={getBoatSvg(selectedBoat.id)}
+        boatName={boatName}
+        selectedBoatName={selectedBoat.name}
+        selectedBoatLengthFt={selectedBoat.lengthFt}
+        credits={credits}
+        currentOceanReadiness={currentOceanReadiness}
+        tkStats={tkStats}
+        activeInstallRows={activeInstallRows.map((item) => ({
+          upgradeId: item.upgradeId,
+          slot: item.slot,
+          upgradeName: item.upgrade?.name ?? "",
+          remainingText: formatRemainingInstallTime(item.completesAt),
+        }))}
+        categories={UPGRADE_CATEGORIES.map((cat) => ({ id: cat.id, name: cat.name }))}
+        selectedUpgradeCategory={selectedUpgradeCategory}
+        onSelectUpgradeCategory={setSelectedUpgradeCategory}
+        comingFromRotaMissing={comingFromRotaMissing}
+        onBackToRotaMissing={() => {
+          setActiveTab("rota");
+          setComingFromRotaMissing(false);
+          setShouldOpenRotaReadiness(true);
+        }}
+        upgradeCards={upgradeCards}
+        onBuyUpgrade={handleBuyUpgrade}
+      />
     );
   };
 

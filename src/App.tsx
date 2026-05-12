@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 import type { Step, Tab, ContentResult, MarinaFilter, StoryHook } from "./types/game";
@@ -1758,8 +1758,13 @@ function App() {
   };
 
   const handleCheckSponsorOffers = () => {
-    const noOfferMessage =
-      "Şu an yeni teklif yok. Daha fazla içerik üret, takipçi kazan ve marka güvenini artır.";
+    const noOfferMessage = "Şu an yeni teklif yok. Daha fazla içerik üret, takipçi kazan ve marka güvenini artır.";
+    const pendingOfferMessage = "Zaten bekleyen sponsor teklifin var. Önce mevcut teklifi değerlendir.";
+
+    if (sponsorOffers.length > 0) {
+      setLogs(prev => [pendingOfferMessage, ...prev.slice(0, 4)]);
+      return;
+    }
 
     const tier = getSponsorTierByFollowers(followers, brandTrust);
     if (!tier) {
@@ -1777,15 +1782,11 @@ function App() {
     ];
 
     const activeSponsorSet = new Set(
-      acceptedSponsors
-        .map(name => String(name).trim())
-        .filter(Boolean)
+      acceptedSponsors.map(name => String(name).trim()).filter(Boolean)
     );
 
     const pendingSponsorSet = new Set(
-      sponsorOffers
-        .map(offer => String(offer?.brandName ?? "").trim())
-        .filter(Boolean)
+      sponsorOffers.map(offer => String(offer?.brandName ?? "").trim()).filter(Boolean)
     );
 
     const eligibleBrands = sponsorBrands.filter(
@@ -1793,22 +1794,6 @@ function App() {
     );
 
     if (eligibleBrands.length === 0) {
-      setAcceptedSponsors(prev => Array.from(new Set(prev.map(name => String(name).trim()).filter(Boolean))));
-
-      setSponsorOffers(prev => {
-        const seenBrands = new Set<string>();
-
-        return prev.filter(offer => {
-          const brandName = String(offer?.brandName ?? "").trim();
-          if (!brandName) return false;
-          if (activeSponsorSet.has(brandName)) return false;
-          if (seenBrands.has(brandName)) return false;
-
-          seenBrands.add(brandName);
-          return true;
-        });
-      });
-
       setLogs(prev => [noOfferMessage, ...prev.slice(0, 4)]);
       return;
     }
@@ -1816,7 +1801,7 @@ function App() {
     const randomBrand = eligibleBrands[Math.floor(Math.random() * eligibleBrands.length)];
 
     const newOffer = {
-      id: "spo_" + Date.now(),
+      id: "spo_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
       brandName: randomBrand,
       tierName: tier.name,
       tierId: tier.tier,
@@ -1832,16 +1817,15 @@ function App() {
         if (!brandName) return false;
         if (activeSponsorSet.has(brandName)) return false;
         if (seenBrands.has(brandName)) return false;
-
         seenBrands.add(brandName);
         return true;
       });
 
-      if (seenBrands.has(randomBrand) || activeSponsorSet.has(randomBrand)) {
-        return cleanedOffers;
+      if (cleanedOffers.length > 0) {
+        return cleanedOffers.slice(0, 1);
       }
 
-      return [...cleanedOffers, newOffer];
+      return [newOffer];
     });
 
     if (!hasReceivedFirstSponsor) {

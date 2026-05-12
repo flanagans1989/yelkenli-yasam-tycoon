@@ -306,6 +306,25 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
     unlockHint: "Büyük marina gerekir.",
   },
   {
+    id: "ais_transponder",
+    categoryId: "navigation",
+    name: "AIS Transponder",
+    size: "ocean",
+    description:
+      "Okyanus geçişlerinde gemi takibi ve çarpışma önleme sistemi.",
+    cost: 16000,
+    installDays: 3,
+    marinaRequirement: "shipyard",
+    effects: {
+      navigation: 5,
+      safety: 3,
+      oceanReadiness: 5,
+      riskReduction: 3,
+    },
+    compatibility: allBoatsNormal,
+    unlockHint: "Tersane gerekir.",
+  },
+  {
     id: "basic_safety_kit",
     categoryId: "safety",
     name: "Temel Güvenlik Seti",

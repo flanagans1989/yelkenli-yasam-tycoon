@@ -159,8 +159,8 @@ export const WORLD_ROUTES: WorldRoute[] = [
     sponsorPotential: "medium",
     requirements: {
       minSafety: 8,
-      minNavigation: 8,
-      minEnergy: 8,
+      minNavigation: 5,
+      minEnergy: 5,
       minWater: 5,
       minMaintenance: 8,
     },

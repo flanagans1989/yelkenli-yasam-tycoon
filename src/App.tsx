@@ -23,6 +23,8 @@ import { SeaModeTab } from "./components/SeaModeTab";
 import { KaptanTab } from "./components/KaptanTab";
 import { ArrivalScreen } from "./components/ArrivalScreen";
 import { CelebrationModal } from "./components/CelebrationModal";
+import { ContentResultCard } from "./components/ContentResultCard";
+import { SponsorOfferList } from "./components/SponsorOfferList";
 import type { CelebrationItem } from "./components/CelebrationModal";
 
 const SAVE_KEY = "yelkenli_save";
@@ -2398,55 +2400,14 @@ function App() {
                 </div>
               </>
             ) : (
-              <div className="cs-result-card fade-in">
-                {contentResult.viral && (
-                  <div className="cs-result-viral" aria-hidden="true">🔥 VİRAL</div>
-                )}
-                <span className="cs-result-eyebrow">Yayınlandı</span>
-                <div className="cs-result-quality">
-                  <span className="cs-result-quality-num">{contentResult.quality}</span>
-                  <span className="cs-result-quality-max">/100</span>
-                  <span className="cs-result-quality-label">kalite skoru</span>
-                </div>
-                <div className="cs-result-meta">
-                  <span className="cs-result-platform">{contentResult.platform}</span>
-                </div>
-                {contentResult.storyHookTitle && (
-                  <div className="cs-result-story-hook">
-                    <span className="cs-result-story-hook-label">{contentResult.storyHookTitle}</span>
-                    {contentResult.storyHookSummary && (
-                      <span className="cs-result-story-hook-text">{contentResult.storyHookSummary}</span>
-                    )}
-                    {contentResult.sponsorInterestGained && (
-                      <span className="cs-result-story-hook-text">
-                        +{contentResult.sponsorInterestGained} marka guveni
-                      </span>
-                    )}
-                  </div>
-                )}
-                <div className="cs-result-gains">
-                  <div className="cs-gain cs-gain--followers">
-                    <span className="cs-gain-num">+{contentResult.followersGained.toLocaleString("tr-TR")}</span>
-                    <span className="cs-gain-label">Takipçi</span>
-                  </div>
-                  <div className="cs-gain cs-gain--credits">
-                    <span className="cs-gain-num">+{contentResult.creditsGained.toLocaleString("tr-TR")} TL</span>
-                    <span className="cs-gain-label">Kredi</span>
-                  </div>
-                </div>
-                <p className="cs-result-comment">"{contentResult.comment}"</p>
-                <button
-                  type="button"
-                  className="cs-result-reset"
-                  onClick={() => {
-                    setContentResult(null);
-                    setSelectedPlatformId(null);
-                    setSelectedContentType(null);
-                  }}
-                >
-                  Yeni İçerik Üret
-                </button>
-              </div>
+              <ContentResultCard
+                result={contentResult}
+                onReset={() => {
+                  setContentResult(null);
+                  setSelectedPlatformId(null);
+                  setSelectedContentType(null);
+                }}
+              />
             )}
           </div>
         )}
@@ -2481,23 +2442,10 @@ function App() {
             </button>
 
             <h3 className="section-title">Gelen Teklifler</h3>
-            {sponsorOffers.length === 0 ? (
-               <p className="empty-text">Henüz yeni bir sponsor teklifi yok. Daha fazla takipçi kazan veya içerik kaliteni artır.</p>
-            ) : (
-               <div className="sponsor-offers-list">
-                  {sponsorOffers.map(offer => (
-                     <div key={offer.id} className="sponsor-card fade-in">
-                        <div className="spo-header">
-                           <strong>{offer.brandName}</strong>
-                           <span className="spo-tier">{offer.tierName}</span>
-                        </div>
-                        <p className="spo-career-line">Bu anlaşma, dünya turu hikayeni bir marka işbirliğine dönüştürür.</p>
-                        <p className="spo-reward-line">Kariyer Geliri: {offer.minReward.toLocaleString("tr-TR")} – {offer.maxReward.toLocaleString("tr-TR")} TL</p>
-                        <button className="btn-primary mt-10 full-width" onClick={() => handleAcceptSponsor(offer.id)}>Kabul Et</button>
-                     </div>
-                  ))}
-               </div>
-            )}
+            <SponsorOfferList
+              offers={sponsorOffers}
+              onAcceptSponsor={handleAcceptSponsor}
+            />
 
             {acceptedSponsors.length > 0 && (
                <>

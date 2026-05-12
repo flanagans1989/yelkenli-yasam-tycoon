@@ -927,14 +927,16 @@ function App() {
     const checkRest = () => {
       setMarinaRestCooldownTick(Date.now());
       if (marinaRestInProgress.completesAt <= Date.now()) {
-        completeMarinaRestService();
+        if (step === "HUB") {
+          completeMarinaRestService();
+        }
       }
     };
 
     checkRest();
     const tickId = window.setInterval(checkRest, 30000);
     return () => window.clearInterval(tickId);
-  }, [marinaRestInProgress]);
+  }, [marinaRestInProgress, step]);
 
   useEffect(() => {
     setCaptainLevel(prev => {
@@ -1970,6 +1972,12 @@ function App() {
   };
 
   const handleStartVoyage = () => {
+    if (marinaRestInProgress) {
+      setLogs(prev => ["Marina hizmeti devam ediyor. Seyre çıkmadan önce hizmetin tamamlanmasını bekle.", ...prev.slice(0, 4)]);
+      pushToast("warning", "Hizmet Bekleniyor", "Marina hizmeti devam ediyor. Lütfen bekleyin.");
+      return;
+    }
+
     if (!currentRoute) return;
 
     const minD = currentRoute.baseDurationDays.min;

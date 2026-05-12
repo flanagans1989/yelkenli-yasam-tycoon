@@ -18,6 +18,21 @@ export interface ContentResult {
   followersGained: number;
   creditsGained: number;
   comment: string;
+  storyHookTitle?: string;
+  storyHookSummary?: string;
+  sponsorInterestGained?: number;
+}
+
+export interface StoryHook {
+  id: string;
+  source: "sea_event" | "arrival";
+  routeId?: string;
+  title: string;
+  description: string;
+  bonusFollowersPct?: number;
+  bonusCreditsPct?: number;
+  sponsorInterest?: number;
+  expiresAfterUses?: number;
 }
 
 export type MarinaFilter = "all" | "ege" | "akdeniz" | "marmara";

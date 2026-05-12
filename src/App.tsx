@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
-import type { Step, Tab, ContentResult, MarinaFilter } from "./types/game";
+import type { Step, Tab, ContentResult, MarinaFilter, StoryHook } from "./types/game";
 import { PLAYER_PROFILES } from "../game-data/playerProfiles";
 import type { PlayerProfile } from "../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../game-data/marinas";
@@ -544,6 +544,67 @@ const getRouteCompletionRewards = (route: (typeof WORLD_ROUTES)[number]) => {
   return { credits, followers };
 };
 
+const getStoryHookBonusesByPotential = (contentPotential: (typeof WORLD_ROUTES)[number]["contentPotential"]) => {
+  switch (contentPotential) {
+    case "very_high":
+      return { bonusFollowersPct: 20, bonusCreditsPct: 10, sponsorInterest: 2 };
+    case "high":
+      return { bonusFollowersPct: 16, bonusCreditsPct: 8, sponsorInterest: 1 };
+    case "medium_high":
+      return { bonusFollowersPct: 14, bonusCreditsPct: 7, sponsorInterest: 1 };
+    case "medium":
+      return { bonusFollowersPct: 12, bonusCreditsPct: 6, sponsorInterest: 1 };
+    default:
+      return { bonusFollowersPct: 10, bonusCreditsPct: 5, sponsorInterest: 1 };
+  }
+};
+
+const createArrivalStoryHook = (route: (typeof WORLD_ROUTES)[number]): StoryHook => {
+  const bonuses = getStoryHookBonusesByPotential(route.contentPotential);
+
+  return {
+    id: `story_arrival_${route.id}_${Date.now()}`,
+    source: "arrival",
+    routeId: route.id,
+    title: "Bu yolculugun hikayesi hazir",
+    description: "Rotada yasadiklarin guclu bir icerik serisine donusebilir.",
+    ...bonuses,
+    expiresAfterUses: 1,
+  };
+};
+
+const createSeaEventStoryHook = (decisionId: string, routeId?: string): StoryHook | null => {
+  if (decisionId === "content_opportunity") {
+    return {
+      id: `story_sea_${decisionId}_${Date.now()}`,
+      source: "sea_event",
+      routeId,
+      title: "Denizden yakalanan hikaye",
+      description: "Seyirde yakaladigin bu an, guclu bir icerik firsatina donustu.",
+      bonusFollowersPct: 15,
+      bonusCreditsPct: 10,
+      sponsorInterest: 1,
+      expiresAfterUses: 1,
+    };
+  }
+
+  if (decisionId === "risky_social_shot") {
+    return {
+      id: `story_sea_${decisionId}_${Date.now()}`,
+      source: "sea_event",
+      routeId,
+      title: "Denizde ses getiren cekim",
+      description: "Riskli an dogru cekimle markalarin dikkatini cekebilecek bir hikayeye donustu.",
+      bonusFollowersPct: 12,
+      bonusCreditsPct: 8,
+      sponsorInterest: 1,
+      expiresAfterUses: 1,
+    };
+  }
+
+  return null;
+};
+
 function migrateSave(parsed: any) {
   if (!parsed || typeof parsed !== "object") return null;
 
@@ -664,6 +725,7 @@ function App() {
   const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
   const [totalContentProduced, setTotalContentProduced] = useState(0);
   const [hasCompletedDailyGoalsOnce, setHasCompletedDailyGoalsOnce] = useState(false);
+  const [activeStoryHook, setActiveStoryHook] = useState<StoryHook | null>(null);
   const toastIdRef = useRef(0);
   const [toastQueue, setToastQueue] = useState<ToastItem[]>([]);
   const [activeToast, setActiveToast] = useState<ToastItem | null>(null);
@@ -1007,6 +1069,7 @@ function App() {
         firstVoyageEventTriggered,
         testMode,
         hasReceivedFirstSponsor,
+        activeStoryHook,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveObj));
       setHasSave(true);
@@ -1016,10 +1079,10 @@ function App() {
     step, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone,
     logs, purchasedUpgradeIds, upgradesInProgress, activeTab, currentLocationName, worldProgress, energy, water,
     fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining,
-    currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, selectedUpgradeCategory,
+    currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, activeStoryHook, selectedUpgradeCategory,
     brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt, marinaRestInProgress,
     captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
-    hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor
+    hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor, activeStoryHook
   ]);
 
   const finalizeGame = () => {
@@ -1061,6 +1124,7 @@ function App() {
     setDailyRewardClaimed(false);
     setTotalContentProduced(0);
     setHasCompletedDailyGoalsOnce(false);
+    setActiveStoryHook(null);
     setStep("HUB");
     setActiveTab("liman");
   };
@@ -1229,6 +1293,7 @@ function App() {
       setFirstVoyageEventTriggered(parsed.firstVoyageEventTriggered ?? false);
       setTestMode(parsed.testMode ?? false);
       setHasReceivedFirstSponsor(parsed.hasReceivedFirstSponsor ?? false);
+      setActiveStoryHook(parsed.activeStoryHook ?? null);
       setIcerikSubTab(parsed.icerikSubTab ?? "produce");
       setLastContentAt(parsed.lastContentAt ?? null);
       setMarinaRestInProgress(nextMarinaRestInProgress);
@@ -1354,16 +1419,16 @@ function App() {
     }
 
     const isFirstVoyage = completedRouteIds.length === 0;
-    const isEarlyInFirstVoyage = isFirstVoyage && voyageDaysRemaining === voyageTotalDays - 1 && !firstVoyageEventTriggered;
+    const shouldForceFirstVoyageEvent = isFirstVoyage && !firstVoyageEventTriggered;
     let shouldTriggerEvent = Math.random() < 0.3;
 
-    if (isEarlyInFirstVoyage) {
+    if (shouldForceFirstVoyageEvent) {
       shouldTriggerEvent = true;
     }
 
     if (shouldTriggerEvent) {
       let nextDecision = SEA_DECISION_EVENTS[Math.floor(Math.random() * SEA_DECISION_EVENTS.length)];
-      if (isEarlyInFirstVoyage) {
+      if (shouldForceFirstVoyageEvent) {
         nextDecision = SEA_DECISION_EVENTS.find(e => e.id === "content_opportunity") || nextDecision;
         setFirstVoyageEventTriggered(true);
       }
@@ -1442,6 +1507,139 @@ function App() {
     });
   };
 
+  const publishContent = ({
+    platformId,
+    contentType,
+    storyHook = null,
+  }: {
+    platformId: string;
+    contentType: string;
+    storyHook?: StoryHook | null;
+  }) => {
+    const contentCooldownMs = getContentCooldownMs(captainLevel, testMode);
+
+    if (lastContentAt && Date.now() - lastContentAt < contentCooldownMs) {
+      const remainingMs = contentCooldownMs - (Date.now() - lastContentAt);
+      const remainingMin = Math.ceil(remainingMs / 60000);
+      setLogs(prev => [`Icerik hazirligi suruyor. ${remainingMin} dakika sonra tekrar uret.`, ...prev.slice(0, 4)]);
+      return;
+    }
+
+    let quality = 40;
+    quality += (selectedProfile.skills.content || 0) * 5;
+
+    const platform = SOCIAL_PLATFORMS.find(p => p.id === platformId);
+    if (platform && platform.bestContentTypes.includes(contentType as any)) {
+      quality += 10;
+    }
+
+    const isViewTubeMatch = platformId === "viewTube" && ["boat_tour", "maintenance_upgrade", "sailing_vlog"].includes(contentType);
+    const isClipTokMatch = platformId === "clipTok" && ["nature_bay", "sailing_vlog", "storm_vlog"].includes(contentType);
+    const isInstaSeaMatch = platformId === "instaSea" && ["marina_life", "city_trip", "nature_bay"].includes(contentType);
+    const isFacePortMatch = platformId === "facePort" && ["marina_life", "boat_tour", "ocean_diary"].includes(contentType);
+
+    if (isViewTubeMatch || isClipTokMatch || isInstaSeaMatch || isFacePortMatch) {
+      quality += 10;
+    }
+
+    quality += upgradeContentBonus;
+
+    if (step === "SEA_MODE" && currentRoute) {
+      if (currentRoute.contentPotential === "very_high") quality += 15;
+      else if (currentRoute.contentPotential === "high") quality += 10;
+      else if (currentRoute.contentPotential === "medium_high") quality += 5;
+    } else {
+      quality += 5;
+    }
+
+    quality += Math.floor(Math.random() * 26) - 10;
+    quality = Math.max(0, Math.min(100, quality));
+
+    let viralChance = 0;
+    if (quality >= 85) viralChance = 0.25;
+    else if (quality >= 70) viralChance = 0.10;
+    else if (quality >= 40) viralChance = 0.03;
+
+    const isViral = Math.random() < viralChance;
+
+    let gainFollowers = quality * 5;
+    let gainCredits = quality * 8;
+
+    if (platformId === "viewTube") { gainCredits *= 1.5; gainFollowers *= 1.0; }
+    if (platformId === "clipTok") { gainCredits *= 0.8; gainFollowers *= 1.8; }
+    if (platformId === "instaSea") { gainCredits *= 1.1; gainFollowers *= 1.3; }
+    if (platformId === "facePort") { gainCredits *= 1.0; gainFollowers *= 1.1; }
+
+    if (isViral) {
+      gainFollowers *= 3;
+      gainCredits *= 2;
+    }
+
+    const storyFollowerBonus = storyHook?.bonusFollowersPct ?? 0;
+    const storyCreditBonus = storyHook?.bonusCreditsPct ?? 0;
+
+    if (storyFollowerBonus > 0) gainFollowers *= 1 + storyFollowerBonus / 100;
+    if (storyCreditBonus > 0) gainCredits *= 1 + storyCreditBonus / 100;
+
+    gainFollowers = Math.floor(gainFollowers);
+    gainCredits = Math.floor(gainCredits);
+
+    const comment = getContentComment(contentType, quality, isViral);
+    const sponsorInterestGained = storyHook?.sponsorInterest ?? 0;
+
+    setSelectedPlatformId(platformId);
+    setSelectedContentType(contentType);
+    setContentResult({
+      platform: platform?.name || "Bilinmeyen",
+      type: contentType,
+      quality,
+      viral: isViral,
+      followersGained: gainFollowers,
+      creditsGained: gainCredits,
+      comment,
+      storyHookTitle: storyHook?.title,
+      storyHookSummary: storyHook
+        ? `Hikaye bonusu: +%${storyFollowerBonus} takipci · +%${storyCreditBonus} TL`
+        : undefined,
+      sponsorInterestGained: sponsorInterestGained > 0 ? sponsorInterestGained : undefined,
+    });
+
+    setCredits(prev => prev + gainCredits);
+    setFollowers(prev => prev + gainFollowers);
+    setFirstContentDone(true);
+    setTotalContentProduced(prev => prev + 1);
+    addFloater(`+${gainCredits.toLocaleString("tr-TR")} TL`, "credits");
+    setTimeout(() => addFloater(`+${gainFollowers.toLocaleString("tr-TR")} Takipci`, "followers"), 200);
+    if (sponsorInterestGained > 0) {
+      setBrandTrust(prev => Math.min(100, prev + sponsorInterestGained));
+      setTimeout(() => addFloater(`+${sponsorInterestGained} Marka Guveni`, "followers"), 400);
+    }
+    triggerFlash("credits");
+    triggerFlash("followers");
+
+    const logMsg = storyHook
+      ? `${platform?.name} platformunda hikaye icerigi yayinlandi: +${gainFollowers} Takipci, +${gainCredits} TL.`
+      : `${platform?.name} platformunda icerik yayinlandi: +${gainFollowers} Takipci, +${gainCredits} TL.`;
+    setLogs(prev => [logMsg, ...prev.slice(0, 4)]);
+    pushToast(
+      "content",
+      storyHook ? "Hikaye Yayinlandi!" : "Icerik Yayinlandi!",
+      storyHook
+        ? `${storyHook.title}: +${gainFollowers.toLocaleString("tr-TR")} takipci, +${gainCredits.toLocaleString("tr-TR")} TL`
+        : platform?.name
+          ? `+${gainFollowers.toLocaleString("tr-TR")} takipci kazandin. Platform: ${platform.name}`
+          : `+${gainFollowers.toLocaleString("tr-TR")} takipci kazandin.`,
+    );
+    setLastContentAt(Date.now());
+    setCaptainXp(prev => prev + 20);
+    completeGoal("produce_content");
+
+    if (storyHook) {
+      const remainingUses = Math.max(0, (storyHook.expiresAfterUses ?? 1) - 1);
+      setActiveStoryHook(remainingUses > 0 ? { ...storyHook, expiresAfterUses: remainingUses } : null);
+    }
+  };
+
   const handleResolveSeaDecision = (choiceKey: "choiceA" | "choiceB") => {
     if (!pendingDecisionId) return;
 
@@ -1488,13 +1686,13 @@ function App() {
     }
 
     const effectSummary = [
-      typeof followersDelta === "number" ? `${followersDelta > 0 ? "+" : ""}${followersDelta} takipçi` : null,
+      typeof followersDelta === "number" ? `${followersDelta > 0 ? "+" : ""}${followersDelta} takipci` : null,
       typeof creditsDelta === "number" ? `${creditsDelta > 0 ? "+" : ""}${creditsDelta} TL` : null,
       typeof energyDelta === "number" ? `${energyDelta > 0 ? "+" : ""}${energyDelta} enerji` : null,
       typeof waterDelta === "number" ? `${waterDelta > 0 ? "+" : ""}${waterDelta} su` : null,
-      typeof fuelDelta === "number" ? `${fuelDelta > 0 ? "+" : ""}${fuelDelta} yakıt` : null,
+      typeof fuelDelta === "number" ? `${fuelDelta > 0 ? "+" : ""}${fuelDelta} yakit` : null,
       typeof boatConditionDelta === "number" ? `${boatConditionDelta > 0 ? "+" : ""}${boatConditionDelta} tekne durumu` : null,
-      typeof remainingDaysDelta === "number" ? `${remainingDaysDelta > 0 ? "+" : ""}${remainingDaysDelta} gün` : null,
+      typeof remainingDaysDelta === "number" ? `${remainingDaysDelta > 0 ? "+" : ""}${remainingDaysDelta} gun` : null,
     ]
       .filter(Boolean)
       .join(" · ");
@@ -1503,19 +1701,28 @@ function App() {
     setLogs(prev => [`${decision.title}: ${choice.resultText}`, ...prev.slice(0, 4)]);
     pushToast(
       "sea_decision",
-      "Karar Uygulandı",
+      "Karar Uygulandi",
       effectSummary
         ? `${choice.label}. ${effectSummary}`
-        : choice.label || "Seçimin denizdeki yolculuğun gidişatını etkiledi.",
+        : choice.label || "Secimin denizdeki yolculugun gidisatini etkiledi.",
     );
+    if (choiceKey === "choiceA") {
+      const nextStoryHook = createSeaEventStoryHook(decision.id, currentRoute?.id);
+      if (nextStoryHook) {
+        setContentResult(null);
+        setActiveStoryHook(nextStoryHook);
+        pushToast("voyage", "Hikaye Yakalandi", nextStoryHook.description);
+      }
+    }
     setCaptainXp(prev => prev + 30);
     setPendingDecisionId(null);
   };
 
-  const handleArrival = () => {
+  const handleArrival = (targetTab: Tab = "liman") => {
     if (!currentRoute) return;
 
     const reward = getRouteCompletionRewards(currentRoute);
+    const nextStoryHook = createArrivalStoryHook(currentRoute);
 
     setWorldProgress(currentRoute.worldProgressPercent);
     setCompletedRouteIds(prev => [...prev, currentRoute.id]);
@@ -1523,130 +1730,31 @@ function App() {
     setCredits(prev => prev + reward.credits);
     setFollowers(prev => prev + reward.followers);
     addFloater(`+${reward.credits.toLocaleString("tr-TR")} TL`, "credits");
-    setTimeout(() => addFloater(`+${reward.followers.toLocaleString("tr-TR")} Takipçi`, "followers"), 200);
+    setTimeout(() => addFloater(`+${reward.followers.toLocaleString("tr-TR")} Takipci`, "followers"), 200);
     setTimeout(() => addFloater(`+80 XP`, "xp"), 400);
     triggerFlash("credits");
     triggerFlash("followers");
 
     const nextR = getNextRoute(currentRoute.id as RouteId);
     if (nextR) {
-       setCurrentRouteId(nextR.id);
+      setCurrentRouteId(nextR.id);
     }
 
-    setLogs(prev => [`${currentRoute.name} rotası tamamlandı. ${currentRoute.to} limanına varıldı. +${reward.credits} TL, +${reward.followers} takipçi ödül alındı.`, ...prev.slice(0, 4)]);
+    setLogs(prev => [`${currentRoute.name} rotasi tamamlandi. ${currentRoute.to} limanina varildi. +${reward.credits} TL, +${reward.followers} takipci odul alindi.`, ...prev.slice(0, 4)]);
     setCaptainXp(prev => prev + 80);
+    setContentResult(null);
+    setActiveStoryHook(nextStoryHook);
     completeGoal("complete_route");
     setPendingDecisionId(null);
     setStep("HUB");
-    setActiveTab("liman");
+    setActiveTab(targetTab);
+    setIcerikSubTab("produce");
+    pushToast("voyage", "Yeni Yolculuk Hikayesi", nextStoryHook.description);
   };
 
   const handleProduceContentV2 = () => {
     if (!selectedPlatformId || !selectedContentType) return;
-
-    const contentCooldownMs = getContentCooldownMs(captainLevel, testMode);
-
-    if (lastContentAt && Date.now() - lastContentAt < contentCooldownMs) {
-      const remainingMs = contentCooldownMs - (Date.now() - lastContentAt);
-      const remainingMin = Math.ceil(remainingMs / 60000);
-      setLogs(prev => [`İçerik hazırlığı sürüyor. ${remainingMin} dakika sonra tekrar üret.`, ...prev.slice(0, 4)]);
-      return;
-    }
-
-    let quality = 40;
-    
-    // Skill bonus
-    quality += (selectedProfile.skills.content || 0) * 5;
-    
-    // Platform match
-    const platform = SOCIAL_PLATFORMS.find(p => p.id === selectedPlatformId);
-    if (platform && platform.bestContentTypes.includes(selectedContentType as any)) {
-      quality += 10;
-    }
-    
-    // Custom specific type logic matching user request
-    const isViewTubeMatch = selectedPlatformId === "viewTube" && ["boat_tour", "maintenance_upgrade", "sailing_vlog"].includes(selectedContentType);
-    const isClipTokMatch = selectedPlatformId === "clipTok" && ["nature_bay", "sailing_vlog", "storm_vlog"].includes(selectedContentType);
-    const isInstaSeaMatch = selectedPlatformId === "instaSea" && ["marina_life", "city_trip", "nature_bay"].includes(selectedContentType);
-    const isFacePortMatch = selectedPlatformId === "facePort" && ["marina_life", "boat_tour", "ocean_diary"].includes(selectedContentType);
-    
-    if (isViewTubeMatch || isClipTokMatch || isInstaSeaMatch || isFacePortMatch) {
-      quality += 10;
-    }
-
-    // Upgrades bonus
-    quality += upgradeContentBonus;
-
-    // Location/Route bonus
-    if (step === "SEA_MODE" && currentRoute) {
-       if (currentRoute.contentPotential === "very_high") quality += 15;
-       else if (currentRoute.contentPotential === "high") quality += 10;
-       else if (currentRoute.contentPotential === "medium_high") quality += 5;
-    } else {
-       quality += 5;
-    }
-
-    // Randomizer
-    quality += Math.floor(Math.random() * 26) - 10;
-    quality = Math.max(0, Math.min(100, quality));
-
-    // Viral Chance
-    let viralChance = 0;
-    if (quality >= 85) viralChance = 0.25;
-    else if (quality >= 70) viralChance = 0.10;
-    else if (quality >= 40) viralChance = 0.03;
-
-    const isViral = Math.random() < viralChance;
-
-    let gainFollowers = quality * 5;
-    let gainCredits = quality * 8;
-
-    if (selectedPlatformId === "viewTube") { gainCredits *= 1.5; gainFollowers *= 1.0; }
-    if (selectedPlatformId === "clipTok") { gainCredits *= 0.8; gainFollowers *= 1.8; }
-    if (selectedPlatformId === "instaSea") { gainCredits *= 1.1; gainFollowers *= 1.3; }
-    if (selectedPlatformId === "facePort") { gainCredits *= 1.0; gainFollowers *= 1.1; }
-
-    if (isViral) {
-      gainFollowers *= 3;
-      gainCredits *= 2;
-    }
-
-    gainFollowers = Math.floor(gainFollowers);
-    gainCredits = Math.floor(gainCredits);
-
-    const comment = getContentComment(selectedContentType, quality, isViral);
-
-    setContentResult({
-      platform: platform?.name || "Bilinmeyen",
-      type: selectedContentType,
-      quality,
-      viral: isViral,
-      followersGained: gainFollowers,
-      creditsGained: gainCredits,
-      comment
-    });
-
-    setCredits(prev => prev + gainCredits);
-    setFollowers(prev => prev + gainFollowers);
-    setFirstContentDone(true);
-    setTotalContentProduced(prev => prev + 1);
-    addFloater(`+${gainCredits.toLocaleString("tr-TR")} TL`, "credits");
-    setTimeout(() => addFloater(`+${gainFollowers.toLocaleString("tr-TR")} Takipçi`, "followers"), 200);
-    triggerFlash("credits");
-    triggerFlash("followers");
-
-    const logMsg = `${platform?.name} platformunda içerik yayınlandı: +${gainFollowers} Takipçi, +${gainCredits} TL.`;
-    setLogs(prev => [logMsg, ...prev.slice(0, 4)]);
-    pushToast(
-      "content",
-      "İçerik Yayınlandı!",
-      platform?.name
-        ? `+${gainFollowers.toLocaleString("tr-TR")} takipçi kazandın. Platform: ${platform.name}`
-        : `+${gainFollowers.toLocaleString("tr-TR")} takipçi kazandın.`,
-    );
-    setLastContentAt(Date.now());
-    setCaptainXp(prev => prev + 20);
-    completeGoal("produce_content");
+    publishContent({ platformId: selectedPlatformId, contentType: selectedContentType });
   };
 
   const handleCheckSponsorOffers = () => {
@@ -1954,6 +2062,17 @@ function App() {
     const selectedTypeMeta = selectedContentType
       ? CONTENT_TYPES.find((t) => t.id === selectedContentType) ?? null
       : null;
+    const availableContentTypeIds = new Set(CONTENT_TYPES.map((type) => type.id));
+    const storyHookPlan = activeStoryHook
+      ? {
+          platformId: selectedPlatformId ?? (activeStoryHook.source === "arrival" ? "viewTube" : "clipTok"),
+          contentType:
+            selectedContentType && availableContentTypeIds.has(selectedContentType)
+              ? selectedContentType
+              : "sailing_vlog",
+        }
+      : null;
+    const storyHookButtonDisabled = !storyHookPlan || onContentCooldown;
 
     return (
       <div className="tab-content fade-in">
@@ -1998,6 +2117,45 @@ function App() {
                       <span className="cs-route-hint-label">Şu an: {currentRoute.name}</span>
                       <span className="cs-route-hint-themes">{currentRoute.contentThemes.join(" · ")}</span>
                     </div>
+                  </div>
+                )}
+
+                {activeStoryHook && (
+                  <div className="cs-story-hook-card">
+                    <div className="cs-story-hook-head">
+                      <span className="cs-story-hook-eyebrow">Yolculuk Hikayesi</span>
+                      <span className="cs-story-hook-source">
+                        {activeStoryHook.source === "arrival" ? "Varis notu" : "Deniz anisi"}
+                      </span>
+                    </div>
+                    <h3 className="cs-story-hook-title">{activeStoryHook.title}</h3>
+                    <p className="cs-story-hook-text">{activeStoryHook.description}</p>
+                    <div className="cs-story-hook-bonuses">
+                      {typeof activeStoryHook.bonusFollowersPct === "number" && (
+                        <span className="cs-story-hook-bonus">+%{activeStoryHook.bonusFollowersPct} takipci</span>
+                      )}
+                      {typeof activeStoryHook.bonusCreditsPct === "number" && (
+                        <span className="cs-story-hook-bonus">+%{activeStoryHook.bonusCreditsPct} TL</span>
+                      )}
+                      {typeof activeStoryHook.sponsorInterest === "number" && activeStoryHook.sponsorInterest > 0 && (
+                        <span className="cs-story-hook-bonus">+{activeStoryHook.sponsorInterest} marka guveni</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className={`cs-story-hook-btn ${storyHookButtonDisabled ? "is-disabled" : ""}`}
+                      disabled={storyHookButtonDisabled}
+                      onClick={() => {
+                        if (!activeStoryHook || !storyHookPlan) return;
+                        publishContent({
+                          platformId: storyHookPlan.platformId,
+                          contentType: storyHookPlan.contentType,
+                          storyHook: activeStoryHook,
+                        });
+                      }}
+                    >
+                      Bu Hikayeyi Yayinla
+                    </button>
                   </div>
                 )}
 
@@ -2110,6 +2268,19 @@ function App() {
                 <div className="cs-result-meta">
                   <span className="cs-result-platform">{contentResult.platform}</span>
                 </div>
+                {contentResult.storyHookTitle && (
+                  <div className="cs-result-story-hook">
+                    <span className="cs-result-story-hook-label">{contentResult.storyHookTitle}</span>
+                    {contentResult.storyHookSummary && (
+                      <span className="cs-result-story-hook-text">{contentResult.storyHookSummary}</span>
+                    )}
+                    {contentResult.sponsorInterestGained && (
+                      <span className="cs-result-story-hook-text">
+                        +{contentResult.sponsorInterestGained} marka guveni
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="cs-result-gains">
                   <div className="cs-gain cs-gain--followers">
                     <span className="cs-gain-num">+{contentResult.followersGained.toLocaleString("tr-TR")}</span>

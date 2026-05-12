@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { WORLD_ROUTES } from "../../game-data/routes";
 
 function useCountUp(target: number, delayMs: number, durationMs: number): number {
@@ -35,6 +35,7 @@ interface ArrivalScreenProps {
   currentRouteId: string;
   milestoneText: string;
   nextRouteName?: string;
+  onPublishStory?: () => void;
   onDone: () => void;
 }
 
@@ -58,7 +59,6 @@ export function ArrivalScreen({
 
   return (
     <div className="ar-screen">
-      {/* Particle drift */}
       <div className="ar-particles" aria-hidden="true">
         {Array.from({ length: PARTICLE_COUNT }, (_, i) => (
           <div key={i} className={`ar-particle ar-particle--${i}`} />
@@ -66,7 +66,6 @@ export function ArrivalScreen({
       </div>
 
       <div className="ar-content">
-        {/* Hero */}
         <div className="ar-hero">
           <div className="ar-hero-glow" aria-hidden="true" />
           <span className="ar-eyebrow">VARIŞ ✦</span>
@@ -75,24 +74,18 @@ export function ArrivalScreen({
           {feeling && <p className="ar-feeling">"{feeling}"</p>}
         </div>
 
-        {/* Reward Block */}
         <div className="ar-reward-block">
           <div className="ar-reward-tile ar-reward-tile--credits">
-            <span className="ar-reward-amount">
-              +{displayCredits.toLocaleString("tr-TR")} TL
-            </span>
+            <span className="ar-reward-amount">+{displayCredits.toLocaleString("tr-TR")} TL</span>
             <span className="ar-reward-label">Kredi</span>
           </div>
           <div className="ar-reward-tile ar-reward-tile--followers">
-            <span className="ar-reward-amount">
-              +{displayFollowers.toLocaleString("tr-TR")}
-            </span>
+            <span className="ar-reward-amount">+{displayFollowers.toLocaleString("tr-TR")}</span>
             <span className="ar-reward-label">Takipçi</span>
           </div>
           <div className="ar-xp-chip">+{xpGain} XP</div>
         </div>
 
-        {/* World Tour Progress */}
         <div className="ar-world-tour glass-card">
           <div className="ar-world-tour-header">
             <span className="ar-world-tour-label">DÜNYA TURU</span>
@@ -112,7 +105,6 @@ export function ArrivalScreen({
           <p className="ar-milestone-text">{milestoneText}</p>
         </div>
 
-        {/* Next Route Peek */}
         {nextRouteName && (
           <div className="ar-next-peek glass-card">
             <span className="ar-next-peek-eyebrow">Sıradaki Destinasyon</span>
@@ -120,12 +112,11 @@ export function ArrivalScreen({
           </div>
         )}
 
-        {/* CTA */}
         <div className="ar-cta-zone">
-          <button
-            className="primary-button primary-button--pulse ar-cta-btn"
-            onClick={onDone}
-          >
+          <div className="ui-helper-note ui-helper-note--inline ar-story-ready-note">
+            <span className="ui-helper-copy">Yolculuk hikâyesi, marinaya girişten sonra İçerik sekmende hazır olacak.</span>
+          </div>
+          <button className="primary-button primary-button--pulse ar-cta-btn" onClick={() => onDone()}>
             ⚓ Marinaya Giriş Yap
           </button>
         </div>

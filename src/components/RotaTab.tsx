@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { WORLD_ROUTES } from "../../game-data/routes";
 
 interface RouteReadinessValue {
@@ -52,8 +52,8 @@ interface RotaTabProps {
   onStartVoyage: () => void;
   onGoTekne: () => void;
   onGoUpgradeCategory?: (categoryId: string) => void;
-  openReadiness?: boolean;          // Task 2: caller can force-open the accordion
-  onReadinessOpened?: () => void;   // Task 2: called after accordion opens so caller can reset the flag
+  openReadiness?: boolean;
+  onReadinessOpened?: () => void;
 }
 
 const RISK_LABELS: Record<string, string> = {
@@ -95,7 +95,7 @@ const READINESS_UPGRADE_CATEGORY: Record<string, string> = {
   "Su": "water_life",
   "Güvenlik": "safety",
   "Navigasyon": "navigation",
-  "Bakım": "engine_mechanical",
+  "Bakım": "hull_maintenance",
 };
 
 export function RotaTab({
@@ -105,14 +105,12 @@ export function RotaTab({
   isSeaMode,
   completedRouteIds,
   onStartVoyage,
-  onGoTekne,
   onGoUpgradeCategory,
   openReadiness,
   onReadinessOpened,
 }: RotaTabProps) {
   const [readinessOpen, setReadinessOpen] = useState(false);
 
-  // Task 2: when the caller signals us to open, do it once then notify
   useEffect(() => {
     if (openReadiness) {
       setReadinessOpen(true);
@@ -135,7 +133,6 @@ export function RotaTab({
 
   return (
     <div className="rt-tab rt-tab-v2 fade-in">
-      {/* ── Journey Arc ── */}
       <div className="rt-arc-section glass-card">
         <div className="rt-arc-header">
           <span className="rt-arc-label">◐ DÜNYA TURU</span>
@@ -153,14 +150,10 @@ export function RotaTab({
           })}
         </div>
         <div className="rt-arc-bar-track">
-          <div
-            className="rt-arc-bar-fill"
-            style={{ width: `${Math.round((completedCount / WORLD_ROUTES.length) * 100)}%` }}
-          />
+          <div className="rt-arc-bar-fill" style={{ width: `${Math.round((completedCount / WORLD_ROUTES.length) * 100)}%` }} />
         </div>
       </div>
 
-      {/* ── Route Hero ── */}
       {currentRoute ? (
         <>
           <div className="rt-hero-card glass-card">
@@ -176,35 +169,22 @@ export function RotaTab({
               <span className={`rt-risk-pill ${getRiskClass(currentRoute.riskLevel)}`}>
                 {RISK_LABELS[currentRoute.riskLevel] ?? currentRoute.riskLevel}
               </span>
-              <span className="rt-duration-chip">
-                ⏱ {currentRoute.baseDurationDays.min}–{currentRoute.baseDurationDays.max} Gün
-              </span>
+              <span className="rt-duration-chip">⏱ {currentRoute.baseDurationDays.min}–{currentRoute.baseDurationDays.max} Gün</span>
               {currentRoute.difficulty && (
-                <span className="rt-difficulty-chip">
-                  {DIFFICULTY_LABELS[currentRoute.difficulty] ?? currentRoute.difficulty}
-                </span>
+                <span className="rt-difficulty-chip">{DIFFICULTY_LABELS[currentRoute.difficulty] ?? currentRoute.difficulty}</span>
               )}
             </div>
-            {currentRoute.feeling && (
-              <p className="rt-hero-feeling">"{currentRoute.feeling}"</p>
-            )}
+            {currentRoute.feeling && <p className="rt-hero-feeling">"{currentRoute.feeling}"</p>}
             <div className="rt-hero-meta-row">
               <span className="rt-meta-chip">
                 <span className="rt-meta-chip-key">İçerik Potansiyeli</span>
-                <span className="rt-meta-chip-val">
-                  {CONTENT_LABELS[currentRoute.contentPotential] ?? currentRoute.contentPotential}
-                </span>
+                <span className="rt-meta-chip-val">{CONTENT_LABELS[currentRoute.contentPotential] ?? currentRoute.contentPotential}</span>
               </span>
             </div>
           </div>
 
-          {/* ── Readiness Accordion ── */}
           <div className="rt-readiness-card glass-card">
-            <button
-              className="rt-readiness-hdr"
-              onClick={() => setReadinessOpen((p) => !p)}
-              aria-expanded={readinessOpen}
-            >
+            <button className="rt-readiness-hdr" onClick={() => setReadinessOpen((p) => !p)} aria-expanded={readinessOpen}>
               <div className="rt-readiness-summary-row">
                 {readinessItems.map(({ label, value }) => (
                   <span
@@ -212,7 +192,7 @@ export function RotaTab({
                     className={`rt-readiness-icon ${value.current >= value.required ? "rt-readiness-icon--ok" : "rt-readiness-icon--fail"}`}
                     title={label}
                   >
-                    {value.current >= value.required ? "✓" : "✗"}
+                    {value.current >= value.required ? "✓" : "✕"}
                   </span>
                 ))}
               </div>
@@ -235,23 +215,18 @@ export function RotaTab({
                       onClick={isClickable ? () => onGoUpgradeCategory!(categoryId) : undefined}
                       role={isClickable ? "button" : undefined}
                     >
-                      <span className="rt-readiness-item-check">{ok ? "✓" : "✗"}</span>
+                      <span className="rt-readiness-item-check">{ok ? "✓" : "✕"}</span>
                       <span className="rt-readiness-item-label">{label}</span>
                       <span className="rt-readiness-item-val">{value.current} / {value.required}</span>
                       {isClickable && <span className="rt-readiness-item-go">→</span>}
                     </div>
                   );
                 })}
-                {!isReady && (
-                  <p className="rt-readiness-hint">
-                    Eksik alanlara tıklayarak ilgili upgrade kategorisine git.
-                  </p>
-                )}
+                {!isReady && <p className="rt-readiness-hint">Eksik satırına dokunarak ilgili upgrade kategorisine git.</p>}
               </div>
             )}
           </div>
 
-          {/* ── CTA ── */}
           <div className="rt-cta-zone">
             {isSeaMode ? (
               <button className="primary-button rt-cta-btn rt-cta-btn--ghost" disabled>
@@ -259,32 +234,32 @@ export function RotaTab({
                 <span className="rt-cta-btn-label">Zaten Denizdesin</span>
               </button>
             ) : isReady ? (
-              <button
-                className="primary-button primary-button--pulse rt-cta-btn rt-cta-btn--go"
-                onClick={onStartVoyage}
-              >
+              <button className="primary-button primary-button--pulse rt-cta-btn rt-cta-btn--go" onClick={onStartVoyage}>
                 <span className="rt-cta-btn-icon">⚓</span>
                 <span className="rt-cta-btn-label">Rotaya Çık</span>
               </button>
             ) : (
-              <button
-                className="primary-button rt-cta-btn rt-cta-btn--prep"
-                onClick={onGoTekne}
-              >
-                <span className="rt-cta-btn-icon">🔧</span>
-                <span className="rt-cta-btn-label">Tekneyi Hazırla</span>
-              </button>
+              <>
+                <button
+                  className="rt-cta-btn rt-cta-btn--locked"
+                  onClick={() => setReadinessOpen(true)}
+                >
+                  <span className="rt-cta-btn-icon">⚠️</span>
+                  <span className="rt-cta-btn-label">Önce Eksikleri Tamamla</span>
+                </button>
+                <div className="ui-helper-card ui-helper-card--compact rt-cta-helper">
+                  <span className="ui-helper-title">Hazırlık gerekiyor</span>
+                  <span className="ui-helper-copy">Hazırlık detayını aç, eksik satıra dokun ve doğru upgrade yoluna git.</span>
+                </div>
+              </>
             )}
           </div>
 
-          {/* ── Next Route Peek ── */}
           {nextRoute && (
             <div className="rt-next-peek glass-card">
               <span className="rt-next-peek-eyebrow">Sıradaki Destinasyon</span>
               <div className="rt-next-peek-name">{nextRoute.name}</div>
-              {nextRoute.feeling && (
-                <div className="rt-next-peek-feeling">"{nextRoute.feeling}"</div>
-              )}
+              {nextRoute.feeling && <div className="rt-next-peek-feeling">"{nextRoute.feeling}"</div>}
             </div>
           )}
         </>

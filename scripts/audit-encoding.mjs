@@ -1,13 +1,11 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+﻿import { readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 import process from "node:process";
 
 const ROOT = process.cwd();
-
 const TARGET_DIRS = ["src", "game-data", "docs"];
 const TARGET_FILES = ["package.json"];
 const ALLOWED_EXTENSIONS = new Set([".ts", ".tsx", ".css", ".md", ".json"]);
-
 const IGNORE_DIRS = new Set(["node_modules", "dist", ".git"]);
 const IGNORE_FILE_PATTERNS = [
   /\.backup\./i,
@@ -22,8 +20,10 @@ const BAD_PATTERNS = [
   { label: "Ã", regex: /Ã/g },
   { label: "Ä", regex: /Ä/g },
   { label: "Å", regex: /Å/g },
-  { label: "ï¸", regex: /ï¸/g },
-  { label: "�", regex: /�/g },
+  { label: "ð", regex: /ð/g },
+  { label: "Â", regex: /Â/g },
+  { label: "ï", regex: /ï/g },
+  { label: "replacement-char", regex: /�/g },
   { label: "GÃ¼", regex: /GÃ¼/g },
   { label: "Ä°", regex: /Ä°/g },
   { label: "Ä±", regex: /Ä±/g },
@@ -37,6 +37,15 @@ const BAD_PATTERNS = [
   { label: "âš", regex: /âš/g },
   { label: "â›", regex: /â›/g },
   { label: "âœ", regex: /âœ/g },
+  { label: "ğŸ", regex: /ğŸ/g },
+  { label: "ğ¥", regex: /ğ¥/g },
+  { label: "ğ§", regex: /ğ§/g },
+  { label: "ğ”", regex: /ğ”/g },
+  { label: "ğ’", regex: /ğ’/g },
+  { label: "ğš", regex: /ğš/g },
+  { label: "ğœ", regex: /ğœ/g },
+  { label: "ğ¤", regex: /ğ¤/g },
+  { label: "ğŸ”", regex: /ğŸ”/g },
 ];
 
 function shouldIgnoreFile(pathValue) {
@@ -45,8 +54,7 @@ function shouldIgnoreFile(pathValue) {
 
 function shouldScanFile(pathValue) {
   if (shouldIgnoreFile(pathValue)) return false;
-  const ext = extname(pathValue).toLowerCase();
-  return ALLOWED_EXTENSIONS.has(ext);
+  return ALLOWED_EXTENSIONS.has(extname(pathValue).toLowerCase());
 }
 
 function collectFiles(startPath, out) {
@@ -62,8 +70,7 @@ function collectFiles(startPath, out) {
       continue;
     }
 
-    if (!shouldScanFile(rel)) continue;
-    out.push(fullPath);
+    if (shouldScanFile(rel)) out.push(fullPath);
   }
 }
 
@@ -73,16 +80,12 @@ function findLineIssues(content) {
 
   lines.forEach((line, idx) => {
     const matches = [];
-    for (const p of BAD_PATTERNS) {
-      if (p.regex.test(line)) matches.push(p.label);
-      p.regex.lastIndex = 0;
+    for (const pattern of BAD_PATTERNS) {
+      if (pattern.regex.test(line)) matches.push(pattern.label);
+      pattern.regex.lastIndex = 0;
     }
     if (matches.length > 0) {
-      issues.push({
-        line: idx + 1,
-        lineText: line,
-        matches: Array.from(new Set(matches)),
-      });
+      issues.push({ line: idx + 1, lineText: line, matches: Array.from(new Set(matches)) });
     }
   });
 
@@ -91,37 +94,26 @@ function findLineIssues(content) {
 
 function previewLine(line) {
   const trimmed = line.trim();
-  if (trimmed.length <= 180) return trimmed;
-  return `${trimmed.slice(0, 177)}...`;
+  return trimmed.length <= 180 ? trimmed : `${trimmed.slice(0, 177)}...`;
 }
 
 function main() {
   const filesToScan = [];
 
   for (const dir of TARGET_DIRS) {
-    const dirPath = join(ROOT, dir);
-    collectFiles(dirPath, filesToScan);
+    collectFiles(join(ROOT, dir), filesToScan);
   }
 
   for (const fileName of TARGET_FILES) {
-    const fullPath = join(ROOT, fileName);
-    if (shouldScanFile(fileName)) filesToScan.push(fullPath);
+    if (shouldScanFile(fileName)) filesToScan.push(join(ROOT, fileName));
   }
 
-  const allFindings = [];
-
+  const findings = [];
   for (const filePath of filesToScan) {
     const rel = relative(ROOT, filePath).replace(/\\/g, "/");
     const content = readFileSync(filePath, "utf8");
-    const issues = findLineIssues(content);
-
-    for (const issue of issues) {
-      allFindings.push({
-        file: rel,
-        line: issue.line,
-        lineText: issue.lineText,
-        matches: issue.matches,
-      });
+    for (const issue of findLineIssues(content)) {
+      findings.push({ file: rel, ...issue });
     }
   }
 
@@ -129,13 +121,13 @@ function main() {
   console.log(`Scanned files: ${filesToScan.length}`);
   console.log(`Patterns checked: ${BAD_PATTERNS.length}`);
 
-  if (allFindings.length === 0) {
+  if (findings.length === 0) {
     console.log("PASS: No mojibake patterns found.\n");
     process.exit(0);
   }
 
-  console.log(`FAIL: Found ${allFindings.length} suspicious encoding line(s).\n`);
-  for (const finding of allFindings) {
+  console.log(`FAIL: Found ${findings.length} suspicious encoding line(s).\n`);
+  for (const finding of findings) {
     console.log(`${finding.file}:${finding.line}`);
     console.log(`  patterns: ${finding.matches.join(", ")}`);
     console.log(`  preview : ${previewLine(finding.lineText)}`);

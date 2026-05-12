@@ -61,13 +61,12 @@ export function SeaModeTab({
 
   const getEventCategory = (title: string, desc: string) => {
     const text = (title + " " + desc).toLowerCase();
-    // Opportunity checked first (prevents "kazandırır" matching "kaza")
     if (text.includes("içerik") || text.includes("çekim") || text.includes("hazine") || text.includes("fırsat") || text.includes("yunus") || text.includes("manzara") || text.includes("ada") || text.includes("ticaret") || text.includes("kurtarma")) return "opportunity";
-    // Technical checked BEFORE danger (prevents "hasar" in technical events triggering danger)
     if (text.includes("motor") || text.includes("arıza") || text.includes("yakıt") || text.includes("sızıntı") || text.includes("teknik") || text.includes("telsiz") || text.includes("ekipman") || text.includes("sabitle")) return "technical";
     if (text.includes("fırtına") || text.includes("korsan") || text.includes("tehlike") || text.includes("hasar") || text.includes("kaza") || text.includes("kayalık") || text.includes("hastalık")) return "danger";
     return "neutral";
   };
+
   const getChoiceTone = (label: string, resultText: string) => {
     const text = `${label} ${resultText}`.toLocaleLowerCase("tr-TR");
     const riskTerms = ["doğrudan devam", "devam et", "risk", "fırtına içinden", "hasar", "tehlike"];
@@ -80,7 +79,6 @@ export function SeaModeTab({
 
   return (
     <div className="sm-tab fade-in">
-      {/* ── Critical Banner ── */}
       {hasCritical && (
         <div className="sm-critical-banner" role="alert" aria-live="polite">
           <span className="sm-critical-icon">⚠️</span>
@@ -91,7 +89,6 @@ export function SeaModeTab({
         </div>
       )}
 
-      {/* ── Voyage Arc ── */}
       <div className="sm-voyage-arc">
         <div className="sm-voyage-arc-header">
           <span className="sm-voyage-label">{completedDays} / {voyageTotalDays} gün</span>
@@ -111,12 +108,9 @@ export function SeaModeTab({
         </div>
       </div>
 
-      {/* ── Boat Hero ── */}
       <div className="sm-hero-zone">
         <div className="sm-boat-glow" aria-hidden="true" />
-        <div className="sm-boat-wrap ob-boat-bob">
-          {getBoatSvg(selectedBoatId)}
-        </div>
+        <div className="sm-boat-wrap ob-boat-bob">{getBoatSvg(selectedBoatId)}</div>
         {routeFromName && routeToName && (
           <div className="sm-route-chip">
             {routeFromName} → {routeToName}
@@ -124,23 +118,13 @@ export function SeaModeTab({
         )}
       </div>
 
-      {/* ── Resource Row ── */}
       <div className="sm-resource-row">
-        <div className={`sm-res-chip${energy < 25 ? " sm-res-chip--crit" : ""}`}>
-          ⚡ {energy}%
-        </div>
-        <div className={`sm-res-chip${water < 25 ? " sm-res-chip--crit" : ""}`}>
-          ğŸ’§ {water}%
-        </div>
-        <div className={`sm-res-chip${fuel < 25 ? " sm-res-chip--crit" : ""}`}>
-          ⛽ {fuel}%
-        </div>
-        <div className={`sm-res-chip${boatCondition < 25 ? " sm-res-chip--crit" : ""}`}>
-          ⚓ {boatCondition}%
-        </div>
+        <div className={`sm-res-chip${energy < 25 ? " sm-res-chip--crit" : ""}`}>⚡ {energy}%</div>
+        <div className={`sm-res-chip${water < 25 ? " sm-res-chip--crit" : ""}`}>💧 {water}%</div>
+        <div className={`sm-res-chip${fuel < 25 ? " sm-res-chip--crit" : ""}`}>⛽ {fuel}%</div>
+        <div className={`sm-res-chip${boatCondition < 25 ? " sm-res-chip--crit" : ""}`}>⚓ {boatCondition}%</div>
       </div>
 
-      {/* ── Sea Event Text ── */}
       {currentSeaEvent && (
         <div className="sm-event-log glass-card">
           <span className="sm-event-eyebrow">SON OLAY</span>
@@ -148,20 +132,15 @@ export function SeaModeTab({
         </div>
       )}
 
-      {/* ── Advance Day CTA ── */}
       {!pendingDecision && (
         <div className="sm-advance-zone">
-          <button
-            className="primary-button primary-button--pulse sm-advance-btn"
-            onClick={onAdvanceDay}
-          >
+          <button className="primary-button primary-button--pulse sm-advance-btn" onClick={onAdvanceDay}>
             ⛵ Bir Gün İlerle
           </button>
           <span className="sm-advance-hint">{voyageDaysRemaining} gün kaldı</span>
         </div>
       )}
 
-      {/* ── Decision Modal ── */}
       {pendingDecision && (() => {
         const decisionCategory = getEventCategory(pendingDecision.title, pendingDecision.description);
         const choiceATone = getChoiceTone(pendingDecision.choiceA.label, pendingDecision.choiceA.resultText);
@@ -170,62 +149,51 @@ export function SeaModeTab({
         let decisionTagLabel = "KARAR ANI";
         let decisionCardClass = "sm-decision-card glass-card";
         let decisionTitle = pendingDecision.title;
-        
+
         if (decisionCategory === "danger") {
-          decisionTagIcon = "\u26C8\uFE0F";
+          decisionTagIcon = "⛈️";
           decisionTagLabel = "TEHLİKE";
           decisionCardClass += " sm-decision-card--danger";
-          if (!decisionTitle.includes("\u26C8\uFE0F") && !decisionTitle.includes("\u26A0\uFE0F")) {
-            decisionTitle = `\u26C8\uFE0F ${decisionTitle}`;
+          if (!decisionTitle.includes("⛈️") && !decisionTitle.includes("⚠️")) {
+            decisionTitle = `⛈️ ${decisionTitle}`;
           }
         } else if (decisionCategory === "opportunity") {
           decisionTagIcon = "✨";
           decisionTagLabel = "✦ FIRSAT ✦";
           decisionCardClass += " sm-decision-card--opportunity";
         } else if (decisionCategory === "technical") {
-          decisionTagIcon = "ğŸ”§";
+          decisionTagIcon = "🔧";
           decisionTagLabel = "SORUN";
           decisionCardClass += " sm-decision-card--technical";
         }
 
         return (
-        <div className="sm-decision-modal" role="dialog" aria-modal="true">
-          <div className="sm-decision-backdrop" aria-hidden="true" />
-          <div className={decisionCardClass}>
-            <span className="sm-decision-tag">{decisionTagIcon} {decisionTagLabel}</span>
-            <h3 className="sm-decision-title">{decisionTitle}</h3>
-            <p className="sm-decision-desc">{pendingDecision.description}</p>
-            <div className="sm-decision-choices">
-              <button
-                className={`sm-choice-btn sm-choice-btn--a${
-                  decisionCategory === "danger" && choiceATone === "safe" ? " sm-choice-btn--safe" : ""
-                }${
-                  decisionCategory === "danger" && choiceATone === "risk" ? " sm-choice-btn--risk" : ""
-                }`}
-                onClick={() => onResolveDecision("choiceA")}
-              >
-                <span className="sm-choice-label">{pendingDecision.choiceA.label}</span>
-                <span className="sm-choice-result">{pendingDecision.choiceA.resultText}</span>
-              </button>
-              <button
-                className={`sm-choice-btn sm-choice-btn--b primary-button${
-                  decisionCategory === "danger" && choiceBTone === "safe" ? " sm-choice-btn--safe" : ""
-                }${
-                  decisionCategory === "danger" && choiceBTone === "risk" ? " sm-choice-btn--risk" : ""
-                }`}
-                onClick={() => onResolveDecision("choiceB")}
-              >
-                <span className="sm-choice-label">{pendingDecision.choiceB.label}</span>
-                <span className="sm-choice-result">{pendingDecision.choiceB.resultText}</span>
-              </button>
+          <div className="sm-decision-modal" role="dialog" aria-modal="true">
+            <div className="sm-decision-backdrop" aria-hidden="true" />
+            <div className={decisionCardClass}>
+              <span className="sm-decision-tag">{decisionTagIcon} {decisionTagLabel}</span>
+              <h3 className="sm-decision-title">{decisionTitle}</h3>
+              <p className="sm-decision-desc">{pendingDecision.description}</p>
+              <div className="sm-decision-choices">
+                <button
+                  className={`sm-choice-btn sm-choice-btn--a${decisionCategory === "danger" && choiceATone === "safe" ? " sm-choice-btn--safe" : ""}${decisionCategory === "danger" && choiceATone === "risk" ? " sm-choice-btn--risk" : ""}`}
+                  onClick={() => onResolveDecision("choiceA")}
+                >
+                  <span className="sm-choice-label">{pendingDecision.choiceA.label}</span>
+                  <span className="sm-choice-result">{pendingDecision.choiceA.resultText}</span>
+                </button>
+                <button
+                  className={`sm-choice-btn sm-choice-btn--b primary-button${decisionCategory === "danger" && choiceBTone === "safe" ? " sm-choice-btn--safe" : ""}${decisionCategory === "danger" && choiceBTone === "risk" ? " sm-choice-btn--risk" : ""}`}
+                  onClick={() => onResolveDecision("choiceB")}
+                >
+                  <span className="sm-choice-label">{pendingDecision.choiceB.label}</span>
+                  <span className="sm-choice-result">{pendingDecision.choiceB.resultText}</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         );
       })()}
     </div>
   );
 }
-
-
-

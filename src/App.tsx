@@ -671,6 +671,7 @@ function App() {
   const [currentSeaEvent, setCurrentSeaEvent] = useState("");
   const [pendingDecisionId, setPendingDecisionId] = useState<string | null>(null);
   const [firstVoyageEventTriggered, setFirstVoyageEventTriggered] = useState(false);
+  const [recentSeaEventIds, setRecentSeaEventIds] = useState<string[]>([]);
 
   // Content V2 States
   const [selectedPlatformId, setSelectedPlatformId] = useState<string | null>(null);
@@ -1293,6 +1294,7 @@ function App() {
       setAcceptedSponsors(parsed.acceptedSponsors ?? []);
       setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
       setFirstVoyageEventTriggered(parsed.firstVoyageEventTriggered ?? false);
+      setRecentSeaEventIds(parsed.recentSeaEventIds ?? []);
       setTestMode(parsed.testMode ?? false);
       setHasReceivedFirstSponsor(parsed.hasReceivedFirstSponsor ?? false);
       setActiveStoryHook(parsed.activeStoryHook ?? null);
@@ -1347,11 +1349,8 @@ function App() {
     setMarinaRestInProgress((current) => {
       if (!current) return null;
       setEnergy((prev) => Math.min(100, prev + 30));
-      setWater((prev) => Math.min(100, prev + 30));
-      setFuel((prev) => Math.min(100, prev + 20));
-      setBoatCondition((prev) => Math.min(100, prev + 10));
-      setLogs((prev) => ["Marina hizmeti tamamlandı. Enerji, su, yakıt ve tekne durumu toparlandı.", ...prev.slice(0, 4)]);
-      pushToast("voyage", "Dinlenme Tamamlandı", "Marina hizmeti bitti. Kaynaklar toparlandı.");
+      setLogs((prev) => ["Marina dinlenme hizmeti tamamlandı. Kaptan dinlendi, enerji toparlandı.", ...prev.slice(0, 4)]);
+      pushToast("voyage", "Dinlenme Tamamlandı", "Marina hizmeti bitti. Enerji toparlandı.");
       return null;
     });
   };
@@ -1359,6 +1358,11 @@ function App() {
   const handleMarinaRest = () => {
     if (marinaRestInProgress) {
       setLogs((prev) => ["Marina dinlenme hizmeti zaten sürüyor.", ...prev.slice(0, 4)]);
+      return;
+    }
+
+    if (energy >= 100) {
+      setLogs((prev) => ["Enerji zaten tam.", ...prev.slice(0, 4)]);
       return;
     }
 
@@ -1370,11 +1374,43 @@ function App() {
     setLogs((prev) => ["Marina dinlenme hizmeti başlatıldı.", ...prev.slice(0, 4)]);
   };
 
+  const handleRefillWater = () => {
+    const missing = Math.max(0, 100 - water);
+    if (missing <= 0) return;
+    const cost = missing * 1;
+    if (credits < cost) {
+      setLogs(prev => ["Su ikmali için yeterli TL yok.", ...prev.slice(0, 4)]);
+      pushToast("warning", "Yetersiz Bütçe", `Su ikmali için ${cost} TL gerekiyor.`);
+      return;
+    }
+    setCredits(c => c - cost);
+    setWater(100);
+    triggerFlash("credits");
+    setLogs(prev => [`Su ikmali yapıldı: ${cost} TL.`, ...prev.slice(0, 4)]);
+  };
+
+  const handleRefillFuel = () => {
+    const missing = Math.max(0, 100 - fuel);
+    if (missing <= 0) return;
+    const cost = missing * 2;
+    if (credits < cost) {
+      setLogs(prev => ["Yakıt ikmali için yeterli TL yok.", ...prev.slice(0, 4)]);
+      pushToast("warning", "Yetersiz Bütçe", `Yakıt ikmali için ${cost} TL gerekiyor.`);
+      return;
+    }
+    setCredits(c => c - cost);
+    setFuel(100);
+    triggerFlash("credits");
+    setLogs(prev => [`Yakıt ikmali yapıldı: ${cost} TL.`, ...prev.slice(0, 4)]);
+  };
+
   const getMarinaRestLabel = () => {
-    if (!marinaRestInProgress) return "Marina'da Dinlen";
+    if (!marinaRestInProgress) {
+      return energy >= 100 ? "Enerji dolu" : "Dinlen";
+    }
     const remainingMs = Math.max(0, marinaRestInProgress.completesAt - marinaRestCooldownTick);
     const remainingMinutes = Math.max(1, Math.ceil(remainingMs / 60000));
-    return `Dinlenme Sürüyor: ${remainingMinutes} dk kaldı`;
+    return `Dinleniyor: ${remainingMinutes} dk`;
   };
 
   const isMarinaRestActive = Boolean(marinaRestInProgress);
@@ -1433,8 +1469,14 @@ function App() {
       if (shouldForceFirstVoyageEvent) {
         nextDecision = SEA_DECISION_EVENTS.find(e => e.id === "content_opportunity") || nextDecision;
         setFirstVoyageEventTriggered(true);
+      } else {
+        let validEvents = SEA_DECISION_EVENTS.filter(e => !recentSeaEventIds.includes(e.id));
+        if (validEvents.length === 0) validEvents = SEA_DECISION_EVENTS.filter(e => e.id !== recentSeaEventIds[0]);
+        if (validEvents.length === 0) validEvents = SEA_DECISION_EVENTS;
+        nextDecision = validEvents[Math.floor(Math.random() * validEvents.length)];
       }
       setPendingDecisionId(nextDecision.id);
+      setRecentSeaEventIds(prev => [nextDecision.id, ...prev].slice(0, 2));
       setCurrentSeaEvent(nextDecision.description);
       return;
     }
@@ -2060,6 +2102,8 @@ function App() {
       marinaRestActionLabel={getMarinaRestLabel()}
       marinaRestActionDisabled={isMarinaRestActive}
       onMarinaRest={handleMarinaRest}
+      onRefillWater={handleRefillWater}
+      onRefillFuel={handleRefillFuel}
       onRepairBoat={handleRepairBoat}
       onGoContent={() => setActiveTab("icerik")}
       onGoRoute={() => setActiveTab("rota")}

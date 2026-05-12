@@ -19,6 +19,8 @@ interface LimanTabProps {
   onMarinaRest: () => void;
   marinaRestActionLabel: string;
   marinaRestActionDisabled: boolean;
+  onRefillWater: () => void;
+  onRefillFuel: () => void;
   onRepairBoat: () => void;
   onGoContent: () => void;
   onGoRoute: () => void;
@@ -53,6 +55,8 @@ export function LimanTab({
   onMarinaRest,
   marinaRestActionLabel,
   marinaRestActionDisabled,
+  onRefillWater,
+  onRefillFuel,
   onRepairBoat,
   onGoContent,
   onGoRoute,
@@ -239,12 +243,18 @@ export function LimanTab({
                 <span>%{boatCondition}</span>
               </div>
             </div>
-            <div className="lh-service-actions">
-              <button className="secondary-button lh-service-btn" onClick={onMarinaRest} disabled={marinaRestActionDisabled}>
+            <div className="lh-service-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <button className="secondary-button lh-service-btn" onClick={onMarinaRest} disabled={marinaRestActionDisabled || energy >= 100}>
                 {marinaRestActionLabel}
               </button>
-              <button className="secondary-button lh-service-btn" onClick={onRepairBoat} disabled={credits < 250}>
-                Onar – 250 TL
+              <button className="secondary-button lh-service-btn" onClick={onRefillWater} disabled={water >= 100}>
+                {water >= 100 ? "Su dolu" : `Su Al – ${Math.max(0, 100 - water) * 1} TL`}
+              </button>
+              <button className="secondary-button lh-service-btn" onClick={onRefillFuel} disabled={fuel >= 100}>
+                {fuel >= 100 ? "Yakıt dolu" : `Yakıt Al – ${Math.max(0, 100 - fuel) * 2} TL`}
+              </button>
+              <button className="secondary-button lh-service-btn" onClick={onRepairBoat} disabled={boatCondition >= 100 || credits < 250}>
+                {boatCondition >= 100 ? "Tekne sağlam" : "Onar – 250 TL"}
               </button>
             </div>
           </div>

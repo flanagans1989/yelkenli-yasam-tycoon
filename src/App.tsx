@@ -23,8 +23,7 @@ import { SeaModeTab } from "./components/SeaModeTab";
 import { KaptanTab } from "./components/KaptanTab";
 import { ArrivalScreen } from "./components/ArrivalScreen";
 import { CelebrationModal } from "./components/CelebrationModal";
-import { ContentResultCard } from "./components/ContentResultCard";
-import { SponsorOfferList } from "./components/SponsorOfferList";
+import { IcerikTab } from "./components/IcerikTab";
 import type { CelebrationItem } from "./components/CelebrationModal";
 
 const SAVE_KEY = "yelkenli_save";
@@ -2218,248 +2217,77 @@ function App() {
         }
       : null;
     const storyHookButtonDisabled = !storyHookPlan || onContentCooldown;
+    const selectedPlatformBestContentTypeIds = selectedPlatform?.bestContentTypes.map((id) => String(id)) ?? [];
+    const activePlatforms = SOCIAL_PLATFORMS.filter((p) => p.mvpStatus === "active").map((platform) => ({
+      id: platform.id,
+      name: platform.name,
+      mainRole: platform.mainRole,
+      bestContentTypes: platform.bestContentTypes.map((id) => String(id)),
+    }));
 
     return (
-      <div className="tab-content fade-in">
-        <div className="sub-tab-bar">
-           <button className={`sub-tab ${icerikSubTab === "produce" ? "active" : ""}`} onClick={() => setIcerikSubTab("produce")}>İçerik Üret</button>
-           <button className={`sub-tab ${icerikSubTab === "sponsor" ? "active" : ""}`} onClick={() => setIcerikSubTab("sponsor")}>Sponsorluklar</button>
-        </div>
-
-        {icerikSubTab === "produce" && (
-          <div className="cs-studio fade-in">
-            <header className="cs-header">
-              <div className="cs-header-rim" aria-hidden="true"></div>
-              <span className="cs-eyebrow">◐ Kaptan Medya Odası</span>
-              <h2 className="cs-title">{contentCareerTitle}</h2>
-              <p className="cs-subtitle">{contentCareerText}</p>
-              <div className="cs-stat-strip">
-                <div className="cs-stat-chip">
-                  <span className="cs-stat-label">Takipçi</span>
-                  <span className="cs-stat-value">{followers.toLocaleString("tr-TR")}</span>
-                </div>
-                <div className="cs-stat-chip">
-                  <span className="cs-stat-label">Bütçe</span>
-                  <span className="cs-stat-value cs-stat-value--gold">{credits.toLocaleString("tr-TR")} TL</span>
-                </div>
-                {nextSponsorTier && (
-                  <div className="cs-stat-chip cs-stat-chip--target">
-                    <span className="cs-stat-label">{nextSponsorTier.name}'a</span>
-                    <span className="cs-stat-value cs-stat-value--cyan">
-                      {followersToTier.toLocaleString("tr-TR")}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </header>
-
-            {!contentResult ? (
-              <>
-                {step === "SEA_MODE" && currentRoute && (
-                  <div className="cs-route-hint">
-                    <span className="cs-route-hint-icon" aria-hidden="true">🌊</span>
-                    <div className="cs-route-hint-body">
-                      <span className="cs-route-hint-label">Şu an: {currentRoute.name}</span>
-                      <span className="cs-route-hint-themes">{currentRoute.contentThemes.join(" · ")}</span>
-                    </div>
-                  </div>
-                )}
-
-                {activeStoryHook && (
-                  <div className="cs-story-hook-card">
-                    <div className="cs-story-hook-head">
-                      <span className="cs-story-hook-eyebrow">Yolculuk Hikayesi</span>
-                      <span className="cs-story-hook-source">
-                        {activeStoryHook.source === "arrival" ? "Varis notu" : "Deniz anisi"}
-                      </span>
-                    </div>
-                    <h3 className="cs-story-hook-title">{activeStoryHook.title}</h3>
-                    <p className="cs-story-hook-text">{activeStoryHook.description}</p>
-                    <div className="cs-story-hook-bonuses">
-                      {typeof activeStoryHook.bonusFollowersPct === "number" && (
-                        <span className="cs-story-hook-bonus">+%{activeStoryHook.bonusFollowersPct} takipci</span>
-                      )}
-                      {typeof activeStoryHook.bonusCreditsPct === "number" && (
-                        <span className="cs-story-hook-bonus">+%{activeStoryHook.bonusCreditsPct} TL</span>
-                      )}
-                      {typeof activeStoryHook.sponsorInterest === "number" && activeStoryHook.sponsorInterest > 0 && (
-                        <span className="cs-story-hook-bonus">+{activeStoryHook.sponsorInterest} marka guveni</span>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      className={`cs-story-hook-btn ${storyHookButtonDisabled ? "is-disabled" : ""}`}
-                      disabled={storyHookButtonDisabled}
-                      onClick={() => {
-                        if (!activeStoryHook || !storyHookPlan) return;
-                        publishContent({
-                          platformId: storyHookPlan.platformId,
-                          contentType: storyHookPlan.contentType,
-                          storyHook: activeStoryHook,
-                        });
-                      }}
-                    >
-                      Bu Hikayeyi Yayinla
-                    </button>
-                  </div>
-                )}
-
-                <div className="cs-step-row">
-                  <span className="cs-step-num">01</span>
-                  <span className="cs-step-text">Yayın Platformu</span>
-                </div>
-                <div className="cs-platform-grid">
-                  {SOCIAL_PLATFORMS.filter(p => p.mvpStatus === "active").map(platform => {
-                    const visual = PLATFORM_VISUALS[platform.id] ?? { icon: "●", specialty: platform.mainRole };
-                    const isActive = selectedPlatformId === platform.id;
-                    return (
-                      <button
-                        key={platform.id}
-                        type="button"
-                        className={`cs-platform-tile ${isActive ? "is-active" : ""}`}
-                        data-platform={platform.id}
-                        onClick={() => setSelectedPlatformId(platform.id)}
-                      >
-                        <div className="cs-platform-icon">
-                          <span aria-hidden="true">{visual.icon}</span>
-                        </div>
-                        <div className="cs-platform-text">
-                          <strong className="cs-platform-name">{platform.name}</strong>
-                          <span className="cs-platform-role">{visual.specialty}</span>
-                        </div>
-                        {isActive && <span className="cs-platform-check" aria-hidden="true">✓</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className={`cs-step-row ${!selectedPlatformId ? "cs-step-row--locked" : ""}`}>
-                  <span className="cs-step-num">02</span>
-                  <span className="cs-step-text">İçerik Formatı</span>
-                  {selectedPlatformId && (
-                    <span className="cs-step-hint">altın kenar = uyumlu</span>
-                  )}
-                </div>
-                {!selectedPlatformId ? (
-                  <div className="cs-types-locked">Önce platform seç</div>
-                ) : (
-                  <div className="cs-type-grid">
-                    {CONTENT_TYPES.map(type => {
-                      const isMatch = selectedPlatform?.bestContentTypes.includes(type.id as any) ?? false;
-                      const isActive = selectedContentType === type.id;
-                      return (
-                        <button
-                          key={type.id}
-                          type="button"
-                          className={`cs-type-tile ${isActive ? "is-active" : ""} ${isMatch ? "is-match" : ""}`}
-                          onClick={() => setSelectedContentType(type.id)}
-                        >
-                          <span className="cs-type-icon" aria-hidden="true">{type.icon}</span>
-                          <span className="cs-type-label">{type.label}</span>
-                          {isMatch && <span className="cs-type-badge">UYUMLU</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <div className="cs-cta-block">
-                  <div style={{ marginBottom: '16px', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', opacity: 0.9, padding: '0 12px', fontStyle: 'italic' }}>
-                    Kaptan seviyesi arttıkça içerikler daha kaliteli prodüksiyon ister; hazırlık süresi uzar ama kariyer etkisi büyür.
-                  </div>
-                  {selectedPlatformId && selectedContentType && !onContentCooldown && (
-                    <div className="cs-cta-preview">
-                      <span className="cs-cta-preview-icon">{PLATFORM_VISUALS[selectedPlatformId]?.icon ?? "●"}</span>
-                      <span className="cs-cta-preview-text">
-                        {selectedPlatform?.name} <span className="cs-cta-sep">·</span> {selectedTypeMeta?.label}
-                      </span>
-                    </div>
-                  )}
-                  {onContentCooldown ? (
-                    <div className="cs-cooldown-card">
-                      <span className="cs-cooldown-eyebrow">Stüdyo Dinleniyor</span>
-                      <strong className="cs-cooldown-time">{cooldownMinutes} dk</strong>
-                      <span className="cs-cooldown-text">Bir sonraki içerik için kısa bir nefes.</span>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className={`cs-cta-btn ${ctaDisabled ? "is-disabled" : ""}`}
-                      onClick={handleProduceContentV2}
-                      disabled={ctaDisabled}
-                    >
-                      <span className="cs-cta-btn-icon" aria-hidden="true">🎬</span>
-                      <span className="cs-cta-btn-label">İÇERİK ÜRET</span>
-                    </button>
-                  )}
-                  {!selectedPlatformId || !selectedContentType ? (
-                    <span className="cs-cta-hint">
-                      {!selectedPlatformId ? "Önce yayın platformu seç" : "Bir format seç"}
-                    </span>
-                  ) : null}
-                </div>
-              </>
-            ) : (
-              <ContentResultCard
-                result={contentResult}
-                onReset={() => {
-                  setContentResult(null);
-                  setSelectedPlatformId(null);
-                  setSelectedContentType(null);
-                }}
-              />
-            )}
-          </div>
-        )}
-
-        {icerikSubTab === "sponsor" && (
-          <div className="sponsor-section fade-in">
-            <div className="sponsor-career-card">
-              <span className="sponsor-career-eyebrow">Sponsor Kariyeri</span>
-              {activeSponsorName ? (
-                <div className="sponsor-career-title">{activeSponsorName}</div>
-              ) : (
-                <div className="sponsor-career-title">İlk anlaşma seni bekliyor</div>
-              )}
-              <div className="sponsor-career-meta">
-                Marka Güveni: {brandTrust}/100
-                {currentSponsorTier ? ` · Seviye: ${currentSponsorTier.name}` : ""}
-              </div>
-              {nextSponsorTier && (
-                <>
-                  <div className="sponsor-progress-bar mt-10">
-                    <div className="sponsor-progress-fill" style={{ width: `${sponsorProgressPercent}%` }}></div>
-                  </div>
-                  <div className="sponsor-career-highlight">
-                    {followers.toLocaleString("tr-TR")} / {nextSponsorTier.minFollowers.toLocaleString("tr-TR")} takipçi · Hedef: {nextSponsorTier.name}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <button className="btn-primary full-width mb-20" onClick={handleCheckSponsorOffers}>
-               Teklifleri Kontrol Et
-            </button>
-
-            <h3 className="section-title">Gelen Teklifler</h3>
-            <SponsorOfferList
-              offers={sponsorOffers}
-              onAcceptSponsor={handleAcceptSponsor}
-            />
-
-            {acceptedSponsors.length > 0 && (
-               <>
-                  <h3 className="section-title mt-20">Aktif Sponsorlar</h3>
-                  <div className="accepted-sponsors-list">
-                     {Array.from(new Set(acceptedSponsors.filter(Boolean))).map((name) => (
-                        <span key={name} className="spo-badge">{name}</span>
-                     ))}
-                  </div>
-               </>
-            )}
-          </div>
-        )}
-      </div>
+      <IcerikTab
+        icerikSubTab={icerikSubTab}
+        onChangeSubTab={setIcerikSubTab}
+        contentCareerTitle={contentCareerTitle}
+        contentCareerText={contentCareerText}
+        followers={followers}
+        credits={credits}
+        nextSponsorTierName={nextSponsorTier?.name}
+        followersToTier={followersToTier}
+        step={step}
+        currentRoute={currentRoute ? { name: currentRoute.name, contentThemes: currentRoute.contentThemes } : undefined}
+        activeStoryHook={activeStoryHook}
+        storyHookButtonDisabled={storyHookButtonDisabled}
+        onPublishStoryHook={() => {
+          if (!activeStoryHook || !storyHookPlan) return;
+          publishContent({
+            platformId: storyHookPlan.platformId,
+            contentType: storyHookPlan.contentType,
+            storyHook: activeStoryHook,
+          });
+        }}
+        platforms={activePlatforms}
+        platformVisuals={PLATFORM_VISUALS}
+        selectedPlatformId={selectedPlatformId}
+        onSelectPlatform={setSelectedPlatformId}
+        selectedPlatformName={selectedPlatform?.name}
+        contentTypes={CONTENT_TYPES}
+        selectedContentType={selectedContentType}
+        onSelectContentType={setSelectedContentType}
+        selectedPlatformBestContentTypeIds={selectedPlatformBestContentTypeIds}
+        selectedTypeLabel={selectedTypeMeta?.label}
+        onContentCooldown={onContentCooldown}
+        cooldownMinutes={cooldownMinutes}
+        ctaDisabled={ctaDisabled}
+        onProduceContent={handleProduceContentV2}
+        contentResult={contentResult}
+        onResetContentResult={() => {
+          setContentResult(null);
+          setSelectedPlatformId(null);
+          setSelectedContentType(null);
+        }}
+        sponsorTabProps={{
+          activeSponsorName,
+          brandTrust,
+          currentSponsorTierName: currentSponsorTier?.name,
+          nextSponsorTier: nextSponsorTier
+            ? { name: nextSponsorTier.name, minFollowers: nextSponsorTier.minFollowers }
+            : undefined,
+          sponsorProgressPercent,
+          followers,
+          onCheckSponsorOffers: handleCheckSponsorOffers,
+          sponsorOffers: sponsorOffers as Array<{
+            id: string;
+            brandName: string;
+            tierName: string;
+            minReward: number;
+            maxReward: number;
+          }>,
+          onAcceptSponsor: handleAcceptSponsor,
+          acceptedSponsors,
+        }}
+      />
     );
   };
 

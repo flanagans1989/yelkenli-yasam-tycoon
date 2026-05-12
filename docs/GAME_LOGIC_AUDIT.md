@@ -1,4 +1,4 @@
-﻿# Yelkenli Yaşam Tycoon — Game Logic Audit
+# Yelkenli Yaşam Tycoon — Game Logic Audit
 
 > Purpose: This document defines the invariants the game must satisfy before ship-ready changes are accepted.
 
@@ -201,3 +201,64 @@ A gameplay batch is done when:
 4. Manual QA items relevant to the touched systems pass
 5. New save fields use safe fallbacks
 6. Route progression is reachable in the expected phase, not only in total theory
+
+---
+
+## 11. Batch 3B Progression Rebalance Checklist
+
+### 11.1 Route Progression Matrix (Required Before Any Balance Change)
+
+Before changing any route requirement or upgrade stat, run `npm run audit:game` and check the **BATCH 3B — ROUTE PROGRESSION MATRIX** section.
+
+Phase assignments:
+- Routes 1–3: `any` marina upgrades only
+- Routes 4–7: `any + medium` marina upgrades
+- Routes 8–9: `any + medium + large` marina upgrades
+- Routes 10–17: all marina upgrades (`any + medium + large + shipyard + ocean`)
+
+### 11.2 Buffer Thresholds
+
+| Buffer | Status | Audit Level |
+|---|---|---|
+| < 0 | IMPOSSIBLE | FAIL |
+| = 0 | Exact-edge | WARN |
+| 1–2 | Risky | WARN |
+| 3–4 | Tight | WARN |
+| >= 5 | Safe | PASS |
+
+### 11.3 Category Ladder Check
+
+Each route-gating stat category must have upgrades across marina tiers with at least one `any` card for early access.
+
+### 11.4 Exact-Edge Lock Prevention
+
+Known exact-edge risks (Batch 3B diagnosis):
+- Route 3 (Girit): navigation=0, energy=0 buffer in `any` phase
+- Routes 15-17: navigation buffer=3 in `all` phase
+
+### 11.5 Current Stat Pools by Phase
+
+| Phase | safety | navigation | energy | water | maintenance | oceanReadiness |
+|---|---|---|---|---|---|---|
+| any | 17 | 8 | 8 | 8 | 26 | 17 |
+| any+medium | 63 | 26 | 26 | 26 | 50 | 71 |
+| any+med+large | 101 | 53 | 51 | 56 | 56 | 121 |
+| all | 101 | 53 | 51 | 56 | 68 | 127 |
+
+### 11.6 Manual Smoke Test Path
+
+1. Route 1 -> first content -> first credits
+2. First sponsor at follower threshold
+3. Buy `any` upgrades (GPS, safety kit, solar panel, water jugs, service pack)
+4. Route 2 -> readiness passes
+5. Buy remaining `any` upgrades -> Route 3 readiness check
+6. Advance to medium marina -> medium upgrades -> Routes 4-5
+
+### 11.7 Audit as Guardrail
+
+The audit is a guardrail, not a replacement for playtesting.
+- FAIL = true dead-end, must fix
+- WARN = balance risk, investigate
+- PASS = technically achievable
+- Manual playtesting required for pacing and fun
+

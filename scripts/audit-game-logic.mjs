@@ -1,4 +1,4 @@
-﻿import { readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -335,6 +335,98 @@ async function main() {
   else fail("firstVoyageEventTriggered setter not found");
   if (appTsx.includes('e.id === "content_opportunity"')) pass("content_opportunity is still the forced first event");
   else fail("Forced first event is no longer content_opportunity");
+
+  // ── Batch 3B: Progression Diagnostics ──
+
+  header("BATCH 3B — ROUTE PROGRESSION MATRIX");
+
+  const phases = [
+    { label: "any", marinas: new Set(["any"]) },
+    { label: "any+medium", marinas: new Set(["any", "medium"]) },
+    { label: "any+med+large", marinas: new Set(["any", "medium", "large"]) },
+    { label: "all", marinas: new Set(["any", "medium", "large", "shipyard", "ocean"]) },
+  ];
+
+  const statKeys = Object.entries(STAT_TO_EFFECT);
+
+  // Compute per-phase max reachable pools
+  info("Per-phase reachable stat pools:");
+  for (const phase of phases) {
+    const vals = statKeys.map(([rk, ek]) => `${ek}=${sumAccessible(BOAT_UPGRADES, ek, phase.marinas)}`).join(", ");
+    info(`  [${phase.label}] ${vals}`);
+  }
+
+  // Route-by-route progression summary
+  let safeCount = 0, tightCount = 0, riskyCount = 0, impossibleCount = 0;
+  const routeSummaries = [];
+
+  for (const route of WORLD_ROUTES) {
+    const allowed = getAllowedMarinaRequirements(route.order);
+    const phaseLabel = route.order <= 3 ? "any" : route.order <= 7 ? "any+med" : route.order <= 9 ? "any+med+lrg" : "all";
+    let worstBuffer = Infinity;
+    let worstStat = "";
+    let hasImpossible = false;
+    const buffers = {};
+
+    for (const [reqKey, effectKey] of statKeys) {
+      const required = route.requirements?.[reqKey] ?? 0;
+      if (required === 0) continue;
+      const pool = sumAccessible(BOAT_UPGRADES, effectKey, allowed);
+      const buffer = pool - required;
+      buffers[effectKey] = { required, pool, buffer };
+      if (buffer < 0) hasImpossible = true;
+      if (buffer < worstBuffer) { worstBuffer = buffer; worstStat = effectKey; }
+    }
+
+    let status;
+    if (hasImpossible) { status = "IMPOSSIBLE"; impossibleCount++; }
+    else if (worstBuffer < 3) { status = "RISKY"; riskyCount++; }
+    else if (worstBuffer < 5) { status = "TIGHT"; tightCount++; }
+    else { status = "SAFE"; safeCount++; }
+
+    routeSummaries.push({ route, phaseLabel, buffers, worstBuffer, worstStat, status });
+
+    // Print compact line
+    const tag = status === "IMPOSSIBLE" ? FAIL : status === "RISKY" ? WARN : status === "TIGHT" ? WARN : PASS;
+    const bufStr = Object.entries(buffers).map(([k, v]) => `${k}:${v.buffer}`).join(" ");
+    console.log(`  ${tag} R${String(route.order).padStart(2)}  ${route.name.padEnd(22)} [${phaseLabel.padEnd(11)}] worst=${worstStat}(${worstBuffer}) | ${bufStr}`);
+
+    // Granular warnings
+    if (hasImpossible) {
+      for (const [ek, v] of Object.entries(buffers)) {
+        if (v.buffer < 0) fail(`R${route.order} "${route.name}": ${ek} IMPOSSIBLE (need ${v.required}, pool ${v.pool})`);
+      }
+    } else if (worstBuffer === 0) {
+      warn(`R${route.order} "${route.name}": exact-edge on ${worstStat} (buffer=0)`);
+    } else if (worstBuffer < 3) {
+      warn(`R${route.order} "${route.name}": risky buffer on ${worstStat} (buffer=${worstBuffer})`);
+    } else if (worstBuffer < 5) {
+      warn(`R${route.order} "${route.name}": tight buffer on ${worstStat} (buffer=${worstBuffer})`);
+    }
+  }
+
+  info(`Summary: ${safeCount} safe, ${tightCount} tight, ${riskyCount} risky, ${impossibleCount} impossible`);
+
+  header("BATCH 3B — UPGRADE CATEGORY LADDER");
+
+  const allCats = [...new Set(BOAT_UPGRADES.map(u => u.categoryId))].sort();
+  for (const cat of allCats) {
+    const cards = BOAT_UPGRADES.filter(u => u.categoryId === cat);
+    const marinaSizes = [...new Set(cards.map(u => u.marinaRequirement))].sort();
+    const statTotals = {};
+    for (const card of cards) {
+      for (const [ek, ev] of Object.entries(card.effects)) {
+        statTotals[ek] = (statTotals[ek] || 0) + ev;
+      }
+    }
+    const statsStr = Object.entries(statTotals).map(([k, v]) => `${k}:${v}`).join(" ");
+    const hasAny = marinaSizes.includes("any");
+    const tag = hasAny ? PASS : WARN;
+    console.log(`  ${tag} ${cat.padEnd(22)} cards=${cards.length} marinas=[${marinaSizes.join(",")}] | ${statsStr}`);
+    if (!hasAny && ["hull_maintenance","safety","navigation","energy","water_life","engine_mechanical"].includes(cat)) {
+      warn(`Category "${cat}" has no any-marina card — early routes may lack access`);
+    }
+  }
 
   console.log(`\n${c.bold}${c.white}╔══════════════════════════════════════════════╗`);
   console.log(`║                  AUDIT SUMMARY              ║`);

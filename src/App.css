@@ -11580,3 +11580,21 @@ button, input, select, textarea {
   }
 }
 
+
+/* A8 autonomous mobile UI safety patch */
+
+@media (max-width: 640px) {
+  button, .clickable-element {
+    min-height: 50px;
+    min-width: 100px;
+  }
+
+  h1, h2, h3, .card {
+    line-height: 1.5;
+  }
+
+  .text-wrap {
+    word-wrap: break-word;
+  }
+}
+

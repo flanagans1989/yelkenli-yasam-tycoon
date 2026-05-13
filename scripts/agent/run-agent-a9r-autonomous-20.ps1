@@ -12,7 +12,7 @@ param(
     [string]$RepoPath        = 'C:\dev\yelkenli-yasam-tycoon',
     [string]$AgentBranch     = 'agent/day-01',
     [string]$AiderModel      = 'ollama_chat/qwen2.5-coder:7b',
-    [int]   $AiderTimeoutSec = 900,
+    [int]   $AiderTimeoutSec = 480,
     [int]   $BuildTimeoutSec = 600
 )
 
@@ -191,6 +191,7 @@ function Invoke-AiderTask {
         '--model', $AiderModel,
         '--no-auto-commits',
         '--map-tokens', '0',
+        '--max-reflections', '1',
         '--yes-always',
         '--no-stream',
         '--no-pretty',

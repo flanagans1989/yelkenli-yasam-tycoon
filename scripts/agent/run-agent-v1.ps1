@@ -19,7 +19,6 @@ $AiderBase = @(
     "--model", "ollama_chat/qwen2.5-coder:7b",
     "--no-auto-commits",
     "--map-tokens", "0",
-    
     "--disable-playwright"
 )
 
@@ -32,6 +31,7 @@ $tasks = @(
             "progress.md",
             "errors_log.md"
         )
+        RequiredOutput = "docs/agent/AUTONOMOUS_TEST_RUN.md"
     },
     @{
         Name = "PACKET 002 - Agent Work Simulation"
@@ -41,6 +41,7 @@ $tasks = @(
             "progress.md",
             "errors_log.md"
         )
+        RequiredOutput = "docs/agent/AGENT_WORK_SIMULATION.md"
     },
     @{
         Name = "PACKET 003 - Final Proof Summary"
@@ -51,6 +52,7 @@ $tasks = @(
             "progress.md",
             "errors_log.md"
         )
+        RequiredOutput = "docs/agent/FINAL_AGENT_REPORT.md"
     }
 )
 
@@ -63,6 +65,44 @@ $ForbiddenPatterns = @(
     "^public/",
     "^index\.html$"
 )
+
+function Test-ForbiddenChanges {
+    $changedFiles = git status --porcelain | ForEach-Object {
+        if ($_.Length -ge 4) { $_.Substring(3).Replace("\", "/").Trim('"') }
+    }
+
+    foreach ($changed in $changedFiles) {
+        foreach ($pattern in $ForbiddenPatterns) {
+            if ($changed -match $pattern) {
+                Write-Host "FORBIDDEN CHANGE DETECTED: $changed"
+                Write-Host "Stopping agent script."
+                git status
+                exit 1
+            }
+        }
+    }
+}
+
+function Test-RequiredOutput {
+    param(
+        [string]$Path,
+        [string]$TaskName
+    )
+
+    if (-not (Test-Path $Path)) {
+        Write-Host "REQUIRED OUTPUT MISSING: $Path"
+        Write-Host "Task failed: $TaskName"
+        exit 1
+    }
+
+    $length = (Get-Item $Path).Length
+    if ($length -lt 50) {
+        Write-Host "REQUIRED OUTPUT TOO SMALL OR EMPTY: $Path"
+        Write-Host "Size: $length bytes"
+        Write-Host "Task failed: $TaskName"
+        exit 1
+    }
+}
 
 foreach ($task in $tasks) {
     Write-Host ""
@@ -84,22 +124,11 @@ foreach ($task in $tasks) {
     Write-Host "=== Aider finished: $($task.Name) ==="
     git status --short
 
-    $changedFiles = git status --porcelain | ForEach-Object {
-        if ($_.Length -ge 4) { $_.Substring(3).Replace("\", "/").Trim('"') }
-    }
-
-    foreach ($changed in $changedFiles) {
-        foreach ($pattern in $ForbiddenPatterns) {
-            if ($changed -match $pattern) {
-                Write-Host "FORBIDDEN CHANGE DETECTED: $changed"
-                Write-Host "Stopping agent script."
-                git status
-                exit 1
-            }
-        }
-    }
+    Test-ForbiddenChanges
+    Test-RequiredOutput -Path $task.RequiredOutput -TaskName $task.Name
 
     Write-Host "Safety check passed for: $($task.Name)"
+    Write-Host "Required output check passed: $($task.RequiredOutput)"
 }
 
 Write-Host ""

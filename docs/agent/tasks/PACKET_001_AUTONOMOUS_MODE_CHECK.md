@@ -10,14 +10,14 @@ Allowed files:
 - progress.md
 - errors_log.md
 
-Forbidden files:
-- src/
-- package.json
-- package-lock.json
-- vite.config.ts
-- tsconfig.json
-- public/
-- index.html
+Rules:
+- Only edit the allowed files listed above.
+- Do not edit source code.
+- Do not edit project configuration files.
+- Do not install packages.
+- Do not commit.
+- Do not push.
+- Do not ask questions.
 
 Tasks:
 1. Create or update docs/agent/AUTONOMOUS_TEST_RUN.md.
@@ -31,10 +31,3 @@ Tasks:
 3. Update progress.md with this exact line:
    - PACKET 001 completed.
 4. If there is no error, do not add a fake error to errors_log.md.
-
-Rules:
-- Do not ask questions.
-- Do not edit source code.
-- Do not commit.
-- Do not push.
-- Only edit allowed files.

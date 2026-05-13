@@ -11,14 +11,14 @@ Allowed files:
 - progress.md
 - errors_log.md
 
-Forbidden files:
-- src/
-- package.json
-- package-lock.json
-- vite.config.ts
-- tsconfig.json
-- public/
-- index.html
+Rules:
+- Only edit the allowed files listed above.
+- Do not edit source code.
+- Do not edit project configuration files.
+- Do not install packages.
+- Do not commit.
+- Do not push.
+- Do not ask questions.
 
 Tasks:
 1. Create or update docs/agent/FINAL_PROOF_SUMMARY.md.
@@ -34,10 +34,3 @@ Tasks:
    - PACKET 003 completed.
 5. If there is no error, write this exact line to errors_log.md:
    - No blocking errors occurred during scripted autonomous proof test.
-
-Rules:
-- Do not ask questions.
-- Do not edit source code.
-- Do not commit.
-- Do not push.
-- Only edit allowed files.

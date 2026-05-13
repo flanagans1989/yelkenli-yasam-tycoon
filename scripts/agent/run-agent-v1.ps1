@@ -19,7 +19,7 @@ $AiderBase = @(
     "--model", "ollama_chat/qwen2.5-coder:7b",
     "--no-auto-commits",
     "--map-tokens", "0",
-    "--yes-always",
+    
     "--disable-playwright"
 )
 

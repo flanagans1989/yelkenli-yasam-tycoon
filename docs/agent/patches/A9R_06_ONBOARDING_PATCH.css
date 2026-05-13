@@ -1,0 +1,48 @@
+/* === A9R_06 PATCH START === */
+.a9r-onboarding {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
+    padding: 20px;
+    text-align: center;
+}
+
+.a9r-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin: 10px auto;
+    padding: 20px;
+    max-width: 300px;
+}
+
+.a9r-hint {
+    font-size: 14px;
+    color: #666;
+}
+
+.a9r-cta {
+    background-color: #007bff;
+    border-radius: 8px;
+    color: white;
+    display: inline-block;
+    padding: 12px 24px;
+    text-decoration: none;
+    font-size: 16px;
+    margin-top: 20px;
+}
+
+.a9r-cta:hover {
+    background-color: #0056b3;
+}
+
+@media (min-width: 768px) {
+    .a9r-card {
+        max-width: 400px;
+    }
+
+    .a9r-cta {
+        padding: 14px 28px;
+        font-size: 18px;
+    }
+}
+/* === A9R_06 PATCH END === */

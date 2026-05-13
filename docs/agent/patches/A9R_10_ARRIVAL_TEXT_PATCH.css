@@ -1,0 +1,64 @@
+/* === A9R_10 PATCH START === */
+.a9r-onboarding {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    max-width: 80%;
+    margin: 2rem auto;
+    padding: 1rem;
+    background-color: #f4f4f4;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.a9r-cta {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    color: #fff;
+    background-color: #007bff;
+    border-radius: 0.25rem;
+    text-decoration: none;
+}
+
+.a9r-cta:hover,
+.a9r-cta:focus-visible {
+    background-color: #0056b3;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.5);
+}
+
+@media (min-width: 768px) {
+    .a9r-onboarding {
+        max-width: 60%;
+        padding: 1.5rem;
+    }
+
+    .a9r-cta {
+        padding: 1rem 2rem;
+        font-size: 1.125rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .a9r-onboarding {
+        max-width: 50%;
+        padding: 2rem;
+    }
+
+    .a9r-cta {
+        padding: 1.25rem 2.5rem;
+        font-size: 1.25rem;
+    }
+}
+
+/* prefers-reduced-motion fallbacks */
+@media (prefers-reduced-motion: reduce) {
+    .a9r-onboarding {
+        animation: none;
+    }
+
+    .a9r-cta {
+        transition: background-color 0.3s ease-in-out;
+    }
+}
+/* === A9R_10 PATCH END === */

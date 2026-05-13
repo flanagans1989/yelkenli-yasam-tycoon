@@ -1,0 +1,68 @@
+/* === A9R_08 PATCH START === */
+.a9r-card {
+    background-color: #f5f5f5;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+}
+
+.a9r-hub-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+}
+
+.a9r-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.a9r-subtitle {
+    font-size: 16px;
+    color: #555;
+    margin-bottom: 16px;
+}
+
+.a9r-cta {
+    background-color: #007bff;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    padding: 12px 24px;
+    font-size: 18px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.a9r-cta:hover {
+    background-color: #0056b3;
+}
+
+.a9r-cta:focus-visible {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+@media (min-width: 600px) {
+    .a9r-card {
+        padding: 24px;
+    }
+
+    .a9r-title {
+        font-size: 32px;
+    }
+
+    .a9r-subtitle {
+        font-size: 18px;
+    }
+
+    .a9r-cta {
+        padding: 16px 32px;
+        font-size: 20px;
+    }
+}
+/* === A9R_08 PATCH END === */

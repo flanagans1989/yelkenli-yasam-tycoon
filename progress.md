@@ -3,9 +3,10 @@ Branch: agent/day-01
 
 Current status:
 - [x] Batch 4B-4 — Component Ayrımı Sonrası Stabilite Audit (audit-only)
+- [x] Package 1 — App.tsx Responsibility Map
 
 Completed tasks:
-- None
+- Created docs/agent/APP_RESPONSIBILITY_MAP.md
 
 Pending tasks:
 - Batch 4B-5 — App.tsx responsibility map

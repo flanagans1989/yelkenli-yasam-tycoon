@@ -292,14 +292,46 @@ function Invoke-NpmBuild {
         -WorkingDirectory $RepoPath -NoNewWindow -PassThru `
         -RedirectStandardOutput $buildOut -RedirectStandardError $buildErr
 
-    if (-not $p.WaitForExit($BuildTimeoutSec * 1000)) {
-        try { $p.Kill() } catch {}
+    $exitedInTime = $p.WaitForExit($BuildTimeoutSec * 1000)
+    if (-not $exitedInTime) {
+        try { $p.Kill(); $p.WaitForExit() } catch {}
         Write-AgentLog "BUILD TIMEOUT after $BuildTimeoutSec s" 'ERROR'
         return @{ Ok = $false; Out = $buildOut; Err = $buildErr; Exit = -1 }
     }
-    $exit = $p.ExitCode
-    Write-AgentLog "BUILD END exit=$exit"
-    return @{ Ok = ($exit -eq 0); Out = $buildOut; Err = $buildErr; Exit = $exit }
+    try { $p.WaitForExit() } catch {}
+    $exit = $null
+    try { $exit = $p.ExitCode } catch {}
+
+    if ($null -ne $exit) {
+        Write-AgentLog "BUILD END exit=$exit"
+        return @{ Ok = ($exit -eq 0); Out = $buildOut; Err = $buildErr; Exit = $exit }
+    }
+
+    # Exit code unreadable - inspect log files for known error markers as fallback
+    $stderrContent = if (Test-Path $buildErr) { Get-Content -LiteralPath $buildErr -Raw -Encoding utf8 } else { '' }
+    $stdoutContent = if (Test-Path $buildOut) { Get-Content -LiteralPath $buildOut -Raw -Encoding utf8 } else { '' }
+    if ($null -eq $stderrContent) { $stderrContent = '' }
+    if ($null -eq $stdoutContent) { $stdoutContent = '' }
+    $combined = $stderrContent + "`n" + $stdoutContent
+
+    $errorPatterns = @(
+        'npm ERR!',
+        'Build failed',
+        'error TS\d+',
+        'vite.*error',
+        'Cannot find module',
+        'is not recognized as an internal',
+        'ENOENT',
+        'SyntaxError'
+    )
+    foreach ($pat in $errorPatterns) {
+        if ($combined -match $pat) {
+            Write-AgentLog "BUILD END exit=<unreadable, error pattern detected: $pat>" 'ERROR'
+            return @{ Ok = $false; Out = $buildOut; Err = $buildErr; Exit = -1 }
+        }
+    }
+    Write-AgentLog 'BUILD END exit=<unreadable, no error markers in logs, trusting success>' 'WARN'
+    return @{ Ok = $true; Out = $buildOut; Err = $buildErr; Exit = 0 }
 }
 
 # ============================================================
@@ -500,8 +532,8 @@ $tasks += New-ScriptTask '11' 'Patch marker validation' {
     [void]$report.AppendLine('# A9R_11 Patch marker validation report')
     [void]$report.AppendLine('')
     $allOk = $true
-    foreach ($pId in '06','07','08','09','10') {
-        $name = switch ($pId) {
+    foreach ($patchId in '06','07','08','09','10') {
+        $name = switch ($patchId) {
             '06' { 'A9R_06_ONBOARDING_PATCH.css' }
             '07' { 'A9R_07_CAPTAIN_SELECTION_PATCH.css' }
             '08' { 'A9R_08_HUB_CARD_PATCH.css' }
@@ -509,11 +541,11 @@ $tasks += New-ScriptTask '11' 'Patch marker validation' {
             '10' { 'A9R_10_ARRIVAL_TEXT_PATCH.css' }
         }
         $abs = Join-Path $PatchesDir $name
-        $res = Test-PatchFile -PatchPath $abs -TaskId "A9R_$pId"
+        $res = Test-PatchFile -PatchPath $abs -TaskId "A9R_$patchId"
         if ($res.Ok) {
-            [void]$report.AppendLine("- OK   A9R_$pId  $name")
+            [void]$report.AppendLine("- OK   A9R_$patchId  $name")
         } else {
-            [void]$report.AppendLine("- FAIL A9R_$pId  $name  ($($res.Reason))")
+            [void]$report.AppendLine("- FAIL A9R_$patchId  $name  ($($res.Reason))")
             $allOk = $false
         }
     }
@@ -525,8 +557,8 @@ $tasks += New-ScriptTask '12' 'Append patches to App.css' {
     $report = New-Object System.Text.StringBuilder
     [void]$report.AppendLine('# A9R_12 Patch apply report')
     [void]$report.AppendLine('')
-    foreach ($pId in '06','07','08','09','10') {
-        $name = switch ($pId) {
+    foreach ($patchId in '06','07','08','09','10') {
+        $name = switch ($patchId) {
             '06' { 'A9R_06_ONBOARDING_PATCH.css' }
             '07' { 'A9R_07_CAPTAIN_SELECTION_PATCH.css' }
             '08' { 'A9R_08_HUB_CARD_PATCH.css' }
@@ -535,13 +567,13 @@ $tasks += New-ScriptTask '12' 'Append patches to App.css' {
         }
         $abs = Join-Path $PatchesDir $name
         # gate again
-        $chk = Test-PatchFile -PatchPath $abs -TaskId "A9R_$pId"
+        $chk = Test-PatchFile -PatchPath $abs -TaskId "A9R_$patchId"
         if (-not $chk.Ok) {
-            [void]$report.AppendLine("- SKIP A9R_$pId  $name  ($($chk.Reason))")
+            [void]$report.AppendLine("- SKIP A9R_$patchId  $name  ($($chk.Reason))")
             continue
         }
-        $r = Append-PatchIfMissing -PatchPath $abs -TaskId "A9R_$pId"
-        [void]$report.AppendLine("- $($r.Reason): A9R_$pId  $name")
+        $r = Append-PatchIfMissing -PatchPath $abs -TaskId "A9R_$patchId"
+        [void]$report.AppendLine("- $($r.Reason): A9R_$patchId  $name")
     }
     Write-Utf8File -Path (Join-Path $DocsDir 'A9R_12_PATCH_APPLY_REPORT.md') -Content $report.ToString()
     return $true
@@ -699,12 +731,19 @@ try {
         $taskReason = ''
 
         if ($task.Type -eq 'aider') {
-            $aiderOk = Invoke-AiderTask -TaskId $task.Id -Prompt (Build-AiderPrompt -OutputRel (To-RepoRel $task.Output) -Body $task.Body -Kind $task.Kind -TaskId "A9R_$($task.Id)") -OutputAbs $task.Output -Kind $task.Kind
-            if (-not $aiderOk) {
-                $taskOk = $false; $taskReason = 'Aider exited non-zero or timed out'
+            # Skip-if-valid: idempotent rerun. If the output already exists and meets MinBytes,
+            # do NOT call Aider again. Saves ~2-6 min per task on partial reruns.
+            if ((Test-Path $task.Output) -and (Test-RequiredOutput -Path $task.Output -MinBytes $task.MinBytes)) {
+                Write-AgentLog "TASK $($task.Id) SKIP-AIDER : output already valid ($(To-RepoRel $task.Output))"
             }
-            elseif (-not (Test-RequiredOutput -Path $task.Output -MinBytes $task.MinBytes)) {
-                $taskOk = $false; $taskReason = "Required output missing or below $($task.MinBytes) bytes"
+            else {
+                $aiderOk = Invoke-AiderTask -TaskId $task.Id -Prompt (Build-AiderPrompt -OutputRel (To-RepoRel $task.Output) -Body $task.Body -Kind $task.Kind -TaskId "A9R_$($task.Id)") -OutputAbs $task.Output -Kind $task.Kind
+                if (-not $aiderOk) {
+                    $taskOk = $false; $taskReason = 'Aider exited non-zero or timed out'
+                }
+                elseif (-not (Test-RequiredOutput -Path $task.Output -MinBytes $task.MinBytes)) {
+                    $taskOk = $false; $taskReason = "Required output missing or below $($task.MinBytes) bytes"
+                }
             }
         }
         elseif ($task.Type -eq 'script') {

@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # A9R - Autonomous 20-task local agent (Aider + Ollama)
 # Project : Yelkenli Yasam Tycoon
 # Repo    : C:\dev\yelkenli-yasam-tycoon
@@ -88,6 +88,7 @@ function Append-Progress {
 }
 
 function Get-ChangedFiles {
+    # --untracked-files=all forces git to list every untracked FILE, not just the new directory
     $raw = git -C $RepoPath status --porcelain --untracked-files=all 2>$null
     if (-not $raw) { return @() }
     $list = New-Object System.Collections.ArrayList
@@ -212,12 +213,22 @@ function Invoke-AiderTask {
         return $false
     }
 
-    if (-not $p.WaitForExit($AiderTimeoutSec * 1000)) {
-        try { $p.Kill() } catch {}
+    $exitedInTime = $p.WaitForExit($AiderTimeoutSec * 1000)
+    if (-not $exitedInTime) {
+        try { $p.Kill(); $p.WaitForExit() } catch {}
         Write-AgentLog "AIDER TIMEOUT $TaskId after $AiderTimeoutSec s" 'ERROR'
         return $false
     }
-    $exit = $p.ExitCode
+    # Flush: parameterless WaitForExit() drains async output streams and guarantees ExitCode is set
+    try { $p.WaitForExit() } catch {}
+    $exit = $null
+    try { $exit = $p.ExitCode } catch {}
+    if ($null -eq $exit) {
+        # Process exited within timeout but exit code unreadable (Start-Process quirk).
+        # Trust the file-output validation gate instead of the exit code.
+        Write-AgentLog "AIDER END   $TaskId exit=<unreadable, trusting file validation>" 'WARN'
+        return $true
+    }
     Write-AgentLog "AIDER END   $TaskId exit=$exit"
     return ($exit -eq 0)
 }

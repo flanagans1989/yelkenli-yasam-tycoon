@@ -1,554 +1,743 @@
-$ErrorActionPreference = "Stop"
+# ============================================================
+# A9R - Autonomous 20-task local agent (Aider + Ollama)
+# Project : Yelkenli Yasam Tycoon
+# Repo    : C:\dev\yelkenli-yasam-tycoon
+# Runner  : Windows PowerShell 5+ / PowerShell 7
+# Usage   : powershell -ExecutionPolicy Bypass -File .\scripts\agent\run-agent-a9r-autonomous-20.ps1
+# Notes   : Script does NOT git add / commit / push. User commits manually.
+# ============================================================
 
-$RepoPath = "C:\dev\yelkenli-yasam-tycoon"
-$LogDir = "logs\agent"
-$TaskDir = "docs\agent\tasks"
-$PatchDir = "docs\agent\patches"
+[CmdletBinding()]
+param(
+    [string]$RepoPath        = 'C:\dev\yelkenli-yasam-tycoon',
+    [string]$AgentBranch     = 'agent/day-01',
+    [string]$AiderModel      = 'ollama_chat/qwen2.5-coder:7b',
+    [int]   $AiderTimeoutSec = 900,
+    [int]   $BuildTimeoutSec = 600
+)
 
-Set-Location $RepoPath
+$ErrorActionPreference = 'Stop'
+$ProgressPreference    = 'SilentlyContinue'
 
-New-Item -ItemType Directory -Force $LogDir | Out-Null
-New-Item -ItemType Directory -Force $TaskDir | Out-Null
-New-Item -ItemType Directory -Force $PatchDir | Out-Null
+# ============================================================
+# CONFIG
+# ============================================================
+$RunId      = 'A9R'
+$Stamp      = Get-Date -Format 'yyyyMMdd-HHmmss'
+$LogDir     = Join-Path $RepoPath 'logs\agent'
+$DocsDir    = Join-Path $RepoPath 'docs\agent'
+$TasksDir   = Join-Path $DocsDir 'tasks'
+$PatchesDir = Join-Path $DocsDir 'patches'
+$AppCss     = Join-Path $RepoPath 'src\App.css'
+$RunLog     = Join-Path $LogDir  ("$RunId-run-$Stamp.log")
 
-$RunStamp = Get-Date -Format "yyyyMMdd-HHmmss"
-$RunLog = Join-Path $LogDir "agent-a9r-autonomous-20-$RunStamp.log"
+# Whitelist of paths that may change during this run (regex, forward slash form)
+$AllowedPathPatterns = @(
+    '^src/App\.css$',
+    '^progress\.md$',
+    '^errors_log\.md$',
+    '^docs/agent/A9R_.*\.md$',
+    '^docs/agent/tasks/A9R_TASK_.*\.md$',
+    '^docs/agent/patches/A9R_.*\.css$',
+    '^logs/agent/.*$'
+)
+
+$ForbiddenCssPatterns = @(
+    '@import',
+    'url\(',
+    'position\s*:\s*fixed',
+    '!important'
+)
+
+$Successes = New-Object System.Collections.ArrayList
+$Failures  = New-Object System.Collections.ArrayList
+$HardStop  = $false
+$HardStopReason = ''
+
+# ============================================================
+# UTILS
+# ============================================================
+function Write-Utf8File {
+    param([string]$Path, [string]$Content)
+    $dir = Split-Path -Parent $Path
+    if ($dir -and -not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    }
+    [System.IO.File]::WriteAllText($Path, $Content, [System.Text.UTF8Encoding]::new($false))
+}
 
 function Write-AgentLog {
-    param([string]$Message)
-    $line = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | $Message"
+    param([string]$Msg, [string]$Level = 'INFO')
+    $line = '[{0}] [{1}] {2}' -f (Get-Date -Format 'HH:mm:ss'), $Level, $Msg
     Write-Host $line
-    Add-Content -Encoding UTF8 -Path $RunLog -Value $line
+    try { Add-Content -LiteralPath $RunLog -Value $line -Encoding utf8 } catch {}
+}
+
+function Append-ErrorsLog {
+    param([string]$TaskId, [string]$Reason)
+    $errPath = Join-Path $RepoPath 'errors_log.md'
+    $entry = "`r`n## $RunId / $TaskId - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')`r`n$Reason`r`n"
+    try { Add-Content -LiteralPath $errPath -Value $entry -Encoding utf8 } catch {}
+}
+
+function Append-Progress {
+    param([string]$TaskId, [string]$Status, [string]$Note = '')
+    $progPath = Join-Path $RepoPath 'progress.md'
+    $entry = "- [$Status] $RunId / $TaskId  $(Get-Date -Format 'HH:mm:ss')  $Note`r`n"
+    try { Add-Content -LiteralPath $progPath -Value $entry -Encoding utf8 } catch {}
 }
 
 function Get-ChangedFiles {
-    git status --porcelain | ForEach-Object {
-        if ($_.Length -ge 4) {
-            $_.Substring(3).Replace("\", "/").Trim('"')
-        }
+    $raw = git -C $RepoPath status --porcelain 2>$null
+    if (-not $raw) { return @() }
+    $list = New-Object System.Collections.ArrayList
+    foreach ($l in ($raw -split "`n")) {
+        if (-not $l) { continue }
+        $path = $l.Substring(3).Trim()
+        if ($path -match ' -> ') { $path = ($path -split ' -> ')[1] }
+        $path = $path.Trim('"').Replace('\','/')
+        [void]$list.Add($path)
     }
+    return ,$list.ToArray()
 }
 
-function Test-AllowedChangesOnly {
-    $AllowedPatterns = @(
-        "^src/App\.css$",
-        "^progress\.md$",
-        "^errors_log\.md$",
-        "^docs/agent/A9R_.*\.md$",
-        "^docs/agent/tasks/A9R_TASK_.*\.md$",
-        "^docs/agent/patches/A9R_.*\.css$",
-        "^logs/agent/"
-    )
-
-    foreach ($changed in Get-ChangedFiles) {
-        $allowed = $false
-
-        foreach ($pattern in $AllowedPatterns) {
-            if ($changed -match $pattern) {
-                $allowed = $true
-            }
+function Get-ForbiddenChanges {
+    $bad = New-Object System.Collections.ArrayList
+    foreach ($f in (Get-ChangedFiles)) {
+        $ok = $false
+        foreach ($p in $AllowedPathPatterns) {
+            if ($f -match $p) { $ok = $true; break }
         }
-
-        if (-not $allowed) {
-            Write-AgentLog "FORBIDDEN CHANGE DETECTED: $changed"
-            git status | Out-String | Add-Content -Encoding UTF8 -Path $RunLog
-            throw "Forbidden change detected: $changed"
-        }
+        if (-not $ok) { [void]$bad.Add($f) }
     }
+    return ,$bad.ToArray()
 }
 
 function Test-RequiredOutput {
-    param(
-        [string]$Path,
-        [string]$TaskName,
-        [int]$MinBytes = 80
-    )
-
-    if (-not (Test-Path $Path)) {
-        Write-AgentLog "REQUIRED OUTPUT MISSING: $Path"
-        throw "Task failed: $TaskName"
-    }
-
-    $length = (Get-Item $Path).Length
-    if ($length -lt $MinBytes) {
-        Write-AgentLog "REQUIRED OUTPUT TOO SMALL OR EMPTY: $Path ($length bytes)"
-        throw "Task failed: $TaskName"
-    }
+    param([string]$Path, [int]$MinBytes = 200)
+    if (-not (Test-Path $Path)) { return $false }
+    return ((Get-Item $Path).Length -ge $MinBytes)
 }
 
-function Write-TextFile {
-    param(
-        [string]$Path,
-        [string[]]$Lines
-    )
-
-    $folder = Split-Path $Path -Parent
-    if ($folder -and -not (Test-Path $folder)) {
-        New-Item -ItemType Directory -Force $folder | Out-Null
+function Ensure-OutputStub {
+    param([string]$Path, [string]$Kind, [string]$TaskId)
+    if (Test-Path $Path) { return }
+    if ($Kind -eq 'css') {
+        $body = "/* === $TaskId PATCH START === */`r`n/* agent will replace this placeholder */`r`n/* === $TaskId PATCH END === */`r`n"
+    } else {
+        $name = Split-Path -Leaf $Path
+        $body = "# $name`r`n`r`n_Placeholder. Agent will fill this._`r`n"
     }
-
-    $Lines | Set-Content -Encoding UTF8 $Path
+    Write-Utf8File -Path $Path -Content $body
 }
 
-function Invoke-AiderSingleTask {
-    param(
-        [string]$TaskName,
-        [string]$MessageFile,
-        [string]$OutputFile,
-        [int]$MinBytes = 80
-    )
-
-    Write-AgentLog ""
-    Write-AgentLog "=== Running: $TaskName ==="
-
-    if (-not (Test-Path $OutputFile)) {
-        New-Item -ItemType File -Force $OutputFile | Out-Null
-    }
-
-    $args = @(
-        "--model", "ollama_chat/qwen2.5-coder:7b",
-        "--no-auto-commits",
-        "--map-tokens", "0",
-        "--yes-always",
-        "--disable-playwright",
-        "--message-file", $MessageFile,
-        "--file", $OutputFile,
-        "--file", "progress.md",
-        "--file", "errors_log.md"
-    )
-
-    & aider @args
-
-    Write-AgentLog "Aider finished: $TaskName"
-    git status --short | Out-String | Add-Content -Encoding UTF8 -Path $RunLog
-
-    Test-AllowedChangesOnly
-    Test-RequiredOutput -Path $OutputFile -TaskName $TaskName -MinBytes $MinBytes
-
-    Write-AgentLog "Task passed: $TaskName"
+function To-RepoRel {
+    param([string]$AbsPath)
+    $r = $RepoPath.TrimEnd('\','/').Replace('\','/')
+    $a = $AbsPath.Replace('\','/')
+    if ($a.StartsWith($r + '/')) { return $a.Substring($r.Length + 1) }
+    return $a
 }
 
+# ============================================================
+# AIDER INVOCATION
+# ============================================================
+function Build-AiderPrompt {
+    param([string]$OutputRel, [string]$Body, [string]$Kind, [string]$TaskId)
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine('You are operating inside a script-controlled, isolated agent run.')
+    [void]$sb.AppendLine('Rules you MUST follow:')
+    [void]$sb.AppendLine('- Edit ONLY the single file already added to chat.')
+    [void]$sb.AppendLine('- Do NOT request, mention, open or add any other file.')
+    [void]$sb.AppendLine('- Do NOT print explanations outside the file content.')
+    [void]$sb.AppendLine('- Do NOT wrap the file content in markdown code fences.')
+    [void]$sb.AppendLine('- Replace the existing placeholder content completely.')
+    if ($Kind -eq 'css') {
+        [void]$sb.AppendLine('- Output type: pure CSS.')
+        [void]$sb.AppendLine("- Keep the two marker lines '=== $TaskId PATCH START ===' and '=== $TaskId PATCH END ===' intact.")
+        [void]$sb.AppendLine('- Write CSS only BETWEEN those markers.')
+        [void]$sb.AppendLine('- Forbidden in CSS: @import, url(...), position: fixed, !important.')
+        [void]$sb.AppendLine('- Use class selectors only. Mobile-first. Minimum 30 lines of useful CSS.')
+    } else {
+        [void]$sb.AppendLine('- Output type: Markdown audit / report.')
+        [void]$sb.AppendLine('- Minimum 40 lines of substantive content.')
+        [void]$sb.AppendLine('- Use H2 sections. Be concrete, not generic.')
+    }
+    [void]$sb.AppendLine('')
+    [void]$sb.AppendLine('---')
+    [void]$sb.AppendLine('TASK:')
+    [void]$sb.AppendLine($Body)
+    return $sb.ToString()
+}
+
+function Invoke-AiderTask {
+    param(
+        [string]$TaskId,
+        [string]$Prompt,
+        [string]$OutputAbs,
+        [string]$Kind
+    )
+
+    $taskFile = Join-Path $TasksDir "${RunId}_TASK_${TaskId}.md"
+    Write-Utf8File -Path $taskFile -Content $Prompt
+
+    Ensure-OutputStub -Path $OutputAbs -Kind $Kind -TaskId "${RunId}_${TaskId}"
+
+    $aiderOut = Join-Path $LogDir "${RunId}-aider-${TaskId}-${Stamp}.out"
+    $aiderErr = Join-Path $LogDir "${RunId}-aider-${TaskId}-${Stamp}.err"
+
+    $aiderArgs = @(
+        '--model', $AiderModel,
+        '--no-auto-commits',
+        '--map-tokens', '0',
+        '--yes-always',
+        '--no-stream',
+        '--no-pretty',
+        '--no-show-model-warnings',
+        '--no-check-update',
+        '--no-show-release-notes',
+        '--no-suggest-shell-commands',
+        '--message-file', $taskFile,
+        '--file', $OutputAbs
+    )
+
+    Write-AgentLog "AIDER START $TaskId -> $(To-RepoRel $OutputAbs)"
+    $p = $null
+    try {
+        $p = Start-Process -FilePath 'aider' -ArgumentList $aiderArgs `
+            -WorkingDirectory $RepoPath -NoNewWindow -PassThru `
+            -RedirectStandardOutput $aiderOut -RedirectStandardError $aiderErr
+    } catch {
+        Write-AgentLog "AIDER FAILED TO START $TaskId : $_" 'ERROR'
+        return $false
+    }
+
+    if (-not $p.WaitForExit($AiderTimeoutSec * 1000)) {
+        try { $p.Kill() } catch {}
+        Write-AgentLog "AIDER TIMEOUT $TaskId after $AiderTimeoutSec s" 'ERROR'
+        return $false
+    }
+    $exit = $p.ExitCode
+    Write-AgentLog "AIDER END   $TaskId exit=$exit"
+    return ($exit -eq 0)
+}
+
+# ============================================================
+# PATCH HANDLING (script-side, not Aider)
+# ============================================================
 function Test-PatchFile {
-    param(
-        [string]$PatchFile,
-        [string]$Marker
-    )
+    param([string]$PatchPath, [string]$TaskId)
 
-    Test-RequiredOutput -Path $PatchFile -TaskName "Patch file check" -MinBytes 40
-
-    $patch = Get-Content $PatchFile -Raw
-
-    if ($patch -notmatch [regex]::Escape($Marker)) {
-        throw "Patch marker missing in $PatchFile"
+    if (-not (Test-Path $PatchPath)) {
+        return @{ Ok = $false; Reason = "Patch file missing: $(To-RepoRel $PatchPath)" }
     }
+    $content = Get-Content -LiteralPath $PatchPath -Raw -Encoding utf8
 
-    if ($patch -match "@import|url\(|position:\s*fixed|!important") {
-        throw "Patch contains disallowed CSS pattern: $PatchFile"
+    $markerStart = "$TaskId PATCH START"
+    $markerEnd   = "$TaskId PATCH END"
+    if ($content -notmatch [regex]::Escape($markerStart)) {
+        return @{ Ok = $false; Reason = "Missing START marker in $(To-RepoRel $PatchPath)" }
     }
+    if ($content -notmatch [regex]::Escape($markerEnd)) {
+        return @{ Ok = $false; Reason = "Missing END marker in $(To-RepoRel $PatchPath)" }
+    }
+    foreach ($pat in $ForbiddenCssPatterns) {
+        if ($content -match $pat) {
+            return @{ Ok = $false; Reason = "Forbidden pattern '$pat' in $(To-RepoRel $PatchPath)" }
+        }
+    }
+    if ($content.Length -lt 200) {
+        return @{ Ok = $false; Reason = "Patch too small (<200 bytes): $(To-RepoRel $PatchPath)" }
+    }
+    return @{ Ok = $true; Reason = '' }
 }
 
 function Append-PatchIfMissing {
-    param(
-        [string]$PatchFile,
-        [string]$Marker,
-        [string]$AppCss
-    )
+    param([string]$PatchPath, [string]$TaskId)
 
-    Test-PatchFile -PatchFile $PatchFile -Marker $Marker
+    $patch = Get-Content -LiteralPath $PatchPath -Raw -Encoding utf8
+    $appCssContent = if (Test-Path $AppCss) {
+        Get-Content -LiteralPath $AppCss -Raw -Encoding utf8
+    } else { '' }
 
-    $patch = Get-Content $PatchFile -Raw
-    $appCssContent = Get-Content $AppCss -Raw
-
-    if ($appCssContent -match [regex]::Escape($Marker)) {
-        Write-AgentLog "Patch already exists in App.css, skipping: $Marker"
+    $markerStart = "$TaskId PATCH START"
+    if ($appCssContent -match [regex]::Escape($markerStart)) {
+        return @{ Applied = $false; Reason = 'Already present in App.css' }
     }
-    else {
-        Write-AgentLog "Appending patch to App.css: $PatchFile"
-        Add-Content -Encoding UTF8 $AppCss ""
-        Add-Content -Encoding UTF8 $AppCss $patch
+    $append = "`r`n`r`n" + $patch.TrimEnd() + "`r`n"
+    Add-Content -LiteralPath $AppCss -Value $append -Encoding utf8
+    return @{ Applied = $true; Reason = 'Appended to App.css' }
+}
+
+# ============================================================
+# BUILD
+# ============================================================
+function Invoke-NpmBuild {
+    $buildOut = Join-Path $LogDir "${RunId}-build-${Stamp}.out"
+    $buildErr = Join-Path $LogDir "${RunId}-build-${Stamp}.err"
+
+    Write-AgentLog 'BUILD START npm run build'
+    $p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','npm','run','build' `
+        -WorkingDirectory $RepoPath -NoNewWindow -PassThru `
+        -RedirectStandardOutput $buildOut -RedirectStandardError $buildErr
+
+    if (-not $p.WaitForExit($BuildTimeoutSec * 1000)) {
+        try { $p.Kill() } catch {}
+        Write-AgentLog "BUILD TIMEOUT after $BuildTimeoutSec s" 'ERROR'
+        return @{ Ok = $false; Out = $buildOut; Err = $buildErr; Exit = -1 }
+    }
+    $exit = $p.ExitCode
+    Write-AgentLog "BUILD END exit=$exit"
+    return @{ Ok = ($exit -eq 0); Out = $buildOut; Err = $buildErr; Exit = $exit }
+}
+
+# ============================================================
+# TASK DEFINITIONS
+# ============================================================
+function New-AiderTask {
+    param($Id, $Title, $Body, $OutputAbs, $Kind, $MinBytes = 400)
+    [pscustomobject]@{
+        Id        = $Id
+        Title     = $Title
+        Body      = $Body
+        Output    = $OutputAbs
+        Kind      = $Kind
+        MinBytes  = $MinBytes
+        Type      = 'aider'
     }
 }
 
-function Write-A9RFinalReport {
-    param(
-        [string[]]$CompletedTasks,
-        [string[]]$BlockedTasks
-    )
-
-    $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $changed = git status --short | Out-String
-
-    $report = @(
-        "# Agent Batch A9R Final Autonomous Report",
-        "",
-        "## Date",
-        $now,
-        "",
-        "## Mode",
-        "20 tasks. Each Aider task runs separately. Script-controlled autonomous mode.",
-        "",
-        "## Completed tasks",
-        $CompletedTasks,
-        "",
-        "## Blocked tasks",
-        $(if ($BlockedTasks.Count -gt 0) { $BlockedTasks } else { "- None" }),
-        "",
-        "## Files modified",
-        "```text",
-        $changed,
-        "```",
-        "",
-        "## Source logic touched",
-        "Expected: NO.",
-        "",
-        "## Source CSS touched",
-        "Expected: src/App.css only.",
-        "",
-        "## Build status",
-        "The script runs npm run build after applying approved CSS patches.",
-        "",
-        "## Safety result",
-        $(if ($BlockedTasks.Count -gt 0) { "A9R finished with blocked tasks. Review logs and errors_log.md." } else { "A9R autonomous 20-task run completed successfully." }),
-        "",
-        "## Log file",
-        $RunLog,
-        "",
-        "## Next step",
-        "Review the UI in browser/mobile viewport. If good, commit the A9R result."
-    )
-
-    $report | Set-Content -Encoding UTF8 docs/agent/A9R_FINAL_AUTONOMOUS_REPORT.md
+function New-ScriptTask {
+    param($Id, $Title, [scriptblock]$Action, $Output = $null, $MinBytes = 0)
+    [pscustomobject]@{
+        Id       = $Id
+        Title    = $Title
+        Action   = $Action
+        Output   = $Output
+        MinBytes = $MinBytes
+        Type     = 'script'
+    }
 }
 
-Write-AgentLog "=== Agent Batch A9R autonomous 20-task run started ==="
+# --- Audit prompts (Aider) ---
+$P01 = @'
+Write a mobile UI risk audit for a React + Vite tycoon game called "Yelkenli Yasam Tycoon" (Sailing Life Tycoon).
+Game loop: produce content -> earn money/followers -> upgrade boat -> sail route -> arrive at new port -> unlock new sponsors.
+You CANNOT see the source code. Reason from general React/Vite mobile UI experience.
+Cover sections (each as H2):
+1. Tap target sizing risks (44px minimum, spacing)
+2. Text legibility on small screens
+3. Modal / overlay risks
+4. Sticky / fixed positioning risks
+5. Scroll trap risks
+6. Loading-state risks
+7. Toast / notification risks
+8. Top 5 lowest-risk CSS-only improvements to apply first
+Output language: Turkish.
+'@
 
-$branch = git branch --show-current
-Write-AgentLog "Current branch: $branch"
+$P02 = @'
+Write a "first 10 minutes player experience" review for the same tycoon game.
+Sections (H2):
+1. First impression of the captain selection screen
+2. Friction risks in the onboarding flow
+3. Clarity of money / follower / time HUD
+4. Clarity of the produce-content action
+5. Clarity of the upgrade-boat path
+6. Clarity of the start-voyage path
+7. Top 7 micro-frictions to fix
+8. 5 lowest-risk CSS-only quick wins
+Output language: Turkish. Concrete, no generic advice.
+'@
 
-$status = git status --porcelain
-if ($status) {
-    Write-AgentLog "Working tree is not clean. Stopping."
-    git status | Out-String | Add-Content -Encoding UTF8 -Path $RunLog
-    exit 1
+$P03 = @'
+Define guide-character ("Mico" - the boat dog) intervention points for the same game.
+Sections (H2):
+1. When Mico should speak (events, thresholds)
+2. When Mico should stay silent
+3. Tone of voice rules (short, warm, concrete)
+4. 10 example one-liners covering: first content, first sponsor, first voyage, first upgrade, first arrival, low money, idle player, repeated failure, milestone, end of session
+5. Anti-patterns to avoid
+Output language: Turkish.
+'@
+
+$P04 = @'
+Write a CTA / button weakness audit for the same React tycoon game.
+Sections (H2):
+1. Primary CTA discoverability risks
+2. Secondary CTA confusion risks
+3. Disabled state communication risks
+4. Loading state on CTAs
+5. Destructive action confirmation gaps
+6. Mobile thumb-zone analysis (bottom 30% of screen)
+7. Top 8 CSS-only CTA improvements
+Output language: Turkish.
+'@
+
+$P05 = @'
+Produce a short list of LOW-RISK CSS-only patch candidates for the same game.
+Constraints: each candidate must be implementable in pure CSS only, must NOT use position: fixed, @import, url(), !important.
+For each candidate provide:
+- Title
+- Target UI area (onboarding / captain selection / hub card / route CTA / arrival text)
+- Problem it solves
+- CSS approach (no actual code, just description)
+- Risk level (must be LOW)
+- Why it cannot break save/load or game logic
+Provide exactly 5 candidates, one per section. Output language: Turkish.
+'@
+
+# --- CSS patch prompts (Aider) ---
+function CssPrompt {
+    param([string]$Area, [string]$Goal)
+    @"
+Generate a low-risk, mobile-first CSS patch for the "$Area" area of the game.
+Goal: $Goal
+Constraints:
+- Use class selectors only. Do not assume specific class names exist; use generic, additive helper classes like .a9r-onboarding, .a9r-cta, .a9r-card, .a9r-hint, etc.
+- Pure CSS only. No @import, no url(), no position: fixed, no !important.
+- Mobile-first. Use min-width media queries for larger screens.
+- Minimum 30 lines of useful CSS between the START and END markers.
+- Include: typography tuning, spacing, tap target sizing (>= 44px), focus-visible states, prefers-reduced-motion fallbacks where animations are added.
+Keep the marker lines intact. Replace ONLY the placeholder line between them.
+"@
 }
 
-$CompletedTasks = @()
-$BlockedTasks = @()
-$AppCss = "src/App.css"
+$P06 = CssPrompt 'onboarding' 'Make the first-time onboarding screen calmer, more readable on mobile, with clearer hierarchy and larger tap targets.'
+$P07 = CssPrompt 'captain selection' 'Improve the captain selection card grid for mobile: better card spacing, clearer selected state, larger tap targets.'
+$P08 = CssPrompt 'hub card' 'Improve the main hub card components: better contrast, clearer headings, comfortable spacing on small screens.'
+$P09 = CssPrompt 'route CTA' 'Improve the "start voyage" route CTA: more prominent primary action, clearer disabled/loading states, thumb-friendly placement helpers.'
+$P10 = CssPrompt 'arrival text' 'Improve the arrival / port-reached text screen: better line-height, max-width for readability, calmer reveal styling.'
 
-try {
-    Write-AgentLog "Creating A9R single-task prompt files"
+# --- Final reports (Aider) ---
+$P16 = @'
+Write a "changed files report" plan for this autonomous run.
+You CANNOT see the actual diff. Instead describe:
+1. Which paths were expected to change (App.css, docs/agent/*, docs/agent/patches/*, progress.md, errors_log.md)
+2. Why each change category is safe
+3. How a reviewer should diff src/App.css (look for A9R_*_PATCH START markers)
+4. Manual sanity-check steps
+Output language: Turkish.
+'@
 
-    $taskDefinitions = @(
-        @{
-            No = "01"
-            Name = "Mobile UI risk audit"
-            Output = "docs/agent/A9R_01_MOBILE_UI_RISK_AUDIT.md"
-            Lines = @(
-                "A9R TASK 01 - Mobile UI Risk Audit",
-                "",
-                "Create a practical mobile UI risk audit for Yelkenli Yaşam Tycoon.",
-                "Only edit the output file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "Do not edit source code or project configuration.",
-                "Write concrete risks related to mobile overflow, button wrapping, text readability, and screen density.",
-                "Update progress.md with: - A9R TASK 01 completed."
-            )
-        },
-        @{
-            No = "02"
-            Name = "First 10 minutes review"
-            Output = "docs/agent/A9R_02_FIRST_10_MINUTES_REVIEW.md"
-            Lines = @(
-                "A9R TASK 02 - First 10 Minutes Review",
-                "",
-                "Review the first 10 minutes of Yelkenli Yaşam Tycoon from a new player's perspective.",
-                "Only edit the output file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "Focus on onboarding, captain selection, first hub view, first content creation, first route attempt, and first arrival.",
-                "Update progress.md with: - A9R TASK 02 completed."
-            )
-        },
-        @{
-            No = "03"
-            Name = "Mico guide points"
-            Output = "docs/agent/A9R_03_MICO_GUIDE_POINTS.md"
-            Lines = @(
-                "A9R TASK 03 - Mico Guide Points",
-                "",
-                "Create a list of places where Miço should guide the player.",
-                "Only edit the output file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "Include trigger moment, Miço message purpose, and expected player action.",
-                "Update progress.md with: - A9R TASK 03 completed."
-            )
-        },
-        @{
-            No = "04"
-            Name = "CTA weakness audit"
-            Output = "docs/agent/A9R_04_CTA_WEAKNESS_AUDIT.md"
-            Lines = @(
-                "A9R TASK 04 - CTA Weakness Audit",
-                "",
-                "Audit likely weak CTA/button moments in Yelkenli Yaşam Tycoon.",
-                "Only edit the output file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "Focus on mobile clarity, button labels, visual hierarchy, and action confidence.",
-                "Update progress.md with: - A9R TASK 04 completed."
-            )
-        },
-        @{
-            No = "05"
-            Name = "Patch candidates"
-            Output = "docs/agent/A9R_05_PATCH_CANDIDATES.md"
-            Lines = @(
-                "A9R TASK 05 - Low Risk Patch Candidates",
-                "",
-                "Create 5 low-risk UI/CSS patch candidates for future autonomous work.",
-                "Only edit the output file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "For each candidate include target area, why low risk, allowed file type, and manual test needed.",
-                "Update progress.md with: - A9R TASK 05 completed."
-            )
-        },
-        @{
-            No = "06"
-            Name = "Onboarding CSS patch"
-            Output = "docs/agent/patches/A9R_06_ONBOARDING_PATCH.css"
-            Marker = "/* A9R onboarding safety patch */"
-            Lines = @(
-                "A9R TASK 06 - Onboarding CSS Patch",
-                "",
-                "Create a small CSS patch file only.",
-                "Only edit the output patch file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "Do not edit source code directly.",
-                "Patch must include marker: /* A9R onboarding safety patch */",
-                "Use safe mobile spacing/readability rules only.",
-                "No external dependencies. No @import. No url(). No fixed positioning. No important flags.",
-                "Update progress.md with: - A9R TASK 06 completed."
-            )
-        },
-        @{
-            No = "07"
-            Name = "Captain selection CSS patch"
-            Output = "docs/agent/patches/A9R_07_CAPTAIN_SELECTION_PATCH.css"
-            Marker = "/* A9R captain selection safety patch */"
-            Lines = @(
-                "A9R TASK 07 - Captain Selection CSS Patch",
-                "",
-                "Create a small CSS patch file only.",
-                "Only edit the output patch file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "Do not edit source code directly.",
-                "Patch must include marker: /* A9R captain selection safety patch */",
-                "Use safe overflow and button wrapping rules only.",
-                "No external dependencies. No @import. No url(). No fixed positioning. No important flags.",
-                "Update progress.md with: - A9R TASK 07 completed."
-            )
-        },
-        @{
-            No = "08"
-            Name = "Hub card CSS patch"
-            Output = "docs/agent/patches/A9R_08_HUB_CARD_PATCH.css"
-            Marker = "/* A9R hub card safety patch */"
-            Lines = @(
-                "A9R TASK 08 - Hub Card CSS Patch",
-                "",
-                "Create a small CSS patch file only.",
-                "Only edit the output patch file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "Do not edit source code directly.",
-                "Patch must include marker: /* A9R hub card safety patch */",
-                "Use safe card spacing and mobile wrapping rules only.",
-                "No external dependencies. No @import. No url(). No fixed positioning. No important flags.",
-                "Update progress.md with: - A9R TASK 08 completed."
-            )
-        },
-        @{
-            No = "09"
-            Name = "Route CTA CSS patch"
-            Output = "docs/agent/patches/A9R_09_ROUTE_CTA_PATCH.css"
-            Marker = "/* A9R route CTA safety patch */"
-            Lines = @(
-                "A9R TASK 09 - Route CTA CSS Patch",
-                "",
-                "Create a small CSS patch file only.",
-                "Only edit the output patch file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "Do not edit source code directly.",
-                "Patch must include marker: /* A9R route CTA safety patch */",
-                "Use safe CTA readability and touch target rules only.",
-                "No external dependencies. No @import. No url(). No fixed positioning. No important flags.",
-                "Update progress.md with: - A9R TASK 09 completed."
-            )
-        },
-        @{
-            No = "10"
-            Name = "Arrival text CSS patch"
-            Output = "docs/agent/patches/A9R_10_ARRIVAL_TEXT_PATCH.css"
-            Marker = "/* A9R arrival text safety patch */"
-            Lines = @(
-                "A9R TASK 10 - Arrival Text CSS Patch",
-                "",
-                "Create a small CSS patch file only.",
-                "Only edit the output patch file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "Do not edit source code directly.",
-                "Patch must include marker: /* A9R arrival text safety patch */",
-                "Use safe story text readability and wrapping rules only.",
-                "No external dependencies. No @import. No url(). No fixed positioning. No important flags.",
-                "Update progress.md with: - A9R TASK 10 completed."
-            )
-        },
-        @{
-            No = "16"
-            Name = "Changed files report"
-            Output = "docs/agent/A9R_16_CHANGED_FILES_REPORT.md"
-            Lines = @(
-                "A9R TASK 16 - Changed Files Report",
-                "",
-                "Create a changed files report for the A9R run.",
-                "Only edit the output file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "Explain that actual final git status will be verified by the script.",
-                "Update progress.md with: - A9R TASK 16 completed."
-            )
-        },
-        @{
-            No = "17"
-            Name = "Manual test checklist"
-            Output = "docs/agent/A9R_17_MANUAL_TEST_CHECKLIST.md"
-            Lines = @(
-                "A9R TASK 17 - Manual Test Checklist",
-                "",
-                "Create a manual browser/mobile test checklist for the A9R CSS patches.",
-                "Only edit the output file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "Include onboarding, captain selection, hub, route CTA, and arrival text checks.",
-                "Update progress.md with: - A9R TASK 17 completed."
-            )
-        },
-        @{
-            No = "18"
-            Name = "Risk rollback plan"
-            Output = "docs/agent/A9R_18_RISK_ROLLBACK_PLAN.md"
-            Lines = @(
-                "A9R TASK 18 - Risk and Rollback Plan",
-                "",
-                "Create a risk and rollback plan for A9R.",
-                "Only edit the output file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "Include rollback using git restore or revert after review.",
-                "Update progress.md with: - A9R TASK 18 completed."
-            )
-        },
-        @{
-            No = "19"
-            Name = "Next 10 tasks"
-            Output = "docs/agent/A9R_19_NEXT_10_TASKS.md"
-            Lines = @(
-                "A9R TASK 19 - Next 10 Tasks",
-                "",
-                "Create the next 10 safe tasks after A9R.",
-                "Only edit the output file, progress.md, and errors_log.md.",
-                "Do not request other files.",
-                "Separate docs-only tasks from low-risk CSS tasks.",
-                "Update progress.md with: - A9R TASK 19 completed."
-            )
+$P17 = @'
+Write a manual test checklist for the changes applied in this run.
+Sections (H2):
+1. Smoke (app launches, no console errors)
+2. Onboarding flow on mobile viewport (375x667)
+3. Captain selection
+4. Hub / main screen
+5. Produce content path
+6. Sponsor accept path
+7. Start voyage path
+8. Arrival path
+9. Save/load round-trip (critical - must not break)
+10. AutoSave
+Each item: one line of what to do, one line of expected result.
+Output language: Turkish.
+'@
+
+$P18 = @'
+Write a risk + rollback plan.
+Sections (H2):
+1. Risk register (likelihood / impact / mitigation) for: visual regression, performance hit, mobile-only breakage, save format change
+2. Rollback procedure step-by-step for src/App.css (locate A9R markers, delete sections, retest)
+3. Rollback procedure for docs-only changes
+4. Decision matrix: when to keep, when to revert, when to partially revert
+Output language: Turkish.
+'@
+
+$P19 = @'
+Propose the NEXT 10 tasks for the next agent run, building on this one.
+Constraints:
+- All must be CSS-only or docs-only (no src/App.tsx, no package.json edits)
+- Each task one paragraph: title, target area, hypothesis, expected output file name (A9S_NN_*.md or .css)
+- Order by priority for mobile ergonomics
+Output language: Turkish.
+'@
+
+$P20Body = @'
+Write the FINAL autonomous run summary report.
+Sections (H2):
+1. Run goal (briefly recap A9R)
+2. Architectural decisions enforced (1 task = 1 Aider call, script-side patch apply, script-side build, no auto commit)
+3. Known limitations of this run (no source code visibility, CSS-only scope)
+4. What a human reviewer should check first (priority order)
+5. Next agent-run recommendations (high level, link to A9R_19)
+Output language: Turkish.
+NOTE: Do not include task pass/fail status here - the script appends that section separately.
+'@
+
+# --- Build task list ---
+$tasks = @()
+
+$tasks += New-AiderTask  '01' 'Mobile UI risk audit'           $P01 (Join-Path $DocsDir 'A9R_01_MOBILE_UI_RISK_AUDIT.md')      'md'
+$tasks += New-AiderTask  '02' 'First 10 minutes review'        $P02 (Join-Path $DocsDir 'A9R_02_FIRST_10_MINUTES_REVIEW.md')   'md'
+$tasks += New-AiderTask  '03' 'Mico guide points'              $P03 (Join-Path $DocsDir 'A9R_03_MICO_GUIDE_POINTS.md')         'md'
+$tasks += New-AiderTask  '04' 'CTA weakness audit'             $P04 (Join-Path $DocsDir 'A9R_04_CTA_WEAKNESS_AUDIT.md')        'md'
+$tasks += New-AiderTask  '05' 'Patch candidates'               $P05 (Join-Path $DocsDir 'A9R_05_PATCH_CANDIDATES.md')          'md'
+
+$tasks += New-AiderTask  '06' 'Onboarding patch'        $P06 (Join-Path $PatchesDir 'A9R_06_ONBOARDING_PATCH.css')        'css'
+$tasks += New-AiderTask  '07' 'Captain selection patch' $P07 (Join-Path $PatchesDir 'A9R_07_CAPTAIN_SELECTION_PATCH.css') 'css'
+$tasks += New-AiderTask  '08' 'Hub card patch'          $P08 (Join-Path $PatchesDir 'A9R_08_HUB_CARD_PATCH.css')          'css'
+$tasks += New-AiderTask  '09' 'Route CTA patch'         $P09 (Join-Path $PatchesDir 'A9R_09_ROUTE_CTA_PATCH.css')         'css'
+$tasks += New-AiderTask  '10' 'Arrival text patch'      $P10 (Join-Path $PatchesDir 'A9R_10_ARRIVAL_TEXT_PATCH.css')      'css'
+
+# Script-only tasks 11..15
+$tasks += New-ScriptTask '11' 'Patch marker validation' {
+    $report = New-Object System.Text.StringBuilder
+    [void]$report.AppendLine('# A9R_11 Patch marker validation report')
+    [void]$report.AppendLine('')
+    $allOk = $true
+    foreach ($pId in '06','07','08','09','10') {
+        $name = switch ($pId) {
+            '06' { 'A9R_06_ONBOARDING_PATCH.css' }
+            '07' { 'A9R_07_CAPTAIN_SELECTION_PATCH.css' }
+            '08' { 'A9R_08_HUB_CARD_PATCH.css' }
+            '09' { 'A9R_09_ROUTE_CTA_PATCH.css' }
+            '10' { 'A9R_10_ARRIVAL_TEXT_PATCH.css' }
         }
-    )
+        $abs = Join-Path $PatchesDir $name
+        $res = Test-PatchFile -PatchPath $abs -TaskId "A9R_$pId"
+        if ($res.Ok) {
+            [void]$report.AppendLine("- OK   A9R_$pId  $name")
+        } else {
+            [void]$report.AppendLine("- FAIL A9R_$pId  $name  ($($res.Reason))")
+            $allOk = $false
+        }
+    }
+    Write-Utf8File -Path (Join-Path $DocsDir 'A9R_11_PATCH_MARKER_REPORT.md') -Content $report.ToString()
+    return $allOk
+} (Join-Path $DocsDir 'A9R_11_PATCH_MARKER_REPORT.md') 100
 
-    foreach ($task in $taskDefinitions) {
-        $messageFile = "docs/agent/tasks/A9R_TASK_$($task.No).md"
-        Write-TextFile $messageFile $task.Lines
+$tasks += New-ScriptTask '12' 'Append patches to App.css' {
+    $report = New-Object System.Text.StringBuilder
+    [void]$report.AppendLine('# A9R_12 Patch apply report')
+    [void]$report.AppendLine('')
+    foreach ($pId in '06','07','08','09','10') {
+        $name = switch ($pId) {
+            '06' { 'A9R_06_ONBOARDING_PATCH.css' }
+            '07' { 'A9R_07_CAPTAIN_SELECTION_PATCH.css' }
+            '08' { 'A9R_08_HUB_CARD_PATCH.css' }
+            '09' { 'A9R_09_ROUTE_CTA_PATCH.css' }
+            '10' { 'A9R_10_ARRIVAL_TEXT_PATCH.css' }
+        }
+        $abs = Join-Path $PatchesDir $name
+        # gate again
+        $chk = Test-PatchFile -PatchPath $abs -TaskId "A9R_$pId"
+        if (-not $chk.Ok) {
+            [void]$report.AppendLine("- SKIP A9R_$pId  $name  ($($chk.Reason))")
+            continue
+        }
+        $r = Append-PatchIfMissing -PatchPath $abs -TaskId "A9R_$pId"
+        [void]$report.AppendLine("- $($r.Reason): A9R_$pId  $name")
+    }
+    Write-Utf8File -Path (Join-Path $DocsDir 'A9R_12_PATCH_APPLY_REPORT.md') -Content $report.ToString()
+    return $true
+} (Join-Path $DocsDir 'A9R_12_PATCH_APPLY_REPORT.md') 100
 
-        Invoke-AiderSingleTask `
-            -TaskName "A9R TASK $($task.No) - $($task.Name)" `
-            -MessageFile $messageFile `
-            -OutputFile $task.Output
+$tasks += New-ScriptTask '13' 'Allowed change validation' {
+    $bad = Get-ForbiddenChanges
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine('# A9R_13 Allowed change validation report')
+    [void]$sb.AppendLine('')
+    if ($bad.Count -eq 0) {
+        [void]$sb.AppendLine('- OK: all working-tree changes are within the allow-list.')
+        Write-Utf8File -Path (Join-Path $DocsDir 'A9R_13_ALLOWED_CHANGE_REPORT.md') -Content $sb.ToString()
+        return $true
+    }
+    [void]$sb.AppendLine('- HARD STOP: forbidden file changes detected:')
+    foreach ($f in $bad) { [void]$sb.AppendLine("  - $f") }
+    Write-Utf8File -Path (Join-Path $DocsDir 'A9R_13_ALLOWED_CHANGE_REPORT.md') -Content $sb.ToString()
+    $script:HardStop = $true
+    $script:HardStopReason = "Forbidden file changes: $($bad -join ', ')"
+    return $false
+} (Join-Path $DocsDir 'A9R_13_ALLOWED_CHANGE_REPORT.md') 50
 
-        $CompletedTasks += "- A9R TASK $($task.No) - $($task.Name)"
+$tasks += New-ScriptTask '14' 'npm run build' {
+    $b = Invoke-NpmBuild
+    if (-not $b.Ok) {
+        $script:HardStop = $true
+        $script:HardStopReason = "Build failed (exit=$($b.Exit)). See $($b.Err)"
+        return $false
+    }
+    return $true
+} $null 0
+
+$tasks += New-ScriptTask '15' 'Build report' {
+    $latestOut = Get-ChildItem -LiteralPath $LogDir -Filter "${RunId}-build-*.out" -ErrorAction SilentlyContinue |
+                 Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $latestErr = Get-ChildItem -LiteralPath $LogDir -Filter "${RunId}-build-*.err" -ErrorAction SilentlyContinue |
+                 Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine('# A9R_15 Build report')
+    [void]$sb.AppendLine('')
+    [void]$sb.AppendLine("- Build stdout log: $($latestOut.FullName)")
+    [void]$sb.AppendLine("- Build stderr log: $($latestErr.FullName)")
+    if ($latestOut) {
+        $tail = Get-Content -LiteralPath $latestOut.FullName -Tail 40 -ErrorAction SilentlyContinue
+        [void]$sb.AppendLine('')
+        [void]$sb.AppendLine('## Tail of stdout')
+        [void]$sb.AppendLine('```')
+        foreach ($l in $tail) { [void]$sb.AppendLine($l) }
+        [void]$sb.AppendLine('```')
+    }
+    if ($latestErr -and ($latestErr.Length -gt 0)) {
+        $etail = Get-Content -LiteralPath $latestErr.FullName -Tail 40 -ErrorAction SilentlyContinue
+        [void]$sb.AppendLine('')
+        [void]$sb.AppendLine('## Tail of stderr')
+        [void]$sb.AppendLine('```')
+        foreach ($l in $etail) { [void]$sb.AppendLine($l) }
+        [void]$sb.AppendLine('```')
+    }
+    Write-Utf8File -Path (Join-Path $DocsDir 'A9R_15_BUILD_REPORT.md') -Content $sb.ToString()
+    return $true
+} (Join-Path $DocsDir 'A9R_15_BUILD_REPORT.md') 100
+
+# Aider tasks 16..20
+$tasks += New-AiderTask '16' 'Changed files report'     $P16     (Join-Path $DocsDir 'A9R_16_CHANGED_FILES_REPORT.md')   'md'
+$tasks += New-AiderTask '17' 'Manual test checklist'    $P17     (Join-Path $DocsDir 'A9R_17_MANUAL_TEST_CHECKLIST.md')  'md'
+$tasks += New-AiderTask '18' 'Risk rollback plan'       $P18     (Join-Path $DocsDir 'A9R_18_RISK_ROLLBACK_PLAN.md')     'md'
+$tasks += New-AiderTask '19' 'Next 10 tasks'            $P19     (Join-Path $DocsDir 'A9R_19_NEXT_10_TASKS.md')          'md'
+$tasks += New-AiderTask '20' 'Final summary'            $P20Body (Join-Path $DocsDir 'A9R_FINAL_AUTONOMOUS_REPORT.md')   'md'
+
+# ============================================================
+# FINAL REPORT (always tried)
+# ============================================================
+function Write-FinalAggregateReport {
+    $path = Join-Path $DocsDir 'A9R_FINAL_AUTONOMOUS_REPORT.md'
+
+    # If task 20 wrote a body, keep it. Append script-side aggregate section.
+    $body = ''
+    if (Test-Path $path) {
+        $body = Get-Content -LiteralPath $path -Raw -Encoding utf8
+    } else {
+        $body = "# A9R Final Autonomous Report`r`n`r`n_(Task 20 did not run.)_`r`n"
     }
 
-    Write-AgentLog "=== A9R TASK 11 - Patch marker validation ==="
-    Test-PatchFile -PatchFile "docs/agent/patches/A9R_06_ONBOARDING_PATCH.css" -Marker "/* A9R onboarding safety patch */"
-    Test-PatchFile -PatchFile "docs/agent/patches/A9R_07_CAPTAIN_SELECTION_PATCH.css" -Marker "/* A9R captain selection safety patch */"
-    Test-PatchFile -PatchFile "docs/agent/patches/A9R_08_HUB_CARD_PATCH.css" -Marker "/* A9R hub card safety patch */"
-    Test-PatchFile -PatchFile "docs/agent/patches/A9R_09_ROUTE_CTA_PATCH.css" -Marker "/* A9R route CTA safety patch */"
-    Test-PatchFile -PatchFile "docs/agent/patches/A9R_10_ARRIVAL_TEXT_PATCH.css" -Marker "/* A9R arrival text safety patch */"
-    Write-TextFile "docs/agent/A9R_11_PATCH_MARKER_REPORT.md" @(
-        "# A9R Task 11 - Patch Marker Report",
-        "",
-        "All required patch markers were found.",
-        "Disallowed CSS pattern check passed."
-    )
-    $CompletedTasks += "- A9R TASK 11 - Patch marker validation"
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine('')
+    [void]$sb.AppendLine('---')
+    [void]$sb.AppendLine('')
+    [void]$sb.AppendLine('## Script-side aggregate (auto-appended)')
+    [void]$sb.AppendLine("- Run ID: $RunId-$Stamp")
+    [void]$sb.AppendLine("- Finished: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
+    [void]$sb.AppendLine("- Branch: $(git -C $RepoPath rev-parse --abbrev-ref HEAD 2>$null)")
+    [void]$sb.AppendLine("- Hard stop: $HardStop")
+    if ($HardStop) { [void]$sb.AppendLine("- Hard stop reason: $HardStopReason") }
+    [void]$sb.AppendLine('')
+    [void]$sb.AppendLine('### Task results')
+    [void]$sb.AppendLine('')
+    foreach ($t in $Successes) { [void]$sb.AppendLine("- OK   $t") }
+    foreach ($t in $Failures)  { [void]$sb.AppendLine("- FAIL $t") }
+    [void]$sb.AppendLine('')
+    [void]$sb.AppendLine('### Working tree (git status)')
+    $changed = Get-ChangedFiles
+    if ($changed.Count -eq 0) {
+        [void]$sb.AppendLine('- (clean)')
+    } else {
+        foreach ($f in $changed) { [void]$sb.AppendLine("- $f") }
+    }
+    [void]$sb.AppendLine('')
+    [void]$sb.AppendLine('### Logs')
+    [void]$sb.AppendLine("- Run log: $RunLog")
 
-    Write-AgentLog "=== A9R TASK 12 - Append patches to src/App.css ==="
-    Append-PatchIfMissing -PatchFile "docs/agent/patches/A9R_06_ONBOARDING_PATCH.css" -Marker "/* A9R onboarding safety patch */" -AppCss $AppCss
-    Append-PatchIfMissing -PatchFile "docs/agent/patches/A9R_07_CAPTAIN_SELECTION_PATCH.css" -Marker "/* A9R captain selection safety patch */" -AppCss $AppCss
-    Append-PatchIfMissing -PatchFile "docs/agent/patches/A9R_08_HUB_CARD_PATCH.css" -Marker "/* A9R hub card safety patch */" -AppCss $AppCss
-    Append-PatchIfMissing -PatchFile "docs/agent/patches/A9R_09_ROUTE_CTA_PATCH.css" -Marker "/* A9R route CTA safety patch */" -AppCss $AppCss
-    Append-PatchIfMissing -PatchFile "docs/agent/patches/A9R_10_ARRIVAL_TEXT_PATCH.css" -Marker "/* A9R arrival text safety patch */" -AppCss $AppCss
-    Write-TextFile "docs/agent/A9R_12_PATCH_APPLY_REPORT.md" @(
-        "# A9R Task 12 - Patch Apply Report",
-        "",
-        "Safe CSS patches were appended to src/App.css if missing.",
-        "Existing markers are skipped to avoid duplicate patch insertion."
-    )
-    $CompletedTasks += "- A9R TASK 12 - Append patches to src/App.css"
+    Write-Utf8File -Path $path -Content ($body + $sb.ToString())
+    Write-AgentLog "FINAL REPORT -> $(To-RepoRel $path)"
+}
 
-    Write-AgentLog "=== A9R TASK 13 - Allowed change validation ==="
-    Test-AllowedChangesOnly
-    Write-TextFile "docs/agent/A9R_13_ALLOWED_CHANGE_REPORT.md" @(
-        "# A9R Task 13 - Allowed Change Report",
-        "",
-        "Allowed change validation passed.",
-        "No forbidden source or project configuration changes were detected."
-    )
-    $CompletedTasks += "- A9R TASK 13 - Allowed change validation"
+# ============================================================
+# MAIN LOOP
+# ============================================================
+try {
+    Set-Location $RepoPath
+    New-Item -ItemType Directory -Force -Path $LogDir, $DocsDir, $TasksDir, $PatchesDir | Out-Null
 
-    Write-AgentLog "=== A9R TASK 14 - npm run build ==="
-    npm run build | Tee-Object -FilePath $RunLog -Append
-    $CompletedTasks += "- A9R TASK 14 - npm run build"
+    Write-AgentLog "========== $RunId START =========="
+    Write-AgentLog "RepoPath:   $RepoPath"
+    Write-AgentLog "Model:      $AiderModel"
+    Write-AgentLog "RunLog:     $RunLog"
 
-    Write-AgentLog "=== A9R TASK 15 - Build report ==="
-    Write-TextFile "docs/agent/A9R_15_BUILD_REPORT.md" @(
-        "# A9R Task 15 - Build Report",
-        "",
-        "npm run build completed successfully.",
-        "Source logic touched: NO.",
-        "Source CSS touched: src/App.css only."
-    )
-    Test-RequiredOutput -Path "docs/agent/A9R_15_BUILD_REPORT.md" -TaskName "A9R TASK 15 Build Report"
-    $CompletedTasks += "- A9R TASK 15 - Build report"
+    # Sanity checks
+    if (-not (Test-Path (Join-Path $RepoPath '.git'))) {
+        throw "Not a git repo: $RepoPath"
+    }
+    $currentBranch = (git -C $RepoPath rev-parse --abbrev-ref HEAD 2>$null).Trim()
+    Write-AgentLog "Current branch: $currentBranch"
+    if ($currentBranch -ne $AgentBranch) {
+        Write-AgentLog "WARNING current branch is not '$AgentBranch'. Continuing anyway." 'WARN'
+    }
 
-    Write-AgentLog "=== A9R TASK 20 - Final autonomous report ==="
-    Write-A9RFinalReport -CompletedTasks $CompletedTasks -BlockedTasks $BlockedTasks
-    Test-RequiredOutput -Path "docs/agent/A9R_FINAL_AUTONOMOUS_REPORT.md" -TaskName "A9R TASK 20 Final Report"
-    Add-Content -Encoding UTF8 progress.md "- A9R TASK 20 completed."
-    Add-Content -Encoding UTF8 errors_log.md "- No blocking errors occurred during A9R autonomous 20-task run."
-    $CompletedTasks += "- A9R TASK 20 - Final autonomous report"
+    # Pre-run dirty-tree warning (informational; we don't fail)
+    $preDirty = Get-ChangedFiles
+    if ($preDirty.Count -gt 0) {
+        Write-AgentLog "Working tree not clean at start ($($preDirty.Count) files). Proceeding." 'WARN'
+    }
 
-    Test-AllowedChangesOnly
+    foreach ($task in $tasks) {
+        if ($HardStop) {
+            Write-AgentLog "SKIP $($task.Id) due to hard stop: $HardStopReason" 'WARN'
+            [void]$Failures.Add("$($task.Id) [SKIPPED: hard stop]")
+            Append-Progress $task.Id 'SKIP' $HardStopReason
+            continue
+        }
 
-    Write-AgentLog "=== Agent Batch A9R autonomous 20-task run completed ==="
-    git status | Out-String | Add-Content -Encoding UTF8 -Path $RunLog
-    git status
+        Write-AgentLog "----- TASK $($task.Id) : $($task.Title) -----"
+
+        $taskOk = $true
+        $taskReason = ''
+
+        if ($task.Type -eq 'aider') {
+            $aiderOk = Invoke-AiderTask -TaskId $task.Id -Prompt (Build-AiderPrompt -OutputRel (To-RepoRel $task.Output) -Body $task.Body -Kind $task.Kind -TaskId "A9R_$($task.Id)") -OutputAbs $task.Output -Kind $task.Kind
+            if (-not $aiderOk) {
+                $taskOk = $false; $taskReason = 'Aider exited non-zero or timed out'
+            }
+            elseif (-not (Test-RequiredOutput -Path $task.Output -MinBytes $task.MinBytes)) {
+                $taskOk = $false; $taskReason = "Required output missing or below $($task.MinBytes) bytes"
+            }
+        }
+        elseif ($task.Type -eq 'script') {
+            try {
+                $r = & $task.Action
+                if ($r -eq $false) { $taskOk = $false; $taskReason = 'Script step returned false' }
+            } catch {
+                $taskOk = $false; $taskReason = "Script step threw: $_"
+            }
+            if ($taskOk -and $task.Output) {
+                if (-not (Test-RequiredOutput -Path $task.Output -MinBytes $task.MinBytes)) {
+                    $taskOk = $false; $taskReason = "Required output missing or below $($task.MinBytes) bytes"
+                }
+            }
+        }
+
+        # Allow-list gate (after EVERY task)
+        $bad = Get-ForbiddenChanges
+        if ($bad.Count -gt 0) {
+            $taskOk = $false
+            $taskReason = "Forbidden file changes after task: $($bad -join ', ')"
+            $HardStop = $true
+            $HardStopReason = $taskReason
+        }
+
+        if ($taskOk) {
+            [void]$Successes.Add("$($task.Id) $($task.Title)")
+            Append-Progress $task.Id 'OK' $task.Title
+            Write-AgentLog "TASK $($task.Id) OK"
+        } else {
+            [void]$Failures.Add("$($task.Id) $($task.Title) :: $taskReason")
+            Append-Progress $task.Id 'FAIL' $taskReason
+            Append-ErrorsLog $task.Id $taskReason
+            Write-AgentLog "TASK $($task.Id) FAIL :: $taskReason" 'ERROR'
+        }
+    }
 }
 catch {
-    $BlockedTasks += "- A9R blocked: $($_.Exception.Message)"
-    Add-Content -Encoding UTF8 errors_log.md "- A9R BLOCKED: $($_.Exception.Message)"
-    Write-AgentLog "A9R BLOCKED: $($_.Exception.Message)"
-
-    try {
-        Write-A9RFinalReport -CompletedTasks $CompletedTasks -BlockedTasks $BlockedTasks
-    }
-    catch {
-        Write-AgentLog "Could not write A9R final report after block: $($_.Exception.Message)"
-    }
-
-    git status
-    exit 1
+    Write-AgentLog "FATAL: $_" 'ERROR'
+    $HardStop = $true
+    $HardStopReason = "Fatal: $_"
+}
+finally {
+    try { Write-FinalAggregateReport } catch { Write-AgentLog "Final report write failed: $_" 'ERROR' }
+    Write-AgentLog "========== $RunId END =========="
+    Write-AgentLog "Successes: $($Successes.Count)  Failures: $($Failures.Count)  HardStop: $HardStop"
 }

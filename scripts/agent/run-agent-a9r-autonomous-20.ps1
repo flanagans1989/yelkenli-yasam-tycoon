@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # A9R - Autonomous 20-task local agent (Aider + Ollama)
 # Project : Yelkenli Yasam Tycoon
 # Repo    : C:\dev\yelkenli-yasam-tycoon
@@ -88,7 +88,7 @@ function Append-Progress {
 }
 
 function Get-ChangedFiles {
-    $raw = git -C $RepoPath status --porcelain 2>$null
+    $raw = git -C $RepoPath status --porcelain --untracked-files=all 2>$null
     if (-not $raw) { return @() }
     $list = New-Object System.Collections.ArrayList
     foreach ($l in ($raw -split "`n")) {

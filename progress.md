@@ -7,6 +7,8 @@ Current status:
 - [x] PACKET 001 — Autonomous Mode Check
 - [ ] PACKET 002 — Agent Work Simulation
 - [x] PACKET 004 — Night Shift Protocol
+- [x] PACKET A7-1 — Post CSS Patch Audit
+- [x] PACKET A7-2 — Next Low Risk UI Candidates
 
 Completed tasks:
 - Created docs/agent/APP_RESPONSIBILITY_MAP.md
@@ -14,6 +16,8 @@ Completed tasks:
 - Created docs/agent/NIGHT_SHIFT_PROTOCOL.md
 - Created docs/agent/AGENT_LIMITS_AND_FAILURES.md
 - Created docs/agent/NEXT_AUTONOMOUS_BATCH_PLAN.md
+- Created docs/agent/A7_POST_CSS_PATCH_AUDIT.md
+- Created docs/agent/A7_NEXT_LOW_RISK_UI_CANDIDATES.md
 
 Pending tasks:
 - Batch 4B-5 — App.tsx responsibility map

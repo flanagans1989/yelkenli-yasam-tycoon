@@ -6,10 +6,14 @@ Current status:
 - [x] Package 1 — App.tsx Responsibility Map
 - [x] PACKET 001 — Autonomous Mode Check
 - [ ] PACKET 002 — Agent Work Simulation
+- [x] PACKET 004 — Night Shift Protocol
 
 Completed tasks:
 - Created docs/agent/APP_RESPONSIBILITY_MAP.md
 - Completed docs/agent/AUTONOMOUS_TEST_RUN.md
+- Created docs/agent/NIGHT_SHIFT_PROTOCOL.md
+- Created docs/agent/AGENT_LIMITS_AND_FAILURES.md
+- Created docs/agent/NEXT_AUTONOMOUS_BATCH_PLAN.md
 
 Pending tasks:
 - Batch 4B-5 — App.tsx responsibility map
@@ -25,3 +29,6 @@ Build result section:
 - PACKET 003 completed.
 - PACKET 003 completed.
 - PACKET 003 completed.
+- PACKET 005 completed.
+
+- PACKET 006 completed.

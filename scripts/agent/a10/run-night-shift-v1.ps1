@@ -3,7 +3,9 @@ param(
     [string]$ExpectedBranch = 'agent/day-01',
     [bool]$DryRun = $true,
     [string]$QueuePath = 'docs/agent/a10/queues/A10_NIGHT_SHIFT_SAFE_QUEUE_01.json',
-    [string]$ExecuteTaskId = ''
+    [string]$ExecuteTaskId = '',
+    [string]$ExecuteMode = '',
+    [int]$MaxTasks = 1
 )
 
 $ErrorActionPreference = 'Stop'
@@ -20,12 +22,6 @@ function Ensure-Directory {
     }
 }
 
-function Append-RunLog {
-    param([string]$Message)
-    $line = "[{0}] {1}" -f (Get-Date -Format 'yyyy-MM-ddTHH:mm:ssK'), $Message
-    Add-Content -Path $runLogPath -Value $line -Encoding UTF8
-}
-
 function Resolve-QueuePath {
     param(
         [string]$BaseRepoPath,
@@ -36,7 +32,13 @@ function Resolve-QueuePath {
         return $InputQueuePath
     }
 
-    return (Join-Path -Path $BaseRepoPath -ChildPath $InputQueuePath)
+    return Join-Path -Path $BaseRepoPath -ChildPath $InputQueuePath
+}
+
+function Append-RunLog {
+    param([string]$Message)
+    $line = "[{0}] {1}" -f (Get-Date -Format 'yyyy-MM-ddTHH:mm:ssK'), $Message
+    Add-Content -Path $runLogPath -Value $line -Encoding UTF8
 }
 
 function Test-AllowedOutputFile {
@@ -64,20 +66,98 @@ function Get-TaskFieldString {
     return [string]$value
 }
 
+function New-PlaceholderContent {
+    param(
+        [string]$TaskId,
+        [string]$TaskTitle
+    )
+
+    return @"
+# $TaskId — $TaskTitle
+
+## 1. Amac
+Bu dosya deterministic A10 placeholder queue execution ciktisidir.
+Bu adimda gercek AI cagrisi yapilmaz ve icerik sabit kuralla uretilir.
+
+## 2. Kontrol Edilecek Seyler
+Kuyruktaki gorev kimligi ve izinli cikti yolu dogrulanir.
+No Aider/Ollama was called.
+No source code or package files were modified.
+
+## 3. Basarili Durum
+Dosya tek hedefe yazilir ve validasyon kurallarini gecer.
+Task basligi ve sabit ifade icerikte bulunur.
+A10 Placeholder Queue Execution ifadesi gorunur.
+
+## 4. Hata Durumlari
+Yanlis cikti yolu hard stop olarak ele alinir.
+Dosya olusmazsa veya boyut yetersizse validation fail olusur.
+Gorev tipi izinli degilse SKIP_WITH_NOTE verilir.
+
+## 5. Hard Stop Kurallari
+Kuyruk disi yol, path traversal veya mutlak yol kabul edilmez.
+Kaynak kod, package veya CSS apply islemi bu modda yasaktir.
+Kurala aykiri istekler calismayi durdurur.
+
+## 6. Sabah Inceleme Notu
+Manual review is required before commit.
+Bu cikti Batch 10 PlaceholderQueue modu kapsaminda uretilmistir.
+"@
+}
+
+function Test-OutputContent {
+    param(
+        [string]$FullPath,
+        [string]$TaskTitle
+    )
+
+    if (-not (Test-Path -LiteralPath $FullPath)) {
+        return 'VALIDATION_FAIL_FILE_MISSING'
+    }
+
+    $fileInfo = Get-Item -LiteralPath $FullPath
+    if ($fileInfo.Length -lt 400) {
+        return 'VALIDATION_FAIL_TOO_SHORT'
+    }
+
+    $content = Get-Content -Path $FullPath -Raw -Encoding UTF8
+    if ($content -notmatch [Regex]::Escape($TaskTitle)) {
+        return 'VALIDATION_FAIL_MISSING_TASK_TITLE'
+    }
+
+    if ($content -notmatch 'A10 Placeholder Queue Execution') {
+        return 'VALIDATION_FAIL_MISSING_PLACEHOLDER_MARKER'
+    }
+
+    return 'PASS'
+}
+
 function Write-FinalReport {
     $gitSummaryBlock = if ($gitStatusLines.Count -eq 0) { '- clean' } else { ($gitStatusLines | ForEach-Object { "- $_" }) -join "`r`n" }
 
-    $taskTableLines = @(
+    $taskValidationTable = @(
         '| task_id | title | task_type | allowed_output_file | validation_result |',
         '|---|---|---|---|---|'
     )
-
     if ($taskValidationRows.Count -eq 0) {
-        $taskTableLines += '| - | - | - | - | NOT_CHECKED |'
+        $taskValidationTable += '| - | - | - | - | NOT_CHECKED |'
     }
     else {
         foreach ($row in $taskValidationRows) {
-            $taskTableLines += "| $($row.task_id) | $($row.title) | $($row.task_type) | $($row.allowed_output_file) | $($row.validation_result) |"
+            $taskValidationTable += "| $($row.task_id) | $($row.title) | $($row.task_type) | $($row.allowed_output_file) | $($row.validation_result) |"
+        }
+    }
+
+    $executionTable = @(
+        '| task_id | title | task_type | output_path | execution_status | validation_result |',
+        '|---|---|---|---|---|---|'
+    )
+    if ($executionRows.Count -eq 0) {
+        $executionTable += '| - | - | - | - | NOT_EXECUTED | NOT_CHECKED |'
+    }
+    else {
+        foreach ($row in $executionRows) {
+            $executionTable += "| $($row.task_id) | $($row.title) | $($row.task_type) | $($row.output_path) | $($row.execution_status) | $($row.validation_result) |"
         }
     }
 
@@ -90,9 +170,12 @@ function Write-FinalReport {
 - Branch: $currentBranch
 - DryRun: $DryRun
 - ExecuteTaskId: $ExecuteTaskId
-- Task 01 executed: $task01Executed
-- Task 01 output path: $task01OutputPath
-- Task 01 output validation: $task01OutputValidationResult
+- ExecuteMode: $ExecuteMode
+- MaxTasks: $MaxTasks
+- executed_count: $executedCount
+- skip_valid_count: $skipValidCount
+- skip_with_note_count: $skipWithNoteCount
+- validation_fail_count: $validationFailCount
 - Required docs validation result: $requiredDocsResult
 - Queue path: $resolvedQueuePath
 - Queue ID: $queueId
@@ -104,14 +187,13 @@ function Write-FinalReport {
 - Final status: $finalStatus
 
 ## Task Validation Table
-$($taskTableLines -join "`r`n")
+$($taskValidationTable -join "`r`n")
+
+## Task Execution Table
+$($executionTable -join "`r`n")
 
 ## Git Status Lines
 $gitSummaryBlock
-
-## Notes
-- Dry-run + controlled Task 01 execution support.
-- No AI calls, no patch apply, no build.
 "@
 
     if ($failureReason) {
@@ -122,24 +204,25 @@ $gitSummaryBlock
 }
 
 $runId = New-RunId
-$startedAt = Get-Date
-$timestampIso = $startedAt.ToString('o')
+$timestampIso = (Get-Date).ToString('o')
 $currentBranch = ''
 $finalStatus = 'UNKNOWN'
 $exitCode = 2
 $failureReason = $null
 $requiredDocsResult = 'FAIL'
-$gitStatusLines = @()
-$gitStatusSummary = 'NOT_CHECKED'
 $queueValidationResult = 'NOT_CHECKED'
 $queueId = ''
 $queueSafetyLevel = ''
 $queueTaskCount = 0
 $expectedOutputFolderStatus = 'NOT_CHECKED'
+$gitStatusLines = @()
+$gitStatusSummary = 'NOT_CHECKED'
 $taskValidationRows = @()
-$task01Executed = 'NO'
-$task01OutputPath = '-'
-$task01OutputValidationResult = 'NOT_EXECUTED'
+$executionRows = @()
+$executedCount = 0
+$skipValidCount = 0
+$skipWithNoteCount = 0
+$validationFailCount = 0
 
 $canonicalTaskTypes = @(
     'docs-only',
@@ -149,6 +232,7 @@ $canonicalTaskTypes = @(
     'build-check',
     'audit/checklist'
 )
+$placeholderAllowedTaskTypes = @('docs-only', 'audit/checklist')
 
 $requiredDocs = @(
     'docs/agent/a10/A10_TASK_TEMPLATE.md',
@@ -171,8 +255,32 @@ $resolvedQueuePath = Resolve-QueuePath -BaseRepoPath $RepoPath -InputQueuePath $
 try {
     if ($ExecuteTaskId -ne '' -and $ExecuteTaskId -ne 'Task 01') {
         $finalStatus = 'HARD_STOP'
-        $failureReason = "Unsupported ExecuteTaskId: $ExecuteTaskId"
         $queueValidationResult = 'HARD_STOP_INVALID_EXECUTE_TASK_ID'
+        $failureReason = "Unsupported ExecuteTaskId: $ExecuteTaskId"
+        $exitCode = 2
+        throw [System.Exception]::new($failureReason)
+    }
+
+    if ($ExecuteMode -ne '' -and $ExecuteMode -ne 'PlaceholderQueue') {
+        $finalStatus = 'HARD_STOP'
+        $queueValidationResult = 'HARD_STOP_INVALID_EXECUTE_MODE'
+        $failureReason = "Unsupported ExecuteMode: $ExecuteMode"
+        $exitCode = 2
+        throw [System.Exception]::new($failureReason)
+    }
+
+    if ($ExecuteTaskId -ne '' -and $ExecuteMode -ne '') {
+        $finalStatus = 'HARD_STOP'
+        $queueValidationResult = 'HARD_STOP_CONFLICTING_EXECUTION_INPUT'
+        $failureReason = 'ExecuteTaskId and ExecuteMode cannot be used together.'
+        $exitCode = 2
+        throw [System.Exception]::new($failureReason)
+    }
+
+    if ($ExecuteMode -eq 'PlaceholderQueue' -and ($MaxTasks -lt 1 -or $MaxTasks -gt 10)) {
+        $finalStatus = 'HARD_STOP'
+        $queueValidationResult = 'HARD_STOP_INVALID_MAX_TASKS'
+        $failureReason = "MaxTasks must be between 1 and 10. Current=$MaxTasks"
         $exitCode = 2
         throw [System.Exception]::new($failureReason)
     }
@@ -185,7 +293,7 @@ try {
     Ensure-Directory -Path $runLogDir
     Ensure-Directory -Path $reportDir
 
-    Set-Content -Path $runLogPath -Value "[$timestampIso] A10 runner v1 started. DryRun=$DryRun QueuePath=$resolvedQueuePath ExecuteTaskId=$ExecuteTaskId" -Encoding UTF8
+    Set-Content -Path $runLogPath -Value "[$timestampIso] A10 runner v1 started. DryRun=$DryRun QueuePath=$resolvedQueuePath ExecuteTaskId=$ExecuteTaskId ExecuteMode=$ExecuteMode MaxTasks=$MaxTasks" -Encoding UTF8
 
     $gitDir = Join-Path -Path $RepoPath -ChildPath '.git'
     if (-not (Test-Path -LiteralPath $gitDir)) {
@@ -208,11 +316,9 @@ try {
             $missingDocs += $docRelPath
         }
     }
-
     if ($missingDocs.Count -gt 0) {
         throw ('Required A10 docs missing: ' + ($missingDocs -join ', '))
     }
-
     $requiredDocsResult = 'PASS'
 
     $statusRaw = & git -C $RepoPath status --porcelain --untracked-files=all
@@ -235,7 +341,6 @@ try {
         throw [System.Exception]::new($failureReason)
     }
 
-    $queue = $null
     try {
         $queueRaw = Get-Content -Path $resolvedQueuePath -Raw -Encoding UTF8
         $queue = $queueRaw | ConvertFrom-Json
@@ -255,18 +360,10 @@ try {
     $queueTaskCount = $queueTasks.Count
 
     $headerIssues = @()
-    if ([string]::IsNullOrWhiteSpace($queueId)) {
-        $headerIssues += 'queue_id empty'
-    }
-    if ([string]::IsNullOrWhiteSpace([string]$queue.created_for_branch) -or [string]$queue.created_for_branch -ne $ExpectedBranch) {
-        $headerIssues += "created_for_branch mismatch (expected $ExpectedBranch)"
-    }
-    if ([string]$queue.safety_level -ne 'SAFE_DOCS_ONLY') {
-        $headerIssues += 'safety_level must be SAFE_DOCS_ONLY'
-    }
-    if ($null -eq $queue.tasks -or $queueTaskCount -le 0) {
-        $headerIssues += 'tasks must exist and contain at least one task'
-    }
+    if ([string]::IsNullOrWhiteSpace($queueId)) { $headerIssues += 'queue_id empty' }
+    if ([string]$queue.created_for_branch -ne $ExpectedBranch) { $headerIssues += "created_for_branch mismatch (expected $ExpectedBranch)" }
+    if ([string]$queue.safety_level -ne 'SAFE_DOCS_ONLY') { $headerIssues += 'safety_level must be SAFE_DOCS_ONLY' }
+    if ($null -eq $queue.tasks -or $queueTaskCount -le 0) { $headerIssues += 'tasks must exist and contain at least one task' }
 
     if ($headerIssues.Count -gt 0) {
         $finalStatus = 'HARD_STOP'
@@ -301,18 +398,8 @@ try {
         if ([string]::IsNullOrWhiteSpace($softFailRule)) { $taskIssues += 'soft_fail_rule empty' }
         if ([string]::IsNullOrWhiteSpace($hardStopRule)) { $taskIssues += 'hard_stop_rule empty' }
 
-        $forbiddenScopeValid = $true
-        if ($null -eq $task.forbidden_scope) {
-            $forbiddenScopeValid = $false
-        }
-        else {
-            $forbiddenArray = @($task.forbidden_scope)
-            if ($forbiddenArray.Count -eq 0) {
-                $forbiddenScopeValid = $false
-            }
-        }
-
-        if (-not $forbiddenScopeValid) {
+        $forbiddenArray = @($task.forbidden_scope)
+        if ($null -eq $task.forbidden_scope -or $forbiddenArray.Count -eq 0) {
             $taskIssues += 'forbidden_scope missing_or_empty'
         }
 
@@ -328,11 +415,11 @@ try {
         }
 
         if (-not ($canonicalTaskTypes -contains $taskType)) {
-            $taskValidationResult = if ($taskValidationResult -eq 'OK') {
-                'VALIDATION_FAIL: non_canonical_task_type'
+            if ($taskValidationResult -eq 'OK') {
+                $taskValidationResult = 'VALIDATION_FAIL: non_canonical_task_type'
             }
             else {
-                "$taskValidationResult, non_canonical_task_type"
+                $taskValidationResult = "$taskValidationResult, non_canonical_task_type"
             }
             $nonHardValidationFailed = $true
         }
@@ -345,10 +432,6 @@ try {
             validation_result = $taskValidationResult
         }
     }
-
-    $taskPassCount = @($taskValidationRows | Where-Object { $_.validation_result -eq 'OK' }).Count
-    $taskFailCount = $taskValidationRows.Count - $taskPassCount
-    Append-RunLog "Per-task validation summary: total=$($taskValidationRows.Count) pass=$taskPassCount fail=$taskFailCount"
 
     if ($hardStopAllowedOutput) {
         $finalStatus = 'HARD_STOP'
@@ -367,106 +450,146 @@ try {
         $exitCode = 0
     }
 
-    if ($exitCode -eq 0 -and $ExecuteTaskId -eq 'Task 01') {
-        $task01 = $queueTasks | Where-Object { ([string]$_.task_id) -eq 'Task 01' } | Select-Object -First 1
-        if ($null -eq $task01) {
-            $finalStatus = 'HARD_STOP'
-            $queueValidationResult = 'HARD_STOP_TASK_01_MISSING'
-            $failureReason = 'Task 01 not found in queue.'
-            $exitCode = 2
-            throw [System.Exception]::new($failureReason)
-        }
-
-        $expectedTask01OutputRel = 'docs/agent/a10/night-shift-01/T01_BRANCH_SAFETY_CHECK_PLAN.md'
-        $task01AllowedOutput = [string]$task01.allowed_output_file
-        if ($task01AllowedOutput -ne $expectedTask01OutputRel) {
-            $finalStatus = 'HARD_STOP'
-            $queueValidationResult = 'HARD_STOP_TASK_01_OUTPUT_MISMATCH'
-            $failureReason = "Task 01 output path mismatch. Expected '$expectedTask01OutputRel' got '$task01AllowedOutput'"
-            $exitCode = 2
-            throw [System.Exception]::new($failureReason)
-        }
-
-        $task01OutputFullPath = Join-Path -Path $RepoPath -ChildPath $task01AllowedOutput
-        $task01OutputPath = $task01AllowedOutput
-        Ensure-Directory -Path (Split-Path -Path $task01OutputFullPath -Parent)
-
-        $placeholder = @"
-# T01 Branch Safety Check Plan
-
-## 1. Amaç
-Bu belge A10 Batch 9 deterministic placeholder execution çıktısıdır.
-Amaç, gece koşusunda branch güvenliğini tek görevlik kontrollü adımla doğrulamaktır.
-
-## 2. Kontrol Edilecek Şeyler
-Aktif branch adı kesin olarak agent/day-01 olmalıdır.
-Repo yolu doğrulanmalı ve .git klasörü mevcut olmalıdır.
-Görev sadece docs kapsamındadır; kaynak kod alanları kapsam dışıdır.
-
-## 3. Başarılı Durum
-Branch agent/day-01 ise kontrol başarılı kabul edilir.
-Queue içindeki Task 01 allowed_output_file değeri sabit hedefle eşleşmelidir.
-Çıktı dosyası tek dosya olarak yazılır ve doğrulama kurallarını karşılar.
-
-## 4. Hata Durumları
-Branch farklıysa işlem derhal başarısız olur.
-Task 01 queue içinde bulunamazsa çalışma durdurulur.
-Çıktı yolu beklenen değerden farklıysa hard stop uygulanır.
-
-## 5. Hard Stop Kuralları
-Yanlış branch hard stop sebebidir.
-Kaynak kod veya package değişikliği bu görevde yasaktır.
-No source/package changes are allowed in this controlled execution step.
-Beklenmeyen output path veya çoklu görev denemesi hard stop sebebidir.
-
-## 6. Sabah İnceleme Notu
-Kullanıcı sabah yalnızca log ve final raporu üzerinden karar verir.
-Manual commit/push zorunluluğu devam eder.
-Bu çıktı gerçek AI üretimi değil, deterministic A10 Batch 9 placeholder execution örneğidir.
-"@
-
-        Set-Content -Path $task01OutputFullPath -Value $placeholder -Encoding UTF8
-        $task01Executed = 'YES'
-
-        if (-not (Test-Path -LiteralPath $task01OutputFullPath)) {
-            $task01OutputValidationResult = 'VALIDATION_FAIL_FILE_MISSING'
-            $finalStatus = 'VALIDATION_FAIL'
-            $failureReason = 'Task 01 output file was not created.'
-            $exitCode = 1
-        }
-        else {
-            $fileInfo = Get-Item -LiteralPath $task01OutputFullPath
-            $content = Get-Content -Path $task01OutputFullPath -Raw -Encoding UTF8
-
-            if ($fileInfo.Length -lt 400) {
-                $task01OutputValidationResult = 'VALIDATION_FAIL_TOO_SHORT'
-                $finalStatus = 'VALIDATION_FAIL'
-                $failureReason = 'Task 01 output file length is below 400 bytes.'
-                $exitCode = 1
+    if ($exitCode -eq 0) {
+        if ($ExecuteTaskId -eq 'Task 01') {
+            $task01 = $queueTasks | Where-Object { ([string]$_.task_id) -eq 'Task 01' } | Select-Object -First 1
+            if ($null -eq $task01) {
+                $finalStatus = 'HARD_STOP'
+                $queueValidationResult = 'HARD_STOP_TASK_01_MISSING'
+                $failureReason = 'Task 01 not found in queue.'
+                $exitCode = 2
+                throw [System.Exception]::new($failureReason)
             }
-            elseif ($content -notmatch 'T01 Branch Safety Check Plan') {
-                $task01OutputValidationResult = 'VALIDATION_FAIL_MISSING_HEADING'
+
+            $expectedPath = 'docs/agent/a10/night-shift-01/T01_BRANCH_SAFETY_CHECK_PLAN.md'
+            $task01OutputRel = [string]$task01.allowed_output_file
+            if ($task01OutputRel -ne $expectedPath) {
+                $finalStatus = 'HARD_STOP'
+                $queueValidationResult = 'HARD_STOP_TASK_01_OUTPUT_MISMATCH'
+                $failureReason = "Task 01 output path mismatch. Expected '$expectedPath' got '$task01OutputRel'"
+                $exitCode = 2
+                throw [System.Exception]::new($failureReason)
+            }
+
+            $task01OutputFull = Join-Path -Path $RepoPath -ChildPath $task01OutputRel
+            Ensure-Directory -Path (Split-Path -Path $task01OutputFull -Parent)
+
+            $placeholder = New-PlaceholderContent -TaskId 'Task 01' -TaskTitle ([string]$task01.title)
+            Set-Content -Path $task01OutputFull -Value $placeholder -Encoding UTF8
+            $singleValidation = Test-OutputContent -FullPath $task01OutputFull -TaskTitle ([string]$task01.title)
+
+            $executionRows += [PSCustomObject]@{
+                task_id = 'Task 01'
+                title = [string]$task01.title
+                task_type = [string]$task01.task_type
+                output_path = $task01OutputRel
+                execution_status = 'EXECUTED'
+                validation_result = $singleValidation
+            }
+
+            Append-RunLog "Task 01 execution decision: EXECUTED output=$task01OutputRel"
+            Append-RunLog "Task 01 output validation result: $singleValidation"
+
+            if ($singleValidation -ne 'PASS') {
+                $validationFailCount = 1
                 $finalStatus = 'VALIDATION_FAIL'
-                $failureReason = 'Task 01 output heading is missing.'
+                $failureReason = 'Task 01 output validation failed.'
                 $exitCode = 1
             }
             else {
-                $task01OutputValidationResult = 'PASS'
+                $executedCount = 1
                 $finalStatus = 'SUCCESS'
-                $failureReason = $null
                 $exitCode = 0
             }
         }
+        elseif ($ExecuteMode -eq 'PlaceholderQueue') {
+            Append-RunLog "PlaceholderQueue execution mode enabled. MaxTasks=$MaxTasks"
+            foreach ($task in $queueTasks) {
+                if ($executedCount -ge $MaxTasks) { break }
 
-        Append-RunLog "Task 01 execution result: executed=$task01Executed output=$task01OutputPath validation=$task01OutputValidationResult"
-    }
-    elseif ($exitCode -eq 0) {
-        $task01Executed = 'NO'
-        $task01OutputValidationResult = 'NOT_EXECUTED'
-        $finalStatus = 'SUCCESS'
+                $taskId = [string]$task.task_id
+                $title = [string]$task.title
+                $taskType = [string]$task.task_type
+                $outputRel = [string]$task.allowed_output_file
+                $outputFull = Join-Path -Path $RepoPath -ChildPath $outputRel
+
+                if (-not ($placeholderAllowedTaskTypes -contains $taskType)) {
+                    $skipWithNoteCount++
+                    $executionRows += [PSCustomObject]@{
+                        task_id = $taskId
+                        title = $title
+                        task_type = $taskType
+                        output_path = $outputRel
+                        execution_status = 'SKIP_WITH_NOTE'
+                        validation_result = 'NOT_APPLICABLE_TASK_TYPE'
+                    }
+                    Append-RunLog "Task decision: $taskId SKIP_WITH_NOTE task_type=$taskType"
+                    continue
+                }
+
+                if (Test-Path -LiteralPath $outputFull) {
+                    $existingLength = (Get-Item -LiteralPath $outputFull).Length
+                    if ($existingLength -ge 400) {
+                        $skipValidCount++
+                        $executionRows += [PSCustomObject]@{
+                            task_id = $taskId
+                            title = $title
+                            task_type = $taskType
+                            output_path = $outputRel
+                            execution_status = 'SKIP_VALID'
+                            validation_result = 'EXISTING_OUTPUT_VALID'
+                        }
+                        Append-RunLog "Task decision: $taskId SKIP_VALID existing_length=$existingLength"
+                        continue
+                    }
+                }
+
+                Ensure-Directory -Path (Split-Path -Path $outputFull -Parent)
+                $placeholderContent = New-PlaceholderContent -TaskId $taskId -TaskTitle $title
+                Set-Content -Path $outputFull -Value $placeholderContent -Encoding UTF8
+                $validationResult = Test-OutputContent -FullPath $outputFull -TaskTitle $title
+
+                $executionStatus = 'EXECUTED'
+                if ($validationResult -ne 'PASS') {
+                    $executionStatus = 'VALIDATION_FAIL'
+                    $validationFailCount++
+                }
+                else {
+                    $executedCount++
+                }
+
+                $executionRows += [PSCustomObject]@{
+                    task_id = $taskId
+                    title = $title
+                    task_type = $taskType
+                    output_path = $outputRel
+                    execution_status = $executionStatus
+                    validation_result = $validationResult
+                }
+
+                Append-RunLog "Task decision: $taskId $executionStatus output=$outputRel"
+                Append-RunLog "Task output validation result: $taskId $validationResult"
+            }
+
+            Append-RunLog "PlaceholderQueue totals: executed_count=$executedCount skip_valid_count=$skipValidCount skip_with_note_count=$skipWithNoteCount validation_fail_count=$validationFailCount"
+
+            if ($validationFailCount -gt 0) {
+                $finalStatus = 'VALIDATION_FAIL'
+                $failureReason = 'One or more placeholder outputs failed validation.'
+                $exitCode = 1
+            }
+            else {
+                $finalStatus = 'SUCCESS'
+                $exitCode = 0
+            }
+        }
+        else {
+            $finalStatus = 'SUCCESS'
+            $exitCode = 0
+        }
     }
 
-    Append-RunLog "Queue header validation result: PASS; QueueId=$queueId Safety=$queueSafetyLevel TaskCount=$queueTaskCount"
+    Append-RunLog "Final execution totals: executed_count=$executedCount skip_valid_count=$skipValidCount skip_with_note_count=$skipWithNoteCount validation_fail_count=$validationFailCount"
 }
 catch {
     if (-not $failureReason) {
@@ -495,12 +618,12 @@ finally {
     }
 
     if (Test-Path -LiteralPath $runLogPath) {
-        Append-RunLog "Final status: $finalStatus ExitCode=$exitCode ExecuteTaskId=$ExecuteTaskId Task01Executed=$task01Executed Task01Validation=$task01OutputValidationResult"
+        Append-RunLog "Final status: $finalStatus ExitCode=$exitCode ExecuteTaskId=$ExecuteTaskId ExecuteMode=$ExecuteMode MaxTasks=$MaxTasks"
     }
 }
 
 if ($exitCode -eq 0) {
-    Write-Host "A10 v1 run succeeded. RunId=$runId ExecuteTaskId=$ExecuteTaskId"
+    Write-Host "A10 v1 run succeeded. RunId=$runId ExecuteTaskId=$ExecuteTaskId ExecuteMode=$ExecuteMode"
     exit 0
 }
 

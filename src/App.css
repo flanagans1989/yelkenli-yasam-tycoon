@@ -11558,3 +11558,25 @@ button {
   background: rgba(12, 42, 71, 0.64);
   color: rgba(214, 244, 250, 0.84);
 }
+
+/* A6R targeted mobile safety patch */
+* {
+  box-sizing: border-box;
+}
+
+img, svg, video {
+  max-width: 100%;
+  height: auto;
+}
+
+button, input, select, textarea {
+  font-size: inherit;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  body {
+    overflow-y: auto;
+  }
+}
+

@@ -1,8 +1,9 @@
-﻿param(
+param(
     [string]$RepoPath = 'C:\dev\yelkenli-yasam-tycoon',
     [string]$ExpectedBranch = 'agent/day-01',
     [bool]$DryRun = $true,
-    [string]$QueuePath = 'docs/agent/a10/queues/A10_NIGHT_SHIFT_SAFE_QUEUE_01.json'
+    [string]$QueuePath = 'docs/agent/a10/queues/A10_NIGHT_SHIFT_SAFE_QUEUE_01.json',
+    [string]$ExecuteTaskId = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -18,50 +19,6 @@ function Ensure-Directory {
         New-Item -Path $Path -ItemType Directory -Force | Out-Null
     }
 }
-
-$runId = New-RunId
-$startedAt = Get-Date
-$timestampIso = $startedAt.ToString('o')
-$currentBranch = ''
-$finalStatus = 'UNKNOWN'
-$exitCode = 2
-$failureReason = $null
-$requiredDocsResult = 'FAIL'
-$gitStatusLines = @()
-$gitStatusSummary = 'NOT_CHECKED'
-$queueValidationResult = 'NOT_CHECKED'
-$queueId = ''
-$queueSafetyLevel = ''
-$queueTaskCount = 0
-$expectedOutputFolder = 'docs/agent/a10/night-shift-01/'
-$expectedOutputFolderStatus = 'NOT_CHECKED'
-$taskValidationRows = @()
-
-$canonicalTaskTypes = @(
-    'docs-only',
-    'css-patch-proposal',
-    'css-patch-apply',
-    'script-only',
-    'build-check',
-    'audit/checklist'
-)
-
-$requiredDocs = @(
-    'docs/agent/a10/A10_TASK_TEMPLATE.md',
-    'docs/agent/a10/A10_STATUS_CODES.md',
-    'docs/agent/a10/A10_RETRY_TIMEOUT_POLICY.md',
-    'docs/agent/a10/A10_LOG_SCHEMA.md',
-    'docs/agent/a10/A10_GUARDRAILS_CHECKLIST.md',
-    'docs/agent/a10/A10_NIGHT_SHIFT_FINAL_REPORT_TEMPLATE.md',
-    'docs/agent/a10/A10_DOCS_CONSISTENCY_AUDIT.md'
-)
-
-$logsBase = Join-Path -Path $RepoPath -ChildPath 'logs/agent/a10'
-$runLogDir = Join-Path -Path $RepoPath -ChildPath 'logs/agent/a10/runs'
-$reportDir = Join-Path -Path $RepoPath -ChildPath 'docs/agent/a10/runs'
-
-$runLogPath = Join-Path -Path $runLogDir -ChildPath ("$runId.log")
-$finalReportPath = Join-Path -Path $reportDir -ChildPath ("$runId-dry-run-report.md")
 
 function Append-RunLog {
     param([string]$Message)
@@ -85,26 +42,11 @@ function Resolve-QueuePath {
 function Test-AllowedOutputFile {
     param([string]$PathValue)
 
-    if ([string]::IsNullOrWhiteSpace($PathValue)) {
-        return $false
-    }
-
-    if (-not $PathValue.StartsWith('docs/agent/a10/night-shift-01/')) {
-        return $false
-    }
-
-    if ($PathValue.Contains('..')) {
-        return $false
-    }
-
-    if ($PathValue -match '^[A-Za-z]:\\') {
-        return $false
-    }
-
-    if ($PathValue.StartsWith('/')) {
-        return $false
-    }
-
+    if ([string]::IsNullOrWhiteSpace($PathValue)) { return $false }
+    if (-not $PathValue.StartsWith('docs/agent/a10/night-shift-01/')) { return $false }
+    if ($PathValue.Contains('..')) { return $false }
+    if ($PathValue -match '^[A-Za-z]:\\') { return $false }
+    if ($PathValue.StartsWith('/')) { return $false }
     return $true
 }
 
@@ -147,6 +89,10 @@ function Write-FinalReport {
 - Repo path: $RepoPath
 - Branch: $currentBranch
 - DryRun: $DryRun
+- ExecuteTaskId: $ExecuteTaskId
+- Task 01 executed: $task01Executed
+- Task 01 output path: $task01OutputPath
+- Task 01 output validation: $task01OutputValidationResult
 - Required docs validation result: $requiredDocsResult
 - Queue path: $resolvedQueuePath
 - Queue ID: $queueId
@@ -164,8 +110,8 @@ $($taskTableLines -join "`r`n")
 $gitSummaryBlock
 
 ## Notes
-- Dry-run only.
-- No task execution, no AI calls, no patch apply, no build.
+- Dry-run + controlled Task 01 execution support.
+- No AI calls, no patch apply, no build.
 "@
 
     if ($failureReason) {
@@ -175,9 +121,62 @@ $gitSummaryBlock
     Set-Content -Path $finalReportPath -Value $body -Encoding UTF8
 }
 
+$runId = New-RunId
+$startedAt = Get-Date
+$timestampIso = $startedAt.ToString('o')
+$currentBranch = ''
+$finalStatus = 'UNKNOWN'
+$exitCode = 2
+$failureReason = $null
+$requiredDocsResult = 'FAIL'
+$gitStatusLines = @()
+$gitStatusSummary = 'NOT_CHECKED'
+$queueValidationResult = 'NOT_CHECKED'
+$queueId = ''
+$queueSafetyLevel = ''
+$queueTaskCount = 0
+$expectedOutputFolderStatus = 'NOT_CHECKED'
+$taskValidationRows = @()
+$task01Executed = 'NO'
+$task01OutputPath = '-'
+$task01OutputValidationResult = 'NOT_EXECUTED'
+
+$canonicalTaskTypes = @(
+    'docs-only',
+    'css-patch-proposal',
+    'css-patch-apply',
+    'script-only',
+    'build-check',
+    'audit/checklist'
+)
+
+$requiredDocs = @(
+    'docs/agent/a10/A10_TASK_TEMPLATE.md',
+    'docs/agent/a10/A10_STATUS_CODES.md',
+    'docs/agent/a10/A10_RETRY_TIMEOUT_POLICY.md',
+    'docs/agent/a10/A10_LOG_SCHEMA.md',
+    'docs/agent/a10/A10_GUARDRAILS_CHECKLIST.md',
+    'docs/agent/a10/A10_NIGHT_SHIFT_FINAL_REPORT_TEMPLATE.md',
+    'docs/agent/a10/A10_DOCS_CONSISTENCY_AUDIT.md'
+)
+
+$logsBase = Join-Path -Path $RepoPath -ChildPath 'logs/agent/a10'
+$runLogDir = Join-Path -Path $RepoPath -ChildPath 'logs/agent/a10/runs'
+$reportDir = Join-Path -Path $RepoPath -ChildPath 'docs/agent/a10/runs'
+
+$runLogPath = Join-Path -Path $runLogDir -ChildPath ("$runId.log")
+$finalReportPath = Join-Path -Path $reportDir -ChildPath ("$runId-dry-run-report.md")
 $resolvedQueuePath = Resolve-QueuePath -BaseRepoPath $RepoPath -InputQueuePath $QueuePath
 
 try {
+    if ($ExecuteTaskId -ne '' -and $ExecuteTaskId -ne 'Task 01') {
+        $finalStatus = 'HARD_STOP'
+        $failureReason = "Unsupported ExecuteTaskId: $ExecuteTaskId"
+        $queueValidationResult = 'HARD_STOP_INVALID_EXECUTE_TASK_ID'
+        $exitCode = 2
+        throw [System.Exception]::new($failureReason)
+    }
+
     if (-not (Test-Path -LiteralPath $RepoPath)) {
         throw "RepoPath not found: $RepoPath"
     }
@@ -186,7 +185,7 @@ try {
     Ensure-Directory -Path $runLogDir
     Ensure-Directory -Path $reportDir
 
-    Set-Content -Path $runLogPath -Value "[$timestampIso] A10 runner v1 started. DryRun=$DryRun QueuePath=$resolvedQueuePath" -Encoding UTF8
+    Set-Content -Path $runLogPath -Value "[$timestampIso] A10 runner v1 started. DryRun=$DryRun QueuePath=$resolvedQueuePath ExecuteTaskId=$ExecuteTaskId" -Encoding UTF8
 
     $gitDir = Join-Path -Path $RepoPath -ChildPath '.git'
     if (-not (Test-Path -LiteralPath $gitDir)) {
@@ -232,7 +231,6 @@ try {
         $finalStatus = 'HARD_STOP'
         $queueValidationResult = 'HARD_STOP_QUEUE_FILE_MISSING'
         $failureReason = "Queue file not found: $resolvedQueuePath"
-        Append-RunLog "Queue load failure. Status=HARD_STOP Reason=$failureReason"
         $exitCode = 2
         throw [System.Exception]::new($failureReason)
     }
@@ -247,7 +245,6 @@ try {
         $finalStatus = 'HARD_STOP'
         $queueValidationResult = 'HARD_STOP_JSON_PARSE_FAIL'
         $failureReason = "Queue JSON parse failed: $($_.Exception.Message)"
-        Append-RunLog "Queue load failure. Status=HARD_STOP Reason=$failureReason"
         $exitCode = 2
         throw [System.Exception]::new($failureReason)
     }
@@ -275,7 +272,6 @@ try {
         $finalStatus = 'HARD_STOP'
         $queueValidationResult = 'HARD_STOP_QUEUE_HEADER_INVALID'
         $failureReason = 'Queue header validation failed: ' + ($headerIssues -join '; ')
-        Append-RunLog "Queue header validation failed. Status=HARD_STOP Issues=$($headerIssues -join ' | ')"
         $exitCode = 2
         throw [System.Exception]::new($failureReason)
     }
@@ -307,9 +303,6 @@ try {
 
         $forbiddenScopeValid = $true
         if ($null -eq $task.forbidden_scope) {
-            $forbiddenScopeValid = $false
-        }
-        elseif (($task.forbidden_scope -is [string]) -and [string]::IsNullOrWhiteSpace([string]$task.forbidden_scope)) {
             $forbiddenScopeValid = $false
         }
         else {
@@ -361,21 +354,116 @@ try {
         $finalStatus = 'HARD_STOP'
         $queueValidationResult = 'HARD_STOP_FORBIDDEN_OUTPUT_PATH'
         $failureReason = 'allowed_output_file validation failed for one or more tasks'
-        Append-RunLog 'Final status=HARD_STOP due to allowed_output_file validation failure.'
         $exitCode = 2
     }
     elseif ($nonHardValidationFailed) {
         $finalStatus = 'VALIDATION_FAIL'
         $queueValidationResult = 'VALIDATION_FAIL'
         $failureReason = 'One or more queue/task validations failed (non-hard).'
-        Append-RunLog 'Final status=VALIDATION_FAIL due to non-hard validation failures.'
         $exitCode = 1
     }
     else {
-        $finalStatus = 'SUCCESS'
         $queueValidationResult = 'PASS'
-        Append-RunLog 'Final status=SUCCESS. All queue validations passed.'
         $exitCode = 0
+    }
+
+    if ($exitCode -eq 0 -and $ExecuteTaskId -eq 'Task 01') {
+        $task01 = $queueTasks | Where-Object { ([string]$_.task_id) -eq 'Task 01' } | Select-Object -First 1
+        if ($null -eq $task01) {
+            $finalStatus = 'HARD_STOP'
+            $queueValidationResult = 'HARD_STOP_TASK_01_MISSING'
+            $failureReason = 'Task 01 not found in queue.'
+            $exitCode = 2
+            throw [System.Exception]::new($failureReason)
+        }
+
+        $expectedTask01OutputRel = 'docs/agent/a10/night-shift-01/T01_BRANCH_SAFETY_CHECK_PLAN.md'
+        $task01AllowedOutput = [string]$task01.allowed_output_file
+        if ($task01AllowedOutput -ne $expectedTask01OutputRel) {
+            $finalStatus = 'HARD_STOP'
+            $queueValidationResult = 'HARD_STOP_TASK_01_OUTPUT_MISMATCH'
+            $failureReason = "Task 01 output path mismatch. Expected '$expectedTask01OutputRel' got '$task01AllowedOutput'"
+            $exitCode = 2
+            throw [System.Exception]::new($failureReason)
+        }
+
+        $task01OutputFullPath = Join-Path -Path $RepoPath -ChildPath $task01AllowedOutput
+        $task01OutputPath = $task01AllowedOutput
+        Ensure-Directory -Path (Split-Path -Path $task01OutputFullPath -Parent)
+
+        $placeholder = @"
+# T01 Branch Safety Check Plan
+
+## 1. Amaç
+Bu belge A10 Batch 9 deterministic placeholder execution çıktısıdır.
+Amaç, gece koşusunda branch güvenliğini tek görevlik kontrollü adımla doğrulamaktır.
+
+## 2. Kontrol Edilecek Şeyler
+Aktif branch adı kesin olarak agent/day-01 olmalıdır.
+Repo yolu doğrulanmalı ve .git klasörü mevcut olmalıdır.
+Görev sadece docs kapsamındadır; kaynak kod alanları kapsam dışıdır.
+
+## 3. Başarılı Durum
+Branch agent/day-01 ise kontrol başarılı kabul edilir.
+Queue içindeki Task 01 allowed_output_file değeri sabit hedefle eşleşmelidir.
+Çıktı dosyası tek dosya olarak yazılır ve doğrulama kurallarını karşılar.
+
+## 4. Hata Durumları
+Branch farklıysa işlem derhal başarısız olur.
+Task 01 queue içinde bulunamazsa çalışma durdurulur.
+Çıktı yolu beklenen değerden farklıysa hard stop uygulanır.
+
+## 5. Hard Stop Kuralları
+Yanlış branch hard stop sebebidir.
+Kaynak kod veya package değişikliği bu görevde yasaktır.
+No source/package changes are allowed in this controlled execution step.
+Beklenmeyen output path veya çoklu görev denemesi hard stop sebebidir.
+
+## 6. Sabah İnceleme Notu
+Kullanıcı sabah yalnızca log ve final raporu üzerinden karar verir.
+Manual commit/push zorunluluğu devam eder.
+Bu çıktı gerçek AI üretimi değil, deterministic A10 Batch 9 placeholder execution örneğidir.
+"@
+
+        Set-Content -Path $task01OutputFullPath -Value $placeholder -Encoding UTF8
+        $task01Executed = 'YES'
+
+        if (-not (Test-Path -LiteralPath $task01OutputFullPath)) {
+            $task01OutputValidationResult = 'VALIDATION_FAIL_FILE_MISSING'
+            $finalStatus = 'VALIDATION_FAIL'
+            $failureReason = 'Task 01 output file was not created.'
+            $exitCode = 1
+        }
+        else {
+            $fileInfo = Get-Item -LiteralPath $task01OutputFullPath
+            $content = Get-Content -Path $task01OutputFullPath -Raw -Encoding UTF8
+
+            if ($fileInfo.Length -lt 400) {
+                $task01OutputValidationResult = 'VALIDATION_FAIL_TOO_SHORT'
+                $finalStatus = 'VALIDATION_FAIL'
+                $failureReason = 'Task 01 output file length is below 400 bytes.'
+                $exitCode = 1
+            }
+            elseif ($content -notmatch 'T01 Branch Safety Check Plan') {
+                $task01OutputValidationResult = 'VALIDATION_FAIL_MISSING_HEADING'
+                $finalStatus = 'VALIDATION_FAIL'
+                $failureReason = 'Task 01 output heading is missing.'
+                $exitCode = 1
+            }
+            else {
+                $task01OutputValidationResult = 'PASS'
+                $finalStatus = 'SUCCESS'
+                $failureReason = $null
+                $exitCode = 0
+            }
+        }
+
+        Append-RunLog "Task 01 execution result: executed=$task01Executed output=$task01OutputPath validation=$task01OutputValidationResult"
+    }
+    elseif ($exitCode -eq 0) {
+        $task01Executed = 'NO'
+        $task01OutputValidationResult = 'NOT_EXECUTED'
+        $finalStatus = 'SUCCESS'
     }
 
     Append-RunLog "Queue header validation result: PASS; QueueId=$queueId Safety=$queueSafetyLevel TaskCount=$queueTaskCount"
@@ -393,26 +481,33 @@ catch {
         $queueValidationResult = 'HARD_STOP'
     }
 
-    if ($exitCode -eq 0 -or $exitCode -eq $null) {
+    if ($exitCode -eq 0 -or $null -eq $exitCode) {
         $exitCode = 2
     }
 
-    Append-RunLog "Failure captured. Status=$finalStatus Reason=$failureReason"
+    if (Test-Path -LiteralPath $runLogPath) {
+        Append-RunLog "Failure captured. Status=$finalStatus Reason=$failureReason"
+    }
 }
 finally {
-    Write-FinalReport
-    Append-RunLog "Final status: $finalStatus ExitCode=$exitCode"
+    if (Test-Path -LiteralPath $reportDir) {
+        Write-FinalReport
+    }
+
+    if (Test-Path -LiteralPath $runLogPath) {
+        Append-RunLog "Final status: $finalStatus ExitCode=$exitCode ExecuteTaskId=$ExecuteTaskId Task01Executed=$task01Executed Task01Validation=$task01OutputValidationResult"
+    }
 }
 
 if ($exitCode -eq 0) {
-    Write-Host "A10 v1 dry-run validation succeeded. RunId=$runId"
+    Write-Host "A10 v1 run succeeded. RunId=$runId ExecuteTaskId=$ExecuteTaskId"
     exit 0
 }
 
 if ($exitCode -eq 1) {
-    Write-Host "A10 v1 dry-run validation failed (non-hard). RunId=$runId Reason=$failureReason"
+    Write-Host "A10 v1 run validation failed. RunId=$runId Reason=$failureReason"
     exit 1
 }
 
-Write-Host "A10 v1 dry-run hard stop. RunId=$runId Reason=$failureReason"
+Write-Host "A10 v1 run hard stop. RunId=$runId Reason=$failureReason"
 exit 2

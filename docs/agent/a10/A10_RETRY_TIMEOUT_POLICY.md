@@ -10,6 +10,19 @@ Bu politika, A10 gece vardiyası çalıştırmalarında görevlerin ne zaman yen
 - `1 task = 1 agent call = 1 output file` ilkesi korunur.
 - Ajan taşeron, script saha şefi, kullanıcı patron, ChatGPT uygulama koçudur.
 
+Kanonik task statü seti:
+- `SUCCESS`
+- `SOFT_FAIL`
+- `HARD_STOP`
+- `SKIPPED`
+- `SKIP_VALID`
+- `SKIP_WITH_NOTE`
+- `TIMEOUT`
+- `VALIDATION_FAIL`
+- `BUILD_FAIL`
+- `FORBIDDEN_CHANGE`
+- `MANUAL_REVIEW_REQUIRED`
+
 ## 3. Görev Tipine Göre Timeout Politikası
 Önerilen üst süreler (tek deneme için):
 - `docs-only`: 120 sn
@@ -144,7 +157,7 @@ Ek rapor kuralları:
 5. Aider timeout ve çıktı yok:
 - Durum: Süre doldu, dosya üretilmedi.
 - Karar: Görev kritik değilse tek retry.
-- Sonuç: Yine yoksa `SKIP_WITH_NOTE`.
+- Sonuç: Yine yoksa `TIMEOUT` (gerekçe: `TIMEOUT_NO_OUTPUT`).
 
 6. Mevcut çıktı zaten valid:
 - Durum: Hedef dosya güncel ve tüm doğrulamalar geçiyor.

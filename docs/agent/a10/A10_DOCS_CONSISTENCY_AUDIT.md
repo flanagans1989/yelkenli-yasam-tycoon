@@ -1,5 +1,29 @@
 ﻿# A10 Docs Consistency Audit
 
+## Batch 7 Terminology Fix Applied
+
+Batch 7 kapsamında terminoloji normalize edildi ve dokümanlar kanonik sözlüğe hizalandı.
+
+Kanonik status kodları:
+- SUCCESS
+- SOFT_FAIL
+- HARD_STOP
+- SKIPPED
+- SKIP_VALID
+- SKIP_WITH_NOTE
+- TIMEOUT
+- VALIDATION_FAIL
+- BUILD_FAIL
+- FORBIDDEN_CHANGE
+- MANUAL_REVIEW_REQUIRED
+
+Kanonik task type seti:
+- docs-only
+- css-patch-proposal
+- css-patch-apply
+- script-only
+- uild-check
+- udit/checklist
 ## 1. Audit Amacı
 
 Bu audit, A10 için mevcut altı dokümanın birbiriyle uyumunu, çelişkilerini, eksik kurallarını ve script implementasyonu öncesi hazır olma seviyesini değerlendirmek için hazırlanmıştır. Amaç, runner script planına geçmeden önce kavram setini ve karar akışlarını sabitlemektir.
@@ -157,3 +181,4 @@ Sonuç:
 ## 12. Net Karar
 
 **Do A10 Docs Fix Batch first**
+

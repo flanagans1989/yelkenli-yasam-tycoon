@@ -20,7 +20,7 @@ Bu belge, A10 gece vardiyasında kullanılacak standart görev kartı şablonunu
 
 ### 5) Task Type
 - Görev sınıfı.
-- Örnek değerler: `docs-only`, `css-patch-proposal`, `analysis-only`, `test-plan`
+- Kanonik değerler: `docs-only`, `css-patch-proposal`, `css-patch-apply`, `script-only`, `build-check`, `audit/checklist`
 
 ### 6) Allowed Output File
 - Çıktının yazılmasına izin verilen dosya(lar).
@@ -189,7 +189,7 @@ Task ID: A10-TASK-0410
 Batch ID: A10-BATCH-06
 Title: Yasak kapsam denetim örnekleri yaz
 Goal: Ajanların kapsam ihlalini erkenden yakalamak
-Task Type: analysis-only
+Task Type: audit/checklist
 Allowed Output File: docs/agent/a10/SCOPE_VALIDATION_NOTES.md
 Allowed Input Context: docs/agent/a10/, errors_log özetleri
 Forbidden Scope: src/, scripts/, package*.json, dist/

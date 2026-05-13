@@ -32,10 +32,17 @@ Bu belge, A10 görev yürütümünde kullanılacak standart durum kodlarını ta
 
 ## SKIP_VALID
 - Meaning: Atlama kararı doğrulama kurallarına göre geçerli.
-- When used: Skip gerekçesi kurallarda açıkça izinliyse.
+- When used: Hedef çıktı zaten mevcutsa ve doğrulama kontrollerini geçiyorsa.
 - Should batch continue?: Evet.
 - Should human review?: Genelde hayır.
-- Example log line: `[A10][SKIP_VALID] task=A10-TASK-0410 reason=deprecated_task`
+- Example log line: `[A10][SKIP_VALID] task=A10-TASK-0410 reason=output_already_valid`
+
+## SKIP_WITH_NOTE
+- Meaning: Görev bilinçli olarak atlandı ve risk/gerekçe notu zorunlu yazıldı.
+- When used: Tekrarlayan düşük değerli retry, desteklenmeyen görev tipi veya tekrar denemesi anlamlı olmayan durumlarda.
+- Should batch continue?: Evet.
+- Should human review?: Evet, sabah raporunda not üzerinden.
+- Example log line: `[A10][SKIP_WITH_NOTE] task=A10-TASK-0520 reason=low_value_retry note=kept_for_morning_review`
 
 ## TIMEOUT
 - Meaning: Görev ayrılan sürede tamamlanamadı.

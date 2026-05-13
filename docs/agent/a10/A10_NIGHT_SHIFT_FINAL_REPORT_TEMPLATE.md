@@ -27,10 +27,12 @@ Aşağıdaki alanlar zorunludur:
 | HARD_STOP count |  |
 | SKIPPED count |  |
 | SKIP_VALID count |  |
+| SKIP_WITH_NOTE count |  |
 | TIMEOUT count |  |
 | MANUAL_REVIEW_REQUIRED count |  |
 
 Not: Bu tablo, task log toplamları ile birebir eşleşmelidir.
+Ek not: `BUILD_FAIL`, `FORBIDDEN_CHANGE` ve `VALIDATION_FAIL` durumları görev sonuç tablosunda ayrı status olarak görünmeli; `HARD_STOP` üst-kategori bilgisini gizlememelidir.
 
 ## 4. Değişen Dosyalar
 
@@ -153,6 +155,7 @@ Durum dağılımı:
 - `HARD_STOP`: `0`
 - `SKIPPED`: `0`
 - `SKIP_VALID`: `0`
+- `SKIP_WITH_NOTE`: `0`
 - `TIMEOUT`: `0`
 - `MANUAL_REVIEW_REQUIRED`: `0`
 

@@ -93,7 +93,7 @@ Açık onay yoksa aşağıdakiler yasaktır:
 | weak text quality | tekrar eden ve düşük netlikte metin | kalite kontrol checklisti | soft fail + yeniden üretim öner | "Metin kalitesi zayıf" |
 | timeout on optional docs task | opsiyonel görevde süre aşıldı | timeout policy kontrolü | `SOFT_FAIL`, run devam | "Opsiyonel görev timeout" |
 | duplicate/repetitive output | aynı paragraf çoklu tekrar | tekrar analizi/pattern check | soft fail + revizyon iste | "Tekrarlı çıktı" |
-| skipped because output already valid | mevcut dosya zaten kabul kriterini sağlıyor | içerik hash/validator eşleşmesi | `SKIPPED` (başarısızlık değil) | "Mevcut çıktı geçerli, task atlandı" |
+| skipped because output already valid | mevcut dosya zaten kabul kriterini sağlıyor | içerik hash/validator eşleşmesi | `SKIP_VALID` (başarısızlık değil) | "Mevcut çıktı geçerli, task atlandı" |
 
 ## 8. Manual Review Checklist
 

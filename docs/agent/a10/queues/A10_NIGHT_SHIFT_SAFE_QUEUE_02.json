@@ -1,0 +1,407 @@
+{
+  "queue_id": "A10_NIGHT_SHIFT_SAFE_QUEUE_02",
+  "queue_title": "A10 Night Shift Safe Queue 02 - Game Design Analysis",
+  "version": "v1",
+  "created_for_branch": "agent/day-01",
+  "safety_level": "SAFE_DOCS_ONLY",
+  "purpose": "Mevcut oyun sistemlerini analiz ederek tasarim dokumanlari uretmek. Kaynak kod degisikligi yok.",
+  "global_rules": [
+    "No source code edits",
+    "No package edits",
+    "No script edits",
+    "No automatic commit/push",
+    "One task equals one output file",
+    "Every task must have validation",
+    "Hard stop on forbidden changes"
+  ],
+  "tasks": [
+    {
+      "task_id": "Task 01",
+      "title": "Economy Balance Audit",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/analysis",
+      "goal": "Mevcut TL gelir/gider dengesini analiz ederek erken oyun ekonomisi icin risk noktalarini tespit etmek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-02/T01_ECONOMY_BALANCE_AUDIT.md",
+      "allowed_input_context": [
+        "docs/11_Ekonomi_Sistemi.md",
+        "docs/GAME_DESIGN_RULES.md",
+        "CLAUDE.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Gelir kaynaklari, gider kalemleri ve risk noktalarini ayri basliklar altinda listeleyen analiz olmali.",
+      "minimum_output_rule": "En az 40 satir, gelir/gider tablosu ve 5 risk notu icermeli.",
+      "soft_fail_rule": "Tablo veya risk notlari eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Kaynak kod veya config dosyasi degisikligi onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Sadece mevcut dokumanlari okuyup analiz raporu uretir.",
+      "expected_commit_message": "docs(a10): add economy balance audit"
+    },
+    {
+      "task_id": "Task 02",
+      "title": "Captain Level Milestone Plan",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Kaptan seviye 1-20 icin XP esikleri, bonus turleri ve oyuncu deneyimi kilometre taslarini tanimlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-02/T02_CAPTAIN_LEVEL_MILESTONE_PLAN.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md",
+        "docs/PROJECT_STATUS.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Her seviye icin XP esigi ve bonus turu tablo halinde verilmeli.",
+      "minimum_output_rule": "En az 45 satir, 20 seviye tablosu ve 3 milestone aciklamasi.",
+      "soft_fail_rule": "Tablo eksik veya 10 seviyeden azsa SOFT_FAIL.",
+      "hard_stop_rule": "Kaynak koda deger yazma onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Tasarim dokumani uretir, kod degistirmez.",
+      "expected_commit_message": "docs(a10): add captain level milestone plan"
+    },
+    {
+      "task_id": "Task 03",
+      "title": "Daily Goals Expansion Ideas",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Mevcut 3 gunluk hedefin otesinde haftalik ve ozel hedef fikirleri listesi olusturmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-02/T03_DAILY_GOALS_EXPANSION_IDEAS.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md",
+        "docs/06_Liman_ve_Deniz_Modu.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Gunluk, haftalik ve ozel hedef kategorileri ayri basliklar altinda olmali.",
+      "minimum_output_rule": "En az 35 satir ve 15 farkli hedef fikri.",
+      "soft_fail_rule": "15 fikitten azsa SOFT_FAIL.",
+      "hard_stop_rule": "Mevcut goal sistemi koduna mudahale onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "6 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Fikir listesi uretir, implementasyon dokunmaz.",
+      "expected_commit_message": "docs(a10): add daily goals expansion ideas"
+    },
+    {
+      "task_id": "Task 04",
+      "title": "Sea Decision Event Bank",
+      "batch_suggestion": "Batch 9",
+      "task_type": "content/design",
+      "goal": "10 adet yeni deniz karar olayi senaryosu yazmak; her birinin avantaj/maliyet dengesi acik olmali.",
+      "allowed_output_file": "docs/agent/a10/night-shift-02/T04_SEA_DECISION_EVENT_BANK.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/06_Liman_ve_Deniz_Modu.md",
+        "docs/GAME_DESIGN_RULES.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Her olay: baslik, durum aciklamasi, 2 secenek, her secenegin avantaj/maliyet icermeli.",
+      "minimum_output_rule": "En az 60 satir ve 10 tam olay karti.",
+      "soft_fail_rule": "10'dan az olay veya seceneksiz kart varsa SOFT_FAIL.",
+      "hard_stop_rule": "Mevcut event koduna ekleme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "10 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Oyun ici metin icerigi uretir.",
+      "expected_commit_message": "docs(a10): add sea decision event bank"
+    },
+    {
+      "task_id": "Task 05",
+      "title": "Follower Growth System Analysis",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/analysis",
+      "goal": "Mevcut takipci buyume mekanigini analiz edip denge sorunlarini ve iyilestirme firsatlarini tespit etmek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-02/T05_FOLLOWER_GROWTH_SYSTEM_ANALYSIS.md",
+      "allowed_input_context": [
+        "docs/08_Sosyal_Medya_Sistemi.md",
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Mevcut mekanik, tespitler ve oneri bolumu olmali.",
+      "minimum_output_rule": "En az 35 satir ve 5 somut iyilestirme onerisi.",
+      "soft_fail_rule": "Oneri bolumu eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Kodda deger degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Analiz raporu uretir.",
+      "expected_commit_message": "docs(a10): add follower growth system analysis"
+    },
+    {
+      "task_id": "Task 06",
+      "title": "Upgrade Tree Design Doc",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Mevcut upgrade sistemini temel alarak 3 seviyeli upgrade agaci yapisini tasarlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-02/T06_UPGRADE_TREE_DESIGN_DOC.md",
+      "allowed_input_context": [
+        "docs/07_Tekne_Upgrade_Sistemi.md",
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Upgrade kategorileri, kilit kosullari ve bagimliliklari tablo/listede acik olmali.",
+      "minimum_output_rule": "En az 40 satir, 3 kategori ve 12 upgrade karti.",
+      "soft_fail_rule": "Bagimliliklari belirtilmemis upgrade varsa SOFT_FAIL.",
+      "hard_stop_rule": "Upgrade data dosyasina dokunma onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "9 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Sadece tasarim dokumani.",
+      "expected_commit_message": "docs(a10): add upgrade tree design doc"
+    },
+    {
+      "task_id": "Task 07",
+      "title": "World Tour Progression Design",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Dunya turu meta-ilerlemesinin basamaklarini, acilinacak icerik ve olaylarini tanimlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-02/T07_WORLD_TOUR_PROGRESSION_DESIGN.md",
+      "allowed_input_context": [
+        "docs/05_Dunya_Rotasi.md",
+        "docs/12_Kazanma_Sartlari.md",
+        "CLAUDE.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Her tur basamagi icin lokasyon, acilacak icerik ve oyuncu hissi aciklanmali.",
+      "minimum_output_rule": "En az 45 satir ve 5 tur basamagi.",
+      "soft_fail_rule": "5 basamaktan az veya acilacak icerik yoksa SOFT_FAIL.",
+      "hard_stop_rule": "Rota veya harita verisi degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Meta progression tasarim dokumani uretir.",
+      "expected_commit_message": "docs(a10): add world tour progression design"
+    },
+    {
+      "task_id": "Task 08",
+      "title": "Sponsor System Tier Analysis",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/analysis",
+      "goal": "Mevcut sponsor sistemini inceleyerek sponsor tier yapisi ve esik dengesini analiz etmek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-02/T08_SPONSOR_SYSTEM_TIER_ANALYSIS.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md",
+        "docs/11_Ekonomi_Sistemi.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Tier yapisi, mevcut esikler ve denge onerisi acik olmali.",
+      "minimum_output_rule": "En az 35 satir, tier tablosu ve 4 denge notu.",
+      "soft_fail_rule": "Tier tablosu veya denge notu eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Sponsor data dosyasina mudahale onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Analiz ve oneri dokumani uretir.",
+      "expected_commit_message": "docs(a10): add sponsor system tier analysis"
+    },
+    {
+      "task_id": "Task 09",
+      "title": "Early Game Flow Analysis",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/analysis",
+      "goal": "Ilk 10 dakikalik oyuncu deneyimini adim adim analiz ederek surtuunme noktalarini tespit etmek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-02/T09_EARLY_GAME_FLOW_ANALYSIS.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/agent/FIRST_10_MINUTES_UX_AUDIT.md",
+        "docs/GAME_DESIGN_RULES.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Oyuncu akis adimlari, surtuunme noktalari ve oneri bolumu olmali.",
+      "minimum_output_rule": "En az 40 satir, akis diyagrami ve 5 surtuunme noktasi.",
+      "soft_fail_rule": "Surtuunme noktalari 5'ten azsa SOFT_FAIL.",
+      "hard_stop_rule": "UI kod degisikligi onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "UX analiz raporu uretir.",
+      "expected_commit_message": "docs(a10): add early game flow analysis"
+    },
+    {
+      "task_id": "Task 10",
+      "title": "Content Production Balance Sheet",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/analysis",
+      "goal": "Icerik uretimi sistemi maliyetlerini, bekleme surelerini ve kazanc degerini karsilastirmali tabloda sunmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-02/T10_CONTENT_PRODUCTION_BALANCE_SHEET.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/08_Sosyal_Medya_Sistemi.md",
+        "docs/11_Ekonomi_Sistemi.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Icerik turleri, bekleme suresi, maliyet ve kazanc tabloyla verilmeli.",
+      "minimum_output_rule": "En az 35 satir ve karsilastirmali tablo.",
+      "soft_fail_rule": "Tablo olmadan metin anlatimi varsa SOFT_FAIL.",
+      "hard_stop_rule": "Icerik uretim kodu degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Veri tablosu ve denge analizi dokumani.",
+      "expected_commit_message": "docs(a10): add content production balance sheet"
+    },
+    {
+      "task_id": "Task 11",
+      "title": "Route Reward Design Review",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/analysis",
+      "goal": "Rota odullerinin mesafe/sure/risk dengesi acisindan tutarliligini degerlerndirmek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-02/T11_ROUTE_REWARD_DESIGN_REVIEW.md",
+      "allowed_input_context": [
+        "docs/09_Seyahat_Suresi_Formulu.md",
+        "docs/11_Ekonomi_Sistemi.md",
+        "CLAUDE.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Kisa/orta/uzun rota kategorileri, odul karsilastirmasi ve denge degerlendirmesi olmali.",
+      "minimum_output_rule": "En az 38 satir ve 3 rota kategorisi analizi.",
+      "soft_fail_rule": "Kategoriler eksikse veya odul karsilastirmasi yoksa SOFT_FAIL.",
+      "hard_stop_rule": "Rota deger degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Denge incelemesi raporu uretir.",
+      "expected_commit_message": "docs(a10): add route reward design review"
+    },
+    {
+      "task_id": "Task 12",
+      "title": "Player Progression Curve Analysis",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/analysis",
+      "goal": "Oyuncunun erken/orta/gec oyun gecis noktalarini ve beklenilen ilerleme egrisini analiz etmek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-02/T12_PLAYER_PROGRESSION_CURVE_ANALYSIS.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/12_Kazanma_Sartlari.md",
+        "docs/GAME_DESIGN_RULES.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Erken/orta/gec oyun asamalari, gecis kosullari ve egri yorumu olmali.",
+      "minimum_output_rule": "En az 40 satir ve 3 oyun asamasi analizi.",
+      "soft_fail_rule": "3 asama analizi eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Ilerleme sistemi kodu degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Tasarim analiz dokumani uretir.",
+      "expected_commit_message": "docs(a10): add player progression curve analysis"
+    },
+    {
+      "task_id": "Task 13",
+      "title": "Retention Hook Design Doc",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Oyuncuyu geri getiren mekanikleri (gunluk hedefler, kaptanllik XP, pasif gelir, vs.) tasiyici cercevede belgelemek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-02/T13_RETENTION_HOOK_DESIGN_DOC.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md",
+        "docs/PROJECT_STATUS.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Mevcut kancalar, etkinlik dereceleri ve eksik kanca onerileri olmali.",
+      "minimum_output_rule": "En az 38 satir, mevcut kancalar listesi ve 4 iyilestirme onerisi.",
+      "soft_fail_rule": "Oneri bolumu eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Retention mekanik kodu degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Tasarim ve strateji dokumani uretir.",
+      "expected_commit_message": "docs(a10): add retention hook design doc"
+    }
+  ],
+  "acceptance_criteria": [
+    "13 tasks listed",
+    "Each task has one output file",
+    "All outputs are under docs/agent/a10/night-shift-02/",
+    "No task touches source code",
+    "No task touches package files",
+    "No task requires build",
+    "No task commits or pushes",
+    "Every task has validation rule",
+    "Every task has soft fail and hard stop rule"
+  ]
+}

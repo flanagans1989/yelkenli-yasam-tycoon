@@ -1,0 +1,407 @@
+{
+  "queue_id": "A10_NIGHT_SHIFT_SAFE_QUEUE_04",
+  "queue_title": "A10 Night Shift Safe Queue 04 - Publishing and Polish",
+  "version": "v1",
+  "created_for_branch": "agent/day-01",
+  "safety_level": "SAFE_DOCS_ONLY",
+  "purpose": "App Store/Google Play yayin hazirligi, tutorial, onboarding ve monetizasyon planlama dokumanlari uretmek.",
+  "global_rules": [
+    "No source code edits",
+    "No package edits",
+    "No script edits",
+    "No automatic commit/push",
+    "One task equals one output file",
+    "Every task must have validation",
+    "Hard stop on forbidden changes"
+  ],
+  "tasks": [
+    {
+      "task_id": "Task 01",
+      "title": "App Store Listing Draft",
+      "batch_suggestion": "Batch 9",
+      "task_type": "content/design",
+      "goal": "App Store icin oyun basligi, aciklama, anahtar kelimeler ve ozellik noktalari taslagi yazmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-04/T01_APP_STORE_LISTING_DRAFT.md",
+      "allowed_input_context": [
+        "docs/00_Proje_Ozeti.md",
+        "docs/13_Mobil_Magaza_Stratejisi.md",
+        "CLAUDE.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Baslik, altyazi, aciklama (kisa ve uzun), anahtar kelimeler ve ozellik noktalari olmali.",
+      "minimum_output_rule": "En az 40 satir ve 5 ozellik noktasi.",
+      "soft_fail_rule": "Ozellik noktalari veya anahtar kelimeler eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Uygulama meta verisini degistiren dosyalara dokunma onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Pazarlama icerik taslagi uretir.",
+      "expected_commit_message": "docs(a10): add App Store listing draft"
+    },
+    {
+      "task_id": "Task 02",
+      "title": "Google Play Listing Draft",
+      "batch_suggestion": "Batch 9",
+      "task_type": "content/design",
+      "goal": "Google Play icin oyun aciklamasi, kisa aciklama, kategori ve icerik derecelendirmesi taslagi yazmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-04/T02_GOOGLE_PLAY_LISTING_DRAFT.md",
+      "allowed_input_context": [
+        "docs/00_Proje_Ozeti.md",
+        "docs/13_Mobil_Magaza_Stratejisi.md",
+        "CLAUDE.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Kisa aciklama, uzun aciklama, kategori secimi ve derecelendirme gerekceleri olmali.",
+      "minimum_output_rule": "En az 40 satir ve iki farkli aciklama versiyonu.",
+      "soft_fail_rule": "Iki versiyon eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Play Store konfigurasyonu degistiren dosyalara dokunma onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Store listeleme taslagi uretir.",
+      "expected_commit_message": "docs(a10): add Google Play listing draft"
+    },
+    {
+      "task_id": "Task 03",
+      "title": "Tutorial Flow Design",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Yeni oyuncu tutorial akisinin ekran ekran taslak planini olusturmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-04/T03_TUTORIAL_FLOW_DESIGN.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md",
+        "docs/agent/FIRST_10_MINUTES_UX_AUDIT.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Tutorial adimlari, her adimda ogretilen mekanik ve gecis kosullari olmali.",
+      "minimum_output_rule": "En az 45 satir ve 7 tutorial adimi.",
+      "soft_fail_rule": "7'den az adim veya ogretilen mekanik belirtilmemisse SOFT_FAIL.",
+      "hard_stop_rule": "Tutorial kodu degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "9 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "UX tasarim akisi dokumani uretir.",
+      "expected_commit_message": "docs(a10): add tutorial flow design"
+    },
+    {
+      "task_id": "Task 04",
+      "title": "Onboarding Checklist",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/checklist",
+      "goal": "Yeni kullanicinin ilk oturumunda gecmesi gereken deneyim noktalarini kontrol listesi olarak belgelerlemek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-04/T04_ONBOARDING_CHECKLIST.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md",
+        "docs/agent/A9R_02_FIRST_10_MINUTES_REVIEW.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Zorunlu deneyim noktalari, gecti/kaldi kriterleri ve oncelik siralamalari olmali.",
+      "minimum_output_rule": "En az 38 satir ve 12 onboarding maddesi.",
+      "soft_fail_rule": "Gecti/kaldi kriterleri eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Onboarding kodu degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Onboarding kontrol listesi uretir.",
+      "expected_commit_message": "docs(a10): add onboarding checklist"
+    },
+    {
+      "task_id": "Task 05",
+      "title": "Beta Testing Plan",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Kapali beta sureci icin katilimci secimi, test protokolu ve geri bildirim toplama planini tanimlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-04/T05_BETA_TESTING_PLAN.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/14_MVP_Yapim_Plani.md",
+        "docs/TEST_CHECKLIST.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Katilimci kriterleri, test adimlari ve geri bildirim formati olmali.",
+      "minimum_output_rule": "En az 40 satir ve 3 test fazı.",
+      "soft_fail_rule": "Geri bildirim toplama detaylari eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Beta build kodu degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Test planlama dokumani uretir.",
+      "expected_commit_message": "docs(a10): add beta testing plan"
+    },
+    {
+      "task_id": "Task 06",
+      "title": "Release Checklist v1",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/checklist",
+      "goal": "App Store ve Google Play ilk sürüm oncesi tamamlanmasi gereken maddelerin kontrol listesini olusturmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-04/T06_RELEASE_CHECKLIST_V1.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/14_MVP_Yapim_Plani.md",
+        "docs/TEST_CHECKLIST.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Teknik, icerik ve yasal kategorilerde maddeler ve oncelikler olmali.",
+      "minimum_output_rule": "En az 40 satir ve 15 release maddesi.",
+      "soft_fail_rule": "Yasal kategori eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Build veya deploy script degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Yayin oncesi kontrol listesi uretir.",
+      "expected_commit_message": "docs(a10): add release checklist v1"
+    },
+    {
+      "task_id": "Task 07",
+      "title": "Monetization Strategy Draft",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Oyunun para kazanma stratejisini (premium, IAP, reklam) degerlerndirerek oyuncu dostu bir yaklasim onerileri sunmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-04/T07_MONETIZATION_STRATEGY_DRAFT.md",
+      "allowed_input_context": [
+        "docs/10_Token_Sistemi.md",
+        "docs/13_Mobil_Magaza_Stratejisi.md",
+        "CLAUDE.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Model alternatifleri, oyuncu deneyimi etkisi ve risk analizi olmali.",
+      "minimum_output_rule": "En az 40 satir ve 3 para kazanma modeli karsilastirmasi.",
+      "soft_fail_rule": "Risk analizi eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Fiyatlandirma verisi veya odeme kodu degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "9 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Strateji taslak dokumani uretir.",
+      "expected_commit_message": "docs(a10): add monetization strategy draft"
+    },
+    {
+      "task_id": "Task 08",
+      "title": "Achievement System Design",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Oyuna eklenebilecek basari sistemi icin kategoriler, tetikleyiciler ve odul yapısını tasarlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-04/T08_ACHIEVEMENT_SYSTEM_DESIGN.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md",
+        "docs/12_Kazanma_Sartlari.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Basari kategorileri, tetikleyiciler ve odul tablosu olmali.",
+      "minimum_output_rule": "En az 45 satir, 4 kategori ve 15 basari karti.",
+      "soft_fail_rule": "15'ten az basari veya kategori eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Basari kodu veya veri dosyasi degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "9 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Basari sistemi tasarim dokumani uretir.",
+      "expected_commit_message": "docs(a10): add achievement system design"
+    },
+    {
+      "task_id": "Task 09",
+      "title": "Analytics Events Plan",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Oyun ici kritik olaylar icin analitik event planini tanimlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-04/T09_ANALYTICS_EVENTS_PLAN.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md",
+        "docs/14_MVP_Yapim_Plani.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Event adi, tetikleyici, parametre ve oncelik tabloyla verilmeli.",
+      "minimum_output_rule": "En az 40 satir ve 10 event kaydı.",
+      "soft_fail_rule": "10'dan az event veya parametre eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Analitik SDK veya izleme kodu degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Event katalog dokumani uretir.",
+      "expected_commit_message": "docs(a10): add analytics events plan"
+    },
+    {
+      "task_id": "Task 10",
+      "title": "Post Launch Roadmap Draft",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Ilk yayin sonrasi 3 aylik muhtemel yeni ozellik ve iyilestirme yol haritasini taslak olarak olusturmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-04/T10_POST_LAUNCH_ROADMAP_DRAFT.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/PRODUCT.md",
+        "docs/PROJECT_STATUS.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Ay 1/2/3 planlari, her ayın ana odagi ve risk faktoru olmali.",
+      "minimum_output_rule": "En az 40 satir ve 3 aylik plan.",
+      "soft_fail_rule": "Risk faktoru belirtilmemis ay varsa SOFT_FAIL.",
+      "hard_stop_rule": "Mevcut ozellik kodunu degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Yol haritasi taslagi uretir.",
+      "expected_commit_message": "docs(a10): add post launch roadmap draft"
+    },
+    {
+      "task_id": "Task 11",
+      "title": "Localization Readiness Plan",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Oyunun coklu dil destegine hazirlanmasi icin lokalizasyon gereksinimlerini ve risk alanlarini dokumanlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-04/T11_LOCALIZATION_READINESS_PLAN.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md",
+        "docs/00_Proje_Ozeti.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Hedef diller, hard-coded metin riskleri ve lokalizasyon hazirlik adimlari olmali.",
+      "minimum_output_rule": "En az 38 satir ve 5 hazirlik adimi.",
+      "soft_fail_rule": "Hard-coded metin riskleri belirtilmemisse SOFT_FAIL.",
+      "hard_stop_rule": "Dize dosyasi veya kaynak koda dokunma onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Lokalizasyon hazirlik dokumani uretir.",
+      "expected_commit_message": "docs(a10): add localization readiness plan"
+    },
+    {
+      "task_id": "Task 12",
+      "title": "Screenshot and Preview Plan",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "App Store ve Google Play icin kullanilacak ekran goruntuleri ve onizleme videosunun iceriklarini planlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-04/T12_SCREENSHOT_AND_PREVIEW_PLAN.md",
+      "allowed_input_context": [
+        "docs/13_Mobil_Magaza_Stratejisi.md",
+        "docs/00_Proje_Ozeti.md",
+        "CLAUDE.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Her ekran goruntusunun icerigi, sirasi ve mesaji tablo olarak olmali.",
+      "minimum_output_rule": "En az 35 satir ve 5 ekran goruntusü plani.",
+      "soft_fail_rule": "Mesaj veya icerik belirtilmemis goruntu varsa SOFT_FAIL.",
+      "hard_stop_rule": "Gorsel veya varlik dosyasi degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "6 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Pazarlama gorselleri icerik plani uretir.",
+      "expected_commit_message": "docs(a10): add screenshot and preview plan"
+    },
+    {
+      "task_id": "Task 13",
+      "title": "Social Sharing Feature Design",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Oyundan sosyal medyaya paylasim ozelliginin tasarimini: hangi anlar, ne formatta, hangi metin ile yapilacagini planlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-04/T13_SOCIAL_SHARING_FEATURE_DESIGN.md",
+      "allowed_input_context": [
+        "docs/08_Sosyal_Medya_Sistemi.md",
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Paylasim anlari, format onerisi ve CTA mesajlari olmali.",
+      "minimum_output_rule": "En az 38 satir ve 5 paylasim ani senaryosu.",
+      "soft_fail_rule": "5'ten az senaryo veya CTA eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Sosyal paylasim API entegrasyon kodu onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Ozellik tasarim dokumani uretir.",
+      "expected_commit_message": "docs(a10): add social sharing feature design"
+    }
+  ],
+  "acceptance_criteria": [
+    "13 tasks listed",
+    "Each task has one output file",
+    "All outputs are under docs/agent/a10/night-shift-04/",
+    "No task touches source code",
+    "No task touches package files",
+    "No task requires build",
+    "No task commits or pushes",
+    "Every task has validation rule",
+    "Every task has soft fail and hard stop rule"
+  ]
+}

@@ -261,6 +261,8 @@ function App() {
   const [dailyGoals, setDailyGoals] = useState<DailyGoal[]>(makeDailyGoals);
   const [lastDailyReset, setLastDailyReset] = useState<string>("");
   const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
+  const [loginStreak, setLoginStreak] = useState(0);
+  const [lastLoginBonus, setLastLoginBonus] = useState<string>("");
   const [totalContentProduced, setTotalContentProduced] = useState(0);
   const [hasCompletedDailyGoalsOnce, setHasCompletedDailyGoalsOnce] = useState(false);
   const [activeStoryHook, setActiveStoryHook] = useState<StoryHook | null>(null);
@@ -539,8 +541,23 @@ function App() {
         setLastDailyReset(today);
         setDailyRewardClaimed(false);
       }
+      if (lastLoginBonus !== today) {
+        const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+        const isConsecutive = lastLoginBonus === yesterday;
+        const newStreak = isConsecutive ? loginStreak + 1 : 1;
+        setLoginStreak(newStreak);
+        setLastLoginBonus(today);
+        const bonus = 500 + Math.min(newStreak - 1, 6) * 100;
+        setCredits(c => c + bonus);
+        setCaptainXp(x => x + 10);
+        pushToast(
+          "content",
+          `Günlük Giriş Bonusu — Gün ${newStreak}`,
+          `+${bonus} TL · +10 XP · ${newStreak > 1 ? `${newStreak} günlük seri!` : "Yarın için geri gel!"}`,
+        );
+      }
     }
-  }, [step, lastDailyReset]);
+  }, [step, lastDailyReset, lastLoginBonus, loginStreak]);
 
   useEffect(() => {
     const allDone = dailyGoals.length > 0 && dailyGoals.every(g => g.completed);
@@ -647,6 +664,8 @@ function App() {
         gender,
         completedFollowerMilestones,
         sponsorObligations,
+        loginStreak,
+        lastLoginBonus,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveObj));
       setHasSave(true);
@@ -660,7 +679,7 @@ function App() {
     brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, contentHistory, icerikSubTab, lastContentAt, marinaRestInProgress,
     captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
     hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor, activeStoryHook,
-    tutorialStep, gender, completedFollowerMilestones, sponsorObligations
+    tutorialStep, gender, completedFollowerMilestones, sponsorObligations, loginStreak, lastLoginBonus
   ]);
 
   const finalizeGame = () => {
@@ -695,6 +714,8 @@ function App() {
     setContentHistory([]);
     setCompletedFollowerMilestones([]);
     setSponsorObligations({});
+    setLoginStreak(0);
+    setLastLoginBonus("");
     setIcerikSubTab("produce");
     setLastContentAt(null);
     setMarinaRestInProgress(null);
@@ -782,6 +803,8 @@ function App() {
       setGender(parsed.gender ?? "unspecified");
       setCompletedFollowerMilestones(Array.isArray(parsed.completedFollowerMilestones) ? parsed.completedFollowerMilestones : []);
       setSponsorObligations(parsed.sponsorObligations && typeof parsed.sponsorObligations === "object" ? parsed.sponsorObligations : {});
+      setLoginStreak(parsed.loginStreak ?? 0);
+      setLastLoginBonus(parsed.lastLoginBonus ?? "");
       setStep(safeLoadStep(parsed));
       setActiveTab(parsed.activeTab ?? "liman");
 
@@ -1124,7 +1147,14 @@ function App() {
       setSponsorObligations(prev => {
         const updated = { ...prev };
         for (const name of acceptedSponsors) {
-          updated[name] = (updated[name] ?? 0) + 1;
+          const prevCount = prev[name] ?? 0;
+          const newCount = prevCount + 1;
+          updated[name] = newCount;
+          if (prevCount < 5 && newCount >= 5) {
+            setCredits(c => c + 500);
+            setBrandTrust(bt => Math.min(100, bt + 5));
+            pushToast("sponsor", `${name} Yükümlülüğü Tamamlandı!`, "+500 TL · +5 Marka Güveni kazandın.");
+          }
         }
         return updated;
       });

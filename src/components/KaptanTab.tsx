@@ -72,6 +72,19 @@ export function KaptanTab({
   const followerGoal = 1_000_000;
   const followerPct = Math.min((followers / followerGoal) * 100, 100);
 
+  const socialRankTiers = [
+    { min: 0,         max: 1_000,     icon: "🌱", label: "Başlangıç",     color: "#a3e635" },
+    { min: 1_000,     max: 10_000,    icon: "🌊", label: "Yükselen",      color: "#22d3ee" },
+    { min: 10_000,    max: 100_000,   icon: "⭐", label: "Influencer",    color: "#facc15" },
+    { min: 100_000,   max: 1_000_000, icon: "🔥", label: "Fenomen",       color: "#f97316" },
+    { min: 1_000_000, max: Infinity,  icon: "🌟", label: "Dünya Yıldızı", color: "#e879f9" },
+  ];
+  const socialRank = socialRankTiers.findLast(t => followers >= t.min) ?? socialRankTiers[0];
+  const nextSocialRank = socialRankTiers[socialRankTiers.indexOf(socialRank) + 1];
+  const socialRankPct = nextSocialRank
+    ? Math.min(100, ((followers - socialRank.min) / (nextSocialRank.min - socialRank.min)) * 100)
+    : 100;
+
   const formatFollowers = (n: number) => {
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
     if (n >= 1_000) return `${(n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1)}K`;
@@ -98,6 +111,21 @@ export function KaptanTab({
         <div className="kp-rank-row">
           <span className="kp-rank-pill">{captainRankLabel}</span>
           <span className="kp-rank-meta">Lv.{captainLevel} · {captainXp.toLocaleString("tr-TR")} XP</span>
+        </div>
+        <div className="kp-social-rank-row">
+          <span className="kp-social-rank-icon">{socialRank.icon}</span>
+          <div className="kp-social-rank-body">
+            <div className="kp-social-rank-head">
+              <span className="kp-social-rank-label" style={{ color: socialRank.color }}>{socialRank.label}</span>
+              <span className="kp-social-rank-followers">{formatFollowers(followers)} takipçi</span>
+            </div>
+            <div className="kp-social-rank-track">
+              <div className="kp-social-rank-fill" style={{ width: `${socialRankPct}%`, background: socialRank.color }} />
+            </div>
+            {nextSocialRank && (
+              <span className="kp-social-rank-next">Sıradaki: {nextSocialRank.icon} {nextSocialRank.label} → {formatFollowers(nextSocialRank.min)}</span>
+            )}
+          </div>
         </div>
       </div>
 

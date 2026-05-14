@@ -159,6 +159,26 @@
   color: #c9e4f2;
 }
 
+/* ── Social rank row ── */
+.kp-tab-v2 .kp-social-rank-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  position: relative;
+  z-index: 1;
+}
+.kp-tab-v2 .kp-social-rank-icon { font-size: 22px; line-height: 1; margin-top: 2px; }
+.kp-tab-v2 .kp-social-rank-body { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.kp-tab-v2 .kp-social-rank-head { display: flex; justify-content: space-between; align-items: baseline; }
+.kp-tab-v2 .kp-social-rank-label { font-size: 13px; font-weight: 800; letter-spacing: 0.05em; }
+.kp-tab-v2 .kp-social-rank-followers { font-size: 11px; color: var(--text-secondary); }
+.kp-tab-v2 .kp-social-rank-track { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+.kp-tab-v2 .kp-social-rank-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+.kp-tab-v2 .kp-social-rank-next { font-size: 10px; color: var(--text-secondary); opacity: 0.8; }
+
 /* ── Level / XP card ── */
 .kp-tab-v2 .kp-level-card {
   padding: 14px 16px;

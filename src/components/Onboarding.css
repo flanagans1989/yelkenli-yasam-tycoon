@@ -164,9 +164,24 @@
   font-size: 11px;
   color: var(--text-muted);
   letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   padding: 6px 16px;
   border-radius: var(--radius-pill);
   border: 1px solid rgba(94, 234, 248, 0.12);
+}
+
+.ob-inline-link {
+  color: var(--cyan-soft);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.ob-inline-link:hover,
+.ob-inline-link:focus-visible {
+  color: var(--gold-primary);
+  text-decoration: underline;
 }
 
 /* ── Shared onboarding screen base ── */

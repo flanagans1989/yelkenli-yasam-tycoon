@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yelkenli Yaşam Tycoon | Gizlilik Politikası</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg-top: #0d2742;
+        --bg-bottom: #07131f;
+        --card: rgba(8, 25, 42, 0.88);
+        --border: rgba(94, 234, 248, 0.18);
+        --text: #f4f8fb;
+        --muted: #a9bac8;
+        --accent: #73e7f6;
+        --gold: #ffd982;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, system-ui, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top, rgba(115, 231, 246, 0.16), transparent 36%),
+          linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+      }
+
+      main {
+        width: min(760px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0 64px;
+      }
+
+      .card {
+        padding: 28px 24px;
+        border-radius: 24px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
+        backdrop-filter: blur(14px);
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: var(--accent);
+        letter-spacing: 0.16em;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(2rem, 5vw, 2.8rem);
+      }
+
+      p,
+      li {
+        line-height: 1.65;
+        color: var(--muted);
+      }
+
+      h2 {
+        margin-top: 28px;
+        color: var(--gold);
+        font-size: 1.05rem;
+      }
+
+      ul {
+        padding-left: 20px;
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      .meta {
+        margin-top: 20px;
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="card">
+        <p class="eyebrow">Yelkenli Yaşam Tycoon</p>
+        <h1>Gizlilik Politikası</h1>
+        <p>
+          Bu sayfa şu an temel bir gizlilik politikası taslağıdır. Uygulamanın yayın öncesi sürümünde,
+          hangi verilerin işlendiğini ve nasıl saklandığını oyunculara açıkça göstermek için eklenmiştir.
+        </p>
+
+        <h2>Toplanan veriler</h2>
+        <p>
+          Uygulama oyun ilerlemesi, tekne adı, ekonomi durumu ve tercih gibi oyun deneyimi için gerekli
+          bilgileri cihaz üzerinde saklayabilir. Bu taslak sürümde amaç, yerel kayıt davranışını şeffaf
+          şekilde açıklamaktır.
+        </p>
+
+        <h2>Yerel kayıtlar</h2>
+        <p>
+          Oyun ilerlemesi, kullanıcı deneyimini sürdürmek için cihazın yerel depolama alanında tutulabilir.
+          Hassas alanların kayda yazılmaması ve eski kayıtların güvenli şekilde taşınması için teknik önlemler
+          uygulanır.
+        </p>
+
+        <h2>Üçüncü taraf paylaşımı</h2>
+        <p>
+          Bu stub sayfa, şu anda otomatik üçüncü taraf veri paylaşımı taahhüdü vermez. Üretim sürümünde
+          analitik, reklam veya destek hizmetleri eklenecekse bu bölüm güncellenecektir.
+        </p>
+
+        <h2>Oyuncu hakları</h2>
+        <ul>
+          <li>Yerel kayıtları sıfırlama veya kaldırma hakkı</li>
+          <li>Uygulamada hangi bilgilerin tutulduğunu öğrenme hakkı</li>
+          <li>Gelecekte çevrim içi özellikler eklenirse ek bilgilendirme alma hakkı</li>
+        </ul>
+
+        <p class="meta">
+          Son güncelleme: 15 Mayıs 2026
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

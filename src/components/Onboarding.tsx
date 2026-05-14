@@ -282,7 +282,18 @@ export function Onboarding({
         )}
       </div>
 
-      <div className="ob-social-proof">Topluluk büyüyor</div>
+      <div className="ob-social-proof">
+        <span>Topluluk büyüyor</span>
+        <a
+          className="ob-inline-link"
+          href="/privacy.html"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Gizlilik politikasını aç"
+        >
+          Gizlilik Politikası
+        </a>
+      </div>
     </div>
   );
 

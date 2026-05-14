@@ -69,8 +69,8 @@ export function validateSaveChecksum(parsed: any): boolean {
  */
 export function stripChecksum(parsed: any): any {
   if (!parsed || typeof parsed !== "object") return parsed;
-  const { _checksum: _checksum, ...rest } = parsed;
-  void _checksum;
+  const rest = { ...parsed };
+  delete rest._checksum;
   return rest;
 }
 

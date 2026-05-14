@@ -49,6 +49,7 @@ type TekneTabProps = {
   onBackToRotaMissing: () => void;
   upgradeCards: UpgradeCardItem[];
   onBuyUpgrade: (upgradeId: string) => void;
+  installedUpgradeLabels?: string[];
 };
 
 export function TekneTab({
@@ -67,6 +68,7 @@ export function TekneTab({
   onBackToRotaMissing,
   upgradeCards,
   onBuyUpgrade,
+  installedUpgradeLabels = [],
 }: TekneTabProps) {
   return (
     <div className="tab-content tk-tab-v2 fade-in">
@@ -79,7 +81,7 @@ export function TekneTab({
           </div>
           <div className="tk-hero-id">
             <span className="tk-hero-eyebrow">⚙ TERSANE</span>
-            <h2 className="tk-hero-name">{boatName}</h2>
+            <h2 className="tk-hero-name tk-hero-name--xl">{boatName}</h2>
             <p className="tk-hero-class">{selectedBoatName} · {selectedBoatLengthFt} ft</p>
           </div>
           <div className="tk-hero-credits">
@@ -97,6 +99,17 @@ export function TekneTab({
             <div className="tk-readiness-fill" style={{ width: `${currentOceanReadiness}%` }} />
           </div>
         </div>
+
+        {installedUpgradeLabels.length > 0 && (
+          <div className="tk-installed-badges">
+            {installedUpgradeLabels.slice(0, 6).map((label, i) => (
+              <span key={i} className="tk-installed-badge">✓ {label}</span>
+            ))}
+            {installedUpgradeLabels.length > 6 && (
+              <span className="tk-installed-badge tk-installed-badge--more">+{installedUpgradeLabels.length - 6} daha</span>
+            )}
+          </div>
+        )}
 
         <div className="tk-stats-grid">
           {tkStats.map((s) => (

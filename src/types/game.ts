@@ -1,12 +1,16 @@
 export type Step =
+  | "WELCOME"
   | "MAIN_MENU"
   | "PICK_PROFILE"
   | "PICK_MARINA"
   | "PICK_BOAT"
   | "NAME_BOAT"
+  | "PICK_GENDER"
   | "HUB"
   | "SEA_MODE"
   | "ARRIVAL_SCREEN";
+
+export type Gender = "male" | "female" | "unspecified";
 
 export type Tab = "liman" | "icerik" | "rota" | "tekne" | "kaptan";
 

@@ -154,6 +154,22 @@ export function RotaTab({
         </div>
       </div>
 
+      {completedCount > 0 && (
+        <div className="rt-completed-list glass-card">
+          <div className="rt-completed-header">
+            <span className="rt-completed-label">Tamamlanan Rotalar</span>
+            <span className="rt-completed-count">{completedCount}</span>
+          </div>
+          {WORLD_ROUTES.filter(r => completedRouteIds.includes(r.id)).slice(-3).reverse().map(r => (
+            <div key={r.id} className="rt-completed-item">
+              <span className="rt-completed-check">✓</span>
+              <span className="rt-completed-name">{r.name}</span>
+              <span className="rt-completed-to">{r.to}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {currentRoute ? (
         <>
           <div className="rt-hero-card glass-card">

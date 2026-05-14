@@ -36,6 +36,7 @@ type IcerikTabProps = {
   followersToTier: number;
   step: Step;
   currentRoute?: CurrentRouteInfo;
+  locationBonusText?: string;
   activeStoryHook: StoryHook | null;
   storyHookButtonDisabled: boolean;
   onPublishStoryHook: () => void;
@@ -86,6 +87,7 @@ export function IcerikTab({
   followersToTier,
   step,
   currentRoute,
+  locationBonusText,
   activeStoryHook,
   storyHookButtonDisabled,
   onPublishStoryHook,
@@ -140,6 +142,10 @@ export function IcerikTab({
               )}
             </div>
           </header>
+
+          {locationBonusText && (
+            <div className="cs-location-bonus">{locationBonusText}</div>
+          )}
 
           {!contentResult ? (
             <>

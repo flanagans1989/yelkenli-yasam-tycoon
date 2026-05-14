@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
-import type { Step, Tab, ContentResult, MarinaFilter, StoryHook } from "./types/game";
+import type { Step, Tab, ContentResult, MarinaFilter, StoryHook, Gender } from "./types/game";
 import { PLAYER_PROFILES } from "../game-data/playerProfiles";
 import type { PlayerProfile } from "../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../game-data/marinas";
@@ -15,6 +15,7 @@ import { BOAT_UPGRADES, UPGRADE_CATEGORIES } from "../game-data/upgrades";
 import type { UpgradeCategoryId } from "../game-data/upgrades";
 import { getSponsorTierByFollowers, SPONSOR_TIERS } from "../game-data/economy";
 import { AppBackground } from "./components/AppBackground";
+import { MicoGuide } from "./components/MicoGuide";
 import { Onboarding, getBoatSvg } from "./components/Onboarding";
 import { HubScreen } from "./components/HubScreen";
 import { LimanTab } from "./components/LimanTab";
@@ -495,6 +496,35 @@ const upgradeEffectLabels: Record<string, string> = {
   engine: "Motor",
 };
 
+const getLocationContentBonus = (region: string, contentType: string): number => {
+  const r = region.toLocaleLowerCase("tr-TR");
+  const isEge = r.includes("ege");
+  const isAkdeniz = r.includes("akdeniz") || r.includes("antalya");
+  const isMarmara = r.includes("marmara") || r.includes("istanbul");
+
+  if (isEge) {
+    if (contentType === "nature_bay") return 10;
+    if (contentType === "sailing_vlog") return 5;
+  }
+  if (isAkdeniz) {
+    if (contentType === "sailing_vlog") return 10;
+    if (contentType === "nature_bay") return 10;
+  }
+  if (isMarmara) {
+    if (contentType === "city_trip") return 10;
+    if (contentType === "marina_life") return 5;
+  }
+  return 0;
+};
+
+const getLocationBonusLabel = (region: string): { contentType: string; label: string } | null => {
+  const r = region.toLocaleLowerCase("tr-TR");
+  if (r.includes("ege")) return { contentType: "nature_bay", label: "📍 Ege: Koy/Doğa +10 kalite" };
+  if (r.includes("akdeniz") || r.includes("antalya")) return { contentType: "sailing_vlog", label: "📍 Akdeniz: Seyir Vlogu +10 kalite" };
+  if (r.includes("marmara") || r.includes("istanbul")) return { contentType: "city_trip", label: "📍 Marmara: Şehir Gezisi +10 kalite" };
+  return null;
+};
+
 const getCaptainRankLabel = (level: number): string => {
   if (level >= 13) return "Dünya Turu Kaptanı";
   if (level >= 9)  return "Okyanus Yolcusu";
@@ -641,7 +671,7 @@ function migrateSave(parsed: any) {
 }
 
 function App() {
-  const [step, setStep] = useState<Step>("MAIN_MENU");
+  const [step, setStep] = useState<Step>("WELCOME");
   const [activeTab, setActiveTab] = useState<Tab>("liman");
   const [profileIndex, setProfileIndex] = useState(0);
   const [marinaIndex, setMarinaIndex] = useState(0);
@@ -702,6 +732,10 @@ function App() {
 
   const [hasSave, setHasSave] = useState(false);
   const [saveBoatName, setSaveBoatName] = useState("");
+  const [tutorialStep, setTutorialStep] = useState(3);
+  const [gender, setGender] = useState<Gender>("unspecified");
+  const [showMicoFarewell, setShowMicoFarewell] = useState(false);
+  const [showSailAnimation, setShowSailAnimation] = useState(false);
   const [testMode, setTestMode] = useState(false);
   const [hasReceivedFirstSponsor, setHasReceivedFirstSponsor] = useState(false);
 
@@ -881,6 +915,7 @@ function App() {
         if (parsed?.hasSave) {
           setHasSave(true);
           setSaveBoatName(parsed.boatName || "Bilinmeyen Tekne");
+          setStep("MAIN_MENU");
         }
       } catch (e) {
         console.error("Save load error", e);
@@ -1006,6 +1041,22 @@ function App() {
   }, [dailyGoals, dailyRewardClaimed]);
 
   useEffect(() => {
+    if (tutorialStep === 0 && firstContentDone) setTutorialStep(1);
+  }, [firstContentDone, tutorialStep]);
+
+  useEffect(() => {
+    if (tutorialStep === 1 && upgradesInProgress.length > 0) setTutorialStep(2);
+  }, [upgradesInProgress.length, tutorialStep]);
+
+  useEffect(() => {
+    if (tutorialStep === 2 && step === "SEA_MODE") {
+      setTutorialStep(3);
+      setShowMicoFarewell(true);
+      setTimeout(() => setShowMicoFarewell(false), 5000);
+    }
+  }, [step, tutorialStep]);
+
+  useEffect(() => {
     if (activeToast || toastQueue.length === 0) return;
     const next = toastQueue[0];
     setToastQueue(prev => prev.slice(1));
@@ -1075,6 +1126,8 @@ function App() {
         testMode,
         hasReceivedFirstSponsor,
         activeStoryHook,
+        tutorialStep,
+        gender,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveObj));
       setHasSave(true);
@@ -1087,7 +1140,8 @@ function App() {
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, activeStoryHook, selectedUpgradeCategory,
     brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt, marinaRestInProgress,
     captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
-    hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor, activeStoryHook
+    hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor, activeStoryHook,
+    tutorialStep, gender
   ]);
 
   const finalizeGame = () => {
@@ -1130,6 +1184,7 @@ function App() {
     setTotalContentProduced(0);
     setHasCompletedDailyGoalsOnce(false);
     setActiveStoryHook(null);
+    setTutorialStep(0);
     setStep("HUB");
     setActiveTab("liman");
   };
@@ -1311,6 +1366,8 @@ function App() {
       setDailyRewardClaimed(parsed.dailyRewardClaimed ?? false);
       setTotalContentProduced(parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0));
       setHasCompletedDailyGoalsOnce(parsed.hasCompletedDailyGoalsOnce ?? false);
+      setTutorialStep(parsed.tutorialStep ?? 3);
+      setGender(parsed.gender ?? "unspecified");
 
       const safeStep = parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB";
       const routeValid = WORLD_ROUTES.some(r => r.id === parsed.currentRouteId);
@@ -1589,6 +1646,7 @@ function App() {
     }
 
     quality += upgradeContentBonus;
+    quality += getLocationContentBonus(selectedMarina?.region ?? "", contentType);
 
     if (step === "SEA_MODE" && currentRoute) {
       if (currentRoute.contentPotential === "very_high") quality += 15;
@@ -2042,6 +2100,8 @@ function App() {
         ? `Hedef: ${currentRoute.name}. ${currentRoute.feeling}`
         : `Hedef: ${currentRoute.name}. Dünya turunda yeni bir etap başlıyor.`,
     );
+    setShowSailAnimation(true);
+    setTimeout(() => setShowSailAnimation(false), 2800);
     setStep("SEA_MODE");
     setActiveTab("liman");
   };
@@ -2236,6 +2296,7 @@ function App() {
         credits={credits}
         nextSponsorTierName={nextSponsorTier?.name}
         followersToTier={followersToTier}
+        locationBonusText={getLocationBonusLabel(selectedMarina?.region ?? "")?.label}
         step={step}
         currentRoute={currentRoute ? { name: currentRoute.name, contentThemes: currentRoute.contentThemes } : undefined}
         activeStoryHook={activeStoryHook}
@@ -2430,6 +2491,7 @@ function App() {
         }}
         upgradeCards={upgradeCards}
         onBuyUpgrade={handleBuyUpgrade}
+        installedUpgradeLabels={purchasedUpgradeObjects.map(u => u.name)}
       />
     );
   };
@@ -2624,7 +2686,7 @@ function App() {
           <div className="game-toast-text">{activeToast.text}</div>
         </div>
       )}
-      {["MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT"].includes(step) && (
+      {["WELCOME", "MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT", "PICK_GENDER"].includes(step) && (
         <Onboarding
           step={step}
           setStep={setStep}
@@ -2646,9 +2708,49 @@ function App() {
           saveBoatName={saveBoatName}
           onLoadGame={loadGame}
           onFinalizeGame={finalizeGame}
+          gender={gender}
+          onSetGender={setGender}
         />
       )}
       {(step === "HUB" || step === "SEA_MODE") && renderMainGame()}
+      {step === "HUB" && tutorialStep < 3 && (
+        <div className="hub-tutorial-overlay">
+          <MicoGuide
+            message={[
+              "Kaptan, hoşgeldin! İlk adım içerik üretmek — İçerik sekmesine geç ve bir video çek. Takipçiler böyle kazanılır!",
+              "Harika iş! Şimdi teknenizi güçlendir. Tekne sekmesinden bir upgrade başlatmanı öneririm.",
+              "Mükemmel! Tekne hazır. Artık denize açılma zamanı — Rota sekmesinden ilk rotanı başlat!",
+            ][tutorialStep] ?? ""}
+            visible={step === "HUB" && tutorialStep < 3}
+            actionLabel={["İçerik Üret →", "Tekneye Git →", "Rotaya Bak →"][tutorialStep]}
+            onAction={() => {
+              const tabs: Tab[] = ["icerik", "tekne", "rota"];
+              setActiveTab(tabs[tutorialStep] ?? "liman");
+            }}
+            onDismiss={() => setTutorialStep(3)}
+          />
+        </div>
+      )}
+      {showSailAnimation && (
+        <div className="sail-launch-overlay">
+          <div className="sail-launch-boat" aria-hidden="true">⛵</div>
+          <p className="sail-launch-text">Açık denize çıkıyorsun!</p>
+          <div className="sail-launch-waves" aria-hidden="true">
+            <span>〰</span><span>〰</span><span>〰</span>
+          </div>
+        </div>
+      )}
+      {showMicoFarewell && (
+        <div className="hub-tutorial-overlay">
+          <MicoGuide
+            message="Kaptan, denizdeyiz! Bu yolculuktan sonra artık sen kaptansın. Ben her zaman buradayım — iyi seyirler!"
+            visible={showMicoFarewell}
+            actionLabel="İyi yolculuklar Miço!"
+            onAction={() => setShowMicoFarewell(false)}
+            onDismiss={() => setShowMicoFarewell(false)}
+          />
+        </div>
+      )}
       {step === "ARRIVAL_SCREEN" && renderArrivalScreen()}
       {activeCelebration && (
         <CelebrationModal

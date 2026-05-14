@@ -1,6 +1,7 @@
-﻿import { useRef } from "react";
+﻿import { useRef, useState } from "react";
 import type { Dispatch, SetStateAction, TouchEvent as ReactTouchEvent } from "react";
-import type { Step, MarinaFilter } from "../types/game";
+import { MicoSvg, MicoGuide } from "./MicoGuide";
+import type { Step, MarinaFilter, Gender } from "../types/game";
 import { PLAYER_PROFILES } from "../../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../../game-data/marinas";
 import { STARTING_BOATS, STARTING_BUDGET } from "../../game-data/boats";
@@ -57,7 +58,26 @@ interface OnboardingProps {
   saveBoatName: string;
   onLoadGame: () => void;
   onFinalizeGame: () => void;
+  gender: Gender;
+  onSetGender: (g: Gender) => void;
 }
+
+const WELCOME_SLIDES = [
+  "Kaptan, hoşgeldin! Ben Miço — senin güverte arkadaşın. Şehirden sıkıldın mı?",
+  "Denizler seni bekliyor. Türkiye'den başlayıp dünyayı dolaşacağız. Her adımda yanında olacağım!",
+  "Haydi başlayalım. Önce seni tanıyayım...",
+];
+
+const MICO_MESSAGES: Partial<Record<string, string>> = {
+  PICK_PROFILE:
+    "Her kaptanın kendi güçlü yönü vardır. Hangi tip seni en iyi tanımlıyor? Sola veya sağa kaydır ve bak!",
+  PICK_MARINA:
+    "Çıkış limanın senin üssün olacak, Kaptan. İyi seç — buradan dünyaya açılacaksın!",
+  PICK_BOAT:
+    "İşte en önemli karar! Bu tekne yol arkadaşın. Seninle her fırtınayı göğüsleyecek. Acele etme!",
+  NAME_BOAT:
+    "Teknen seni bekliyor! Ona güzel bir isim ver — artık senin, kimsenin değil.",
+};
 
 export function Onboarding({
   step, setStep,
@@ -69,7 +89,9 @@ export function Onboarding({
   onboardingMessage,
   hasSave, saveBoatName,
   onLoadGame, onFinalizeGame,
+  gender, onSetGender,
 }: OnboardingProps) {
+  const [welcomeSlide, setWelcomeSlide] = useState(0);
   const selectedProfile = PLAYER_PROFILES[profileIndex];
   const selectedMarina = STARTING_MARINAS[marinaIndex];
   const selectedBoat = STARTING_BOATS[boatIndex];
@@ -163,6 +185,46 @@ export function Onboarding({
     else onPrev();
   };
 
+  const renderWelcome = () => {
+    const isLast = welcomeSlide >= WELCOME_SLIDES.length - 1;
+    return (
+      <div className="mico-welcome">
+        <div className="mico-welcome-stage">
+          <div className="mico-welcome-glow" aria-hidden="true" />
+          <div className="mico-welcome-rings" aria-hidden="true">
+            <span className="ob-ring ob-ring--outer-gold" />
+            <span className="ob-ring ob-ring--mid-cyan" />
+          </div>
+          <MicoSvg size={112} />
+        </div>
+
+        <div className="mico-welcome-card glass-card fade-in" key={welcomeSlide}>
+          <span className="mico-welcome-name">Miço</span>
+          <p className="mico-welcome-text">{WELCOME_SLIDES[welcomeSlide]}</p>
+          <div className="mico-welcome-dots" aria-hidden="true">
+            {WELCOME_SLIDES.map((_, i) => (
+              <span key={i} className={`mico-dot ${i === welcomeSlide ? "mico-dot--active" : ""}`} />
+            ))}
+          </div>
+        </div>
+
+        <button
+          className="primary-button primary-button--pulse mico-welcome-btn"
+          onClick={() => {
+            if (isLast) {
+              setWelcomeSlide(0);
+              setStep("MAIN_MENU");
+            } else {
+              setWelcomeSlide((s) => s + 1);
+            }
+          }}
+        >
+          {isLast ? "⚓ Başlayalım!" : "Devam →"}
+        </button>
+      </div>
+    );
+  };
+
   const renderMainMenu = () => (
     <div className="ob-main-menu ob-main-menu-v2">
       <div className="ob-corners">
@@ -237,6 +299,7 @@ export function Onboarding({
           <div className="ob-step-eyebrow">ADIM 1 / 4</div>
           <h2 className="ob-step-title">KAPTANINI SEÇ</h2>
         </div>
+        <MicoGuide message={MICO_MESSAGES.PICK_PROFILE!} visible />
 
         <div
           className="ob-captain-carousel"
@@ -381,6 +444,7 @@ export function Onboarding({
           <div className="ob-step-eyebrow">ADIM 2 / 4</div>
           <h2 className="ob-step-title">ÇIKIŞ LİMANINI SEÇ</h2>
         </div>
+        <MicoGuide message={MICO_MESSAGES.PICK_MARINA!} visible />
 
         <div className="ob-region-filter">
           {(["all", "ege", "akdeniz", "marmara"] as MarinaFilter[]).map((f) => (
@@ -599,6 +663,7 @@ export function Onboarding({
           <div className="ob-step-eyebrow">ADIM 3 / 4</div>
           <h2 className="ob-step-title">TEKNENİ SEÇ</h2>
         </div>
+        <MicoGuide message={MICO_MESSAGES.PICK_BOAT!} visible />
 
         <div className="ob-boat-tabs">
           {STARTING_BOATS.map((boat, idx) => (
@@ -683,6 +748,7 @@ export function Onboarding({
 
   const renderBoatNaming = () => (
     <div className="ob-naming-screen">
+      <MicoGuide message={MICO_MESSAGES.NAME_BOAT!} visible />
       <div className="ob-naming-hero-header">
         <h2 className="ob-naming-title">SON HAZIRLIK</h2>
         <div className="ob-step-eyebrow">ADIM 4 / 4</div>
@@ -724,19 +790,52 @@ export function Onboarding({
         <button className="secondary-button" onClick={() => setStep("PICK_BOAT")}>Geri</button>
         <button
           className="primary-button primary-button--pulse"
-          onClick={onFinalizeGame}
+          onClick={() => setStep("PICK_GENDER")}
           disabled={!boatName.trim()}
         >
+          Devam →
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderPickGender = () => (
+    <div className="ob-screen fade-in">
+      <MicoGuide
+        message="Son bir şey, Kaptan — seni daha iyi tanımak istiyorum. Nasıl hitap edeyim?"
+        visible
+      />
+      <div className="ob-gender-options">
+        {([
+          { value: "male" as const, label: "Kaptan (Erkek)", icon: "👨‍✈️" },
+          { value: "female" as const, label: "Kaptan (Kadın)", icon: "👩‍✈️" },
+          { value: "unspecified" as const, label: "Belirtmek İstemiyorum", icon: "⚓" },
+        ] as const).map((opt) => (
+          <button
+            key={opt.value}
+            className={`ob-gender-btn${gender === opt.value ? " ob-gender-btn--active" : ""}`}
+            onClick={() => onSetGender(opt.value)}
+          >
+            <span className="ob-gender-icon">{opt.icon}</span>
+            <span>{opt.label}</span>
+          </button>
+        ))}
+      </div>
+      <div className="ob-screen-actions">
+        <button className="secondary-button" onClick={() => setStep("NAME_BOAT")}>Geri</button>
+        <button className="primary-button primary-button--pulse" onClick={onFinalizeGame}>
           ⚓ DENİZE İNDİR
         </button>
       </div>
     </div>
   );
 
+  if (step === "WELCOME") return renderWelcome();
   if (step === "MAIN_MENU") return renderMainMenu();
   if (step === "PICK_PROFILE") return renderProfileSelection();
   if (step === "PICK_MARINA") return renderMarinaSelection();
   if (step === "PICK_BOAT") return renderBoatSelection();
   if (step === "NAME_BOAT") return renderBoatNaming();
+  if (step === "PICK_GENDER") return renderPickGender();
   return null;
 }

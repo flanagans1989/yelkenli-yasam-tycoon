@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import "./App.css";
 import { audioManager } from "./lib/audioManager";
 import { useAudioSettings } from "./lib/useAudioSettings";
@@ -22,16 +22,75 @@ import type { UpgradeCategoryId } from "../game-data/upgrades";
 import { getSponsorTierByFollowers, SPONSOR_TIERS } from "../game-data/economy";
 import { AppBackground } from "./components/AppBackground";
 import { MicoGuide } from "./components/MicoGuide";
-import { Onboarding, getBoatSvg } from "./components/Onboarding";
 import { HubScreen } from "./components/HubScreen";
-import { LimanTab } from "./components/LimanTab";
-import { RotaTab } from "./components/RotaTab";
-import { SeaModeTab } from "./components/SeaModeTab";
-import { KaptanTab } from "./components/KaptanTab";
-import { TekneTab } from "./components/TekneTab";
-import { ArrivalScreen } from "./components/ArrivalScreen";
 import { CelebrationModal } from "./components/CelebrationModal";
-import { IcerikTab } from "./components/IcerikTab";
+import { getBoatSvg } from "./data/boatSvg";
+
+// Code-split: heavy screens load on-demand to keep the initial JS bundle small.
+const Onboarding = lazy(() =>
+  import("./components/Onboarding").then((m) => ({ default: m.Onboarding })),
+);
+const LimanTab = lazy(() =>
+  import("./components/LimanTab").then((m) => ({ default: m.LimanTab })),
+);
+const IcerikTab = lazy(() =>
+  import("./components/IcerikTab").then((m) => ({ default: m.IcerikTab })),
+);
+const RotaTab = lazy(() =>
+  import("./components/RotaTab").then((m) => ({ default: m.RotaTab })),
+);
+const TekneTab = lazy(() =>
+  import("./components/TekneTab").then((m) => ({ default: m.TekneTab })),
+);
+const KaptanTab = lazy(() =>
+  import("./components/KaptanTab").then((m) => ({ default: m.KaptanTab })),
+);
+const SeaModeTab = lazy(() =>
+  import("./components/SeaModeTab").then((m) => ({ default: m.SeaModeTab })),
+);
+const ArrivalScreen = lazy(() =>
+  import("./components/ArrivalScreen").then((m) => ({ default: m.ArrivalScreen })),
+);
+
+const ScreenFallback = ({ label = "Yükleniyor..." }: { label?: string } = {}) => (
+  <div
+    role="status"
+    aria-live="polite"
+    style={{
+      minHeight: "60vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#9bbecf",
+      fontSize: "14px",
+      letterSpacing: "0.04em",
+    }}
+  >
+    {label}
+  </div>
+);
+
+const FullScreenFallback = () => (
+  <div
+    role="status"
+    aria-live="polite"
+    style={{
+      minHeight: "100dvh",
+      width: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#9bbecf",
+      fontSize: "14px",
+      letterSpacing: "0.04em",
+      paddingTop: "env(safe-area-inset-top, 0px)",
+      paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      boxSizing: "border-box",
+    }}
+  >
+    Yükleniyor...
+  </div>
+);
 import { SEA_DECISION_EVENTS } from "./data/seaEvents";
 import { ACHIEVEMENTS, ACHIEVEMENT_ICONS } from "./data/achievements";
 import { getContentComment } from "./data/contentComments";
@@ -1824,6 +1883,7 @@ function App() {
   const handleCancelUpgradeConfirm = () => setPendingUpgradeConfirmId(null);
 
   const renderLimanTab = () => (
+    <Suspense fallback={<ScreenFallback />}>
     <LimanTab
       selectedBoatId={selectedBoat.id}
       currentLocationName={currentLocationName}
@@ -1852,9 +1912,11 @@ function App() {
       marinaTasks={marinaTasks}
       hasCompletedWorldTour={hasCompletedWorldTour}
     />
+    </Suspense>
   );
 
   const renderSeaModeTab = () => (
+    <Suspense fallback={<ScreenFallback />}>
     <SeaModeTab
       selectedBoatId={selectedBoat.id}
       voyageDaysRemaining={voyageDaysRemaining}
@@ -1874,6 +1936,7 @@ function App() {
       }
       onResolveDecision={handleResolveSeaDecision}
     />
+    </Suspense>
   );
 
   const renderIcerikTab = () => {
@@ -1977,6 +2040,7 @@ function App() {
     };
 
     return (
+      <Suspense fallback={<ScreenFallback />}>
       <IcerikTab
         icerikSubTab={icerikSubTab}
         onChangeSubTab={setIcerikSubTab}
@@ -2050,12 +2114,14 @@ function App() {
             : []
         }
       />
+      </Suspense>
     );
   };
 
   const renderRotaTab = () => {
     const nextRouteData = currentRoute ? getNextRoute(currentRoute.id as RouteId) : undefined;
     return (
+    <Suspense fallback={<ScreenFallback />}>
     <>
       <RotaTab
         currentRoute={currentRoute
@@ -2109,6 +2175,7 @@ function App() {
         onStartPrestigeVoyage={handleStartPrestigeVoyage}
       />
     </>
+    </Suspense>
   );
   };
 
@@ -2171,6 +2238,7 @@ function App() {
     });
 
     return (
+      <Suspense fallback={<ScreenFallback />}>
       <TekneTab
         boatSvg={getBoatSvg(selectedBoat.id)}
         boatName={boatName}
@@ -2200,10 +2268,12 @@ function App() {
         onCancelUpgradeConfirm={handleCancelUpgradeConfirm}
         installedUpgradeLabels={purchasedUpgradeObjects.map(u => u.name)}
       />
+      </Suspense>
     );
   };
 
   const renderKaptanTab = () => (
+    <Suspense fallback={<ScreenFallback />}>
     <KaptanTab
       selectedProfile={selectedProfile}
       captainLevel={captainLevel}
@@ -2217,6 +2287,7 @@ function App() {
       totalCreditsEarned={credits}
       loginStreak={loginStreak}
     />
+    </Suspense>
   );
 
   const completeGoal = (type: DailyGoal["type"]) => {
@@ -2388,6 +2459,7 @@ function App() {
     }
 
     return (
+      <Suspense fallback={<ScreenFallback />}>
       <ArrivalScreen
         portName={currentRoute?.to ?? "Varış Limanı"}
         feeling={currentRoute?.feeling}
@@ -2402,6 +2474,7 @@ function App() {
         isPrestige={isPrestigeVoyage}
         onDone={handleArrival}
       />
+      </Suspense>
     );
   };
 
@@ -2420,6 +2493,7 @@ function App() {
         </div>
       )}
       {["WELCOME", "ACCOUNT_SETUP", "MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT", "PICK_GENDER"].includes(step) && (
+        <Suspense fallback={<FullScreenFallback />}>
         <Onboarding
           step={step}
           setStep={requestStepTransition}
@@ -2452,6 +2526,7 @@ function App() {
           gender={gender}
           onSetGender={setGender}
         />
+        </Suspense>
       )}
       {(step === "HUB" || step === "SEA_MODE") && renderMainGame()}
       {step === "HUB" && tutorialStep < 3 && (

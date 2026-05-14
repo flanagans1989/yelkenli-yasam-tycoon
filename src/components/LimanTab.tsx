@@ -1,7 +1,7 @@
 ﻿import './LimanTab.css';
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { getBoatSvg } from "./Onboarding";
+import { getBoatSvg } from "../data/boatSvg";
 import type { MarinaTask } from "../types/game";
 
 interface LimanTabProps {

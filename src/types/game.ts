@@ -1,5 +1,6 @@
 export type Step =
   | "WELCOME"
+  | "ACCOUNT_SETUP"
   | "MAIN_MENU"
   | "PICK_PROFILE"
   | "PICK_MARINA"

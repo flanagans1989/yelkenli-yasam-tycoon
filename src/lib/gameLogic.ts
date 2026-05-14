@@ -91,13 +91,13 @@ export function formatSeaDecisionEffectSummary(effect: {
   water?: number; fuel?: number; boatCondition?: number; remainingDays?: number;
 }): string {
   return [
-    effect.followers != null ? `${effect.followers > 0 ? "+" : ""}${effect.followers} takipci` : null,
+    effect.followers != null ? `${effect.followers > 0 ? "+" : ""}${effect.followers} takipçi` : null,
     effect.credits != null ? `${effect.credits > 0 ? "+" : ""}${effect.credits} TL` : null,
     effect.energy != null ? `${effect.energy > 0 ? "+" : ""}${effect.energy} enerji` : null,
     effect.water != null ? `${effect.water > 0 ? "+" : ""}${effect.water} su` : null,
-    effect.fuel != null ? `${effect.fuel > 0 ? "+" : ""}${effect.fuel} yakit` : null,
+    effect.fuel != null ? `${effect.fuel > 0 ? "+" : ""}${effect.fuel} yakıt` : null,
     effect.boatCondition != null ? `${effect.boatCondition > 0 ? "+" : ""}${effect.boatCondition} tekne durumu` : null,
-    effect.remainingDays != null ? `${effect.remainingDays > 0 ? "+" : ""}${effect.remainingDays} gun` : null,
+    effect.remainingDays != null ? `${effect.remainingDays > 0 ? "+" : ""}${effect.remainingDays} gün` : null,
   ]
     .filter(Boolean)
     .join(" · ");

@@ -91,7 +91,7 @@ export function ContentResultCard({ result, onReset }: ContentResultCardProps) {
           )}
           {result.sponsorInterestGained && (
             <span className="cs-result-story-hook-text">
-              +{result.sponsorInterestGained} marka guveni
+              +{result.sponsorInterestGained} marka güveni
             </span>
           )}
         </div>

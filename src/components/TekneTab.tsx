@@ -51,6 +51,8 @@ type TekneTabProps = {
   onBackToRotaMissing: () => void;
   upgradeCards: UpgradeCardItem[];
   onBuyUpgrade: (upgradeId: string) => void;
+  pendingUpgradeConfirmId?: string | null;
+  onCancelUpgradeConfirm?: () => void;
   installedUpgradeLabels?: string[];
 };
 
@@ -70,6 +72,8 @@ export function TekneTab({
   onBackToRotaMissing,
   upgradeCards,
   onBuyUpgrade,
+  pendingUpgradeConfirmId = null,
+  onCancelUpgradeConfirm,
   installedUpgradeLabels = [],
 }: TekneTabProps) {
   return (
@@ -209,22 +213,45 @@ export function TekneTab({
             )}
 
             {!upgrade.isPurchased && upgrade.isCompatible && (
-              <button
-                className={`tk-upg-cta${upgrade.buyDisabled ? " is-disabled" : ""}`}
-                onClick={() => onBuyUpgrade(upgrade.id)}
-                disabled={upgrade.buyDisabled}
-              >
-                <span className="tk-upg-cta-icon">{upgrade.isInstalling ? "🔧" : upgrade.slotsFull ? "⏳" : upgrade.cantAfford ? "✕" : "⚙"}</span>
-                <span className="tk-upg-cta-label">
-                  {upgrade.isInstalling
-                    ? "Kurulumda"
-                    : upgrade.slotsFull
-                      ? "Slot Dolu"
-                      : upgrade.cantAfford
-                        ? "Yetersiz Bütçe"
-                        : "Satın Al"}
-                </span>
-              </button>
+              pendingUpgradeConfirmId === upgrade.id ? (
+                <div className="tk-upg-confirm">
+                  <p className="tk-upg-confirm-text">
+                    {upgrade.cost.toLocaleString("tr-TR")} TL harcanacak. Onaylıyor musun?
+                  </p>
+                  <div className="tk-upg-confirm-actions">
+                    <button
+                      className="tk-upg-cta"
+                      onClick={() => onBuyUpgrade(upgrade.id)}
+                    >
+                      <span className="tk-upg-cta-icon">⚙</span>
+                      <span className="tk-upg-cta-label">Onayla</span>
+                    </button>
+                    <button
+                      className="tk-upg-cta tk-upg-cta--cancel"
+                      onClick={() => onCancelUpgradeConfirm?.()}
+                    >
+                      <span className="tk-upg-cta-label">Vazgeç</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  className={`tk-upg-cta${upgrade.buyDisabled ? " is-disabled" : ""}`}
+                  onClick={() => onBuyUpgrade(upgrade.id)}
+                  disabled={upgrade.buyDisabled}
+                >
+                  <span className="tk-upg-cta-icon">{upgrade.isInstalling ? "🔧" : upgrade.slotsFull ? "⏳" : upgrade.cantAfford ? "✕" : "⚙"}</span>
+                  <span className="tk-upg-cta-label">
+                    {upgrade.isInstalling
+                      ? "Kurulumda"
+                      : upgrade.slotsFull
+                        ? "Slot Dolu"
+                        : upgrade.cantAfford
+                          ? "Yetersiz Bütçe"
+                          : "Satın Al"}
+                  </span>
+                </button>
+              )
             )}
           </div>
         ))}

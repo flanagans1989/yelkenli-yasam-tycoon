@@ -27,6 +27,8 @@ interface LimanTabProps {
   onGoContent: () => void;
   onGoRoute: () => void;
   renderDailyGoals: () => ReactNode;
+  dailyGoalsCompletedCount: number;
+  dailyGoalsTotal: number;
   marinaTasks: MarinaTask[];
 }
 
@@ -64,10 +66,13 @@ export function LimanTab({
   onGoContent,
   onGoRoute,
   renderDailyGoals,
+  dailyGoalsCompletedCount,
+  dailyGoalsTotal,
   marinaTasks,
 }: LimanTabProps) {
   const [marinaOpen, setMarinaOpen] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
+  const [dailyGoalsOpen, setDailyGoalsOpen] = useState(false);
 
   const hasCompletedFirstRoute = completedRouteIds.length > 0;
   const isResourceLow = energy < 30 || water < 30 || fuel < 30 || boatCondition < 30;
@@ -189,8 +194,26 @@ export function LimanTab({
         })}
       </section>
 
-      {/* ── Daily Goals (slotted from App.tsx) ── */}
-      {renderDailyGoals()}
+      {/* ── Daily Goals (collapsible) ── */}
+      <div className="lh-accordion lh-accordion-v2 glass-card">
+        <button className="lh-accordion-hdr" onClick={() => setDailyGoalsOpen(p => !p)}>
+          <span>
+            <span className="lh-accordion-icon">🎯</span>
+            Günlük Görevler
+          </span>
+          <span className="lh-daily-goals-strip">
+            <span className={`lh-daily-goals-count${dailyGoalsCompletedCount === dailyGoalsTotal ? " is-done" : ""}`}>
+              {dailyGoalsCompletedCount}/{dailyGoalsTotal}
+            </span>
+            <span className={`lh-chevron${dailyGoalsOpen ? " lh-chevron--open" : ""}`}>›</span>
+          </span>
+        </button>
+        {dailyGoalsOpen && (
+          <div className="lh-accordion-body lh-accordion-body--goals">
+            {renderDailyGoals()}
+          </div>
+        )}
+      </div>
 
       {/* ── Marina Tasks ── */}
       {marinaTasks.length > 0 && (

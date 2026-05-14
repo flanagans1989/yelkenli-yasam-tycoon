@@ -432,10 +432,7 @@
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
-  background: var(--gradient-gold-text);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--gold-bright);
 }
 
 /* Dots strip with connector line */
@@ -700,10 +697,7 @@
 .rt-tab-v2 .rt-meta-chip-val {
   font-size: 12px;
   font-weight: 800;
-  background: var(--gradient-gold-text);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--gold-bright);
 }
 
 /* ── Readiness card (quieter) ── */

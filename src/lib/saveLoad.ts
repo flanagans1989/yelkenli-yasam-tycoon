@@ -4,6 +4,7 @@ import { WORLD_ROUTES } from "../../game-data/routes";
 export const SAVE_KEY = "yelkenli_save";
 export const SAVE_VERSION = 2;
 export const MAX_OFFLINE_MINUTES = 480;
+export const MAX_OFFLINE_REWARD_MINUTES = 120;
 export const OFFLINE_CREDITS_PER_MINUTE = 15;
 export const OFFLINE_FOLLOWERS_PER_MINUTE = 1;
 
@@ -61,7 +62,8 @@ export function calculateOfflineIncome(lastSavedAt: unknown): { credits: number;
     return { credits: 0, followers: 0, minutes: 0 };
   }
   const offlineMs = Math.max(0, Date.now() - lastSavedAt);
-  const minutes = Math.min(Math.floor(offlineMs / 60000), MAX_OFFLINE_MINUTES);
+  const cappedMinutes = Math.min(Math.floor(offlineMs / 60000), MAX_OFFLINE_MINUTES);
+  const minutes = Math.min(cappedMinutes, MAX_OFFLINE_REWARD_MINUTES);
   return {
     minutes,
     credits: Math.max(0, minutes * OFFLINE_CREDITS_PER_MINUTE),
@@ -179,7 +181,7 @@ export function buildOfflineMessages(
         : `${completedUpgradeObjects.length} upgrade tamamlandı: ${completedUpgradeObjects.map((u) => u.name).join(", ")}.`
       : "";
   const marinaMsg = marinaRestCompletedOffline
-    ? "Marina dinlenme hizmeti siz yokken tamamlandi. Kaynaklar toparlandi."
+    ? "Marina dinlenme hizmeti siz yokken tamamlandı. Kaynaklar toplandı."
     : "";
 
   const messages = [installMsg, marinaMsg, passiveMsg].filter(Boolean);

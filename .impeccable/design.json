@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-14T00:00:00Z",
+  "title": "Design System: Yelkenli Yaşam Tycoon",
+  "extensions": {
+    "colorMeta": {
+      "ocean-deep":    { "role": "neutral",   "displayName": "Ocean Deep",    "canonical": "#06182c", "tonalRamp": ["#06182c","#0a2035","#0d2a47","#123560","#1a4a7a","#246094","#3a82b8","#7bb8d8"] },
+      "ocean-mid":     { "role": "neutral",   "displayName": "Ocean Mid",     "canonical": "#0c2a47", "tonalRamp": ["#071a2c","#0c2a47","#103660","#174d80","#2068a0","#3d87bb","#70aed4","#a8d4ea"] },
+      "ocean-rim":     { "role": "neutral",   "displayName": "Ocean Rim",     "canonical": "#0f3a5c", "tonalRamp": ["#081f35","#0f3a5c","#15507a","#1e6898","#2e84b8","#56a6cc","#8dc6de","#c2e0ee"] },
+      "cyan-glow":     { "role": "primary",   "displayName": "Cyan Glow",     "canonical": "#5eeaf8", "tonalRamp": ["#0a4a52","#0d6270","#128494","#1aabbb","#2ecfe0","#5eeaf8","#8ff2fb","#c4f8fd"] },
+      "cyan-soft":     { "role": "primary",   "displayName": "Cyan Soft",     "canonical": "#3ec7e0", "tonalRamp": ["#094248","#0c5a62","#107580","#19969e","#29bac8","#3ec7e0","#72d8e8","#aeecf2"] },
+      "gold-bright":   { "role": "tertiary",  "displayName": "Gold Bright",   "canonical": "#ffd982", "tonalRamp": ["#4a3200","#6b4800","#8f6200","#b47c00","#d49400","#f5b000","#ffd982","#fff0c0"] },
+      "gold-warm":     { "role": "tertiary",  "displayName": "Gold Warm",     "canonical": "#e8a651", "tonalRamp": ["#3d1e00","#5e2e00","#844200","#a85800","#cc7200","#e8a651","#f4c688","#fbe3c0"] },
+      "success-green": { "role": "secondary", "displayName": "Success Green", "canonical": "#4be8a3", "tonalRamp": ["#063020","#0a4a30","#0e6442","#168056","#22a46e","#4be8a3","#82f0c4","#baf8e0"] },
+      "danger-red":    { "role": "secondary", "displayName": "Danger Red",    "canonical": "#ff6b6b", "tonalRamp": ["#4a0000","#700000","#960000","#c00000","#e02020","#ff6b6b","#ff9a9a","#ffd0d0"] },
+      "text-primary":  { "role": "neutral",   "displayName": "Text Primary",  "canonical": "#f4f8ff", "tonalRamp": ["#1a2030","#2a3348","#3d4f68","#5a7090","#8aafcc","#b8d4e8","#deeef8","#f4f8ff"] },
+      "text-secondary":{ "role": "neutral",   "displayName": "Text Secondary","canonical": "#9bbecf", "tonalRamp": ["#0c2030","#16303f","#1e4456","#2a5a72","#4a7f98","#9bbecf","#c0d8e4","#e4f0f5"] },
+      "text-muted":    { "role": "neutral",   "displayName": "Text Muted",    "canonical": "#5e7a8e", "tonalRamp": ["#0e1820","#162430","#1e3040","#2c4458","#3e5e74","#5e7a8e","#8aaabb","#bcd0da"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Ekran başlıkları, kahraman metrikler, kart ana değerleri. Yalnızca Sora." },
+      "body":    { "displayName": "Body",    "purpose": "Açıklamalar, event sonuçları, yardımcı metin. Maks 60ch." },
+      "label":   { "displayName": "Label",   "purpose": "Eyebrow etiketler, chip içerikleri, stat başlıkları. UPPERCASE." }
+    },
+    "shadows": [
+      { "name": "card-ambient",  "value": "0 8px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(94,234,248,0.06) inset", "purpose": "Standart kart yükselmesi." },
+      { "name": "glow-sm",       "value": "0 0 12px rgba(94,234,248,0.35)",  "purpose": "Aktif durum vurgusu, küçük ölçek." },
+      { "name": "glow-md",       "value": "0 0 24px rgba(94,234,248,0.45)",  "purpose": "Önemli aktif bileşen." },
+      { "name": "glow-hero",     "value": "0 0 64px rgba(94,234,248,0.55)",  "purpose": "Ana karakter veya ekran kahramanı." },
+      { "name": "button-press",  "value": "0 0 0 1px rgba(94,234,248,0.45) inset, 0 4px 24px rgba(94,234,248,0.25)", "purpose": "Buton hover/focus durumu." },
+      { "name": "gold-glow",     "value": "0 6px 24px rgba(255,217,130,0.30)", "purpose": "Gold CTA aktif durumu." },
+      { "name": "tab-bar-top",   "value": "0 -8px 32px rgba(0,0,0,0.45)",    "purpose": "Bottom tab bar üst gölgesi." }
+    ],
+    "motion": [
+      { "name": "fast",        "value": "0.15s ease",                          "purpose": "Hover, renk geçişleri." },
+      { "name": "normal",      "value": "0.25s cubic-bezier(0.16,1,0.3,1)",   "purpose": "Kart, modal, standart geçişler." },
+      { "name": "slow",        "value": "0.4s cubic-bezier(0.16,1,0.3,1)",    "purpose": "Ekran geçişleri, büyük layout değişimleri." },
+      { "name": "press",       "value": "0.08s ease",                          "purpose": "Buton/tab basma anı — hızlı geri bildirim." },
+      { "name": "shimmer",     "value": "2s linear infinite",                  "purpose": "Progress bar shimmer döngüsü." }
+    ],
+    "breakpoints": [
+      { "name": "mobile-max", "value": "390px", "purpose": "Oyun wrapper max genişliği." },
+      { "name": "sm",         "value": "375px", "purpose": "Minimum hedef viewport." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ana aksiyon butonu. Taktil, güvenli, her zaman 56px min-height.",
+      "html": "<button class=\"ds-btn-primary\">ROTAYA ÇIK</button>",
+      "css": ".ds-btn-primary { background: linear-gradient(180deg,#23abdf,#12638f); color:#fff; padding:16px 24px; border-radius:20px; font-family:'Sora',system-ui,sans-serif; font-size:16px; font-weight:800; min-height:56px; display:flex; align-items:center; justify-content:center; border:none; cursor:pointer; box-shadow:0 4px 0 #0d4a6e,0 8px 20px rgba(30,159,212,0.4); touch-action:manipulation; -webkit-tap-highlight-color:transparent; transition:transform 0.15s cubic-bezier(0.16,1,0.3,1),box-shadow 0.15s ease; } .ds-btn-primary:active { transform:scale(0.97) translateY(2px); box-shadow:0 1px 0 #0d4a6e,0 4px 10px rgba(30,159,212,0.3); transition:transform 0.08s ease,box-shadow 0.08s ease; } .ds-btn-primary:focus-visible { outline:2px solid #5eeaf8; outline-offset:3px; }"
+    },
+    {
+      "name": "Gold CTA Button",
+      "kind": "button",
+      "refersTo": "button-cta-gold",
+      "description": "İçerik yayınla. Yalnızca bu aksiyon için altın rengi kullanır.",
+      "html": "<button class=\"ds-btn-gold\">İÇERİĞİ YAYINLA</button>",
+      "css": ".ds-btn-gold { background:linear-gradient(135deg,#e8a651,#ffd982 50%,#e8a651); color:#1a0f04; padding:14px 20px; border-radius:18px; font-family:'Sora',system-ui,sans-serif; font-size:16px; font-weight:900; min-height:60px; width:100%; display:flex; align-items:center; justify-content:center; border:none; cursor:pointer; box-shadow:0 0 0 1px rgba(255,217,130,0.55) inset,0 6px 24px rgba(255,217,130,0.30); touch-action:manipulation; transition:transform 0.15s cubic-bezier(0.16,1,0.3,1); } .ds-btn-gold:active { transform:scale(0.97) translateY(1px); transition:transform 0.08s ease; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "İkincil aksiyon. Sessiz, şeffaf.",
+      "html": "<button class=\"ds-btn-secondary\">İPTAL</button>",
+      "css": ".ds-btn-secondary { background:rgba(255,255,255,0.05); color:#9bbecf; padding:16px 24px; border-radius:20px; font-family:'Sora',system-ui,sans-serif; font-size:14px; font-weight:700; min-height:56px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.1); cursor:pointer; touch-action:manipulation; transition:transform 0.15s cubic-bezier(0.16,1,0.3,1); } .ds-btn-secondary:active { background:rgba(255,255,255,0.10); transform:scale(0.97); transition:transform 0.08s ease; } .ds-btn-secondary:focus-visible { outline:2px solid #5eeaf8; outline-offset:3px; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": null,
+      "description": "Standart içerik kartı. Tonal katmanlama, ince cyan sınır.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-rim\"></div><p class=\"ds-card-label\">KAPTAN</p><h3 class=\"ds-card-title\">Açık Deniz Kaptanı</h3><p class=\"ds-card-body\">7 rota tamamlandı.</p></div>",
+      "css": ".ds-card { position:relative; background:linear-gradient(180deg,rgba(15,58,92,0.85),rgba(12,42,71,0.65)); border:1px solid rgba(94,234,248,0.18); border-radius:18px; padding:18px; box-shadow:0 8px 32px rgba(0,0,0,0.45),0 0 0 1px rgba(94,234,248,0.06) inset; overflow:hidden; } .ds-card-rim { position:absolute; inset:0 0 auto 0; height:1px; background:linear-gradient(90deg,transparent,rgba(94,234,248,0.35),transparent); pointer-events:none; } .ds-card-label { font-family:'Sora',system-ui,sans-serif; font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#5e7a8e; margin:0 0 8px; } .ds-card-title { font-family:'Sora',system-ui,sans-serif; font-size:17px; font-weight:800; color:#f4f8ff; margin:0 0 6px; letter-spacing:-0.01em; } .ds-card-body { font-family:'Inter',system-ui,sans-serif; font-size:13px; color:#9bbecf; margin:0; line-height:1.55; }"
+    },
+    {
+      "name": "Bottom Tab",
+      "kind": "nav",
+      "refersTo": "tab-active",
+      "description": "Ana navigasyon tab'ı. Aktif durum pill arka plan + alt çizgi.",
+      "html": "<nav class=\"ds-tab-bar\"><button class=\"ds-tab ds-tab--active\"><span class=\"ds-tab-icon\">🌊</span><span class=\"ds-tab-label\">Liman</span></button><button class=\"ds-tab\"><span class=\"ds-tab-icon\">📹</span><span class=\"ds-tab-label\">İçerik</span></button></nav>",
+      "css": ".ds-tab-bar { display:grid; grid-template-columns:repeat(2,1fr); background:rgba(4,13,22,0.97); backdrop-filter:blur(24px); padding:10px 16px 24px; border-top:1px solid rgba(94,234,248,0.10); } .ds-tab { display:flex; flex-direction:column; align-items:center; gap:4px; justify-content:center; color:#4a6a85; font-family:'Sora',system-ui,sans-serif; font-size:11px; font-weight:700; position:relative; min-height:46px; padding:0 2px; border:none; background:none; cursor:pointer; touch-action:manipulation; transition:color 0.2s,transform 0.1s; } .ds-tab:active { transform:scale(0.88); transition:transform 0.08s ease; } .ds-tab-icon { font-size:22px; transition:transform 0.2s,filter 0.2s; } .ds-tab--active { color:#5eeaf8; } .ds-tab--active .ds-tab-icon { transform:translateY(-4px) scale(1.12); filter:drop-shadow(0 4px 14px rgba(94,234,248,0.55)); } .ds-tab--active::before { content:''; position:absolute; top:4px; left:50%; transform:translateX(-50%); width:36px; height:32px; border-radius:10px; background:rgba(94,234,248,0.10); pointer-events:none; } .ds-tab--active::after { content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:20px; height:3px; border-radius:999px; background:#5eeaf8; box-shadow:0 0 10px rgba(94,234,248,0.7); }"
+    },
+    {
+      "name": "Progress Bar",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "XP, sponsor, dünya turu progress bar'ları. Shimmer ile canlı hissi.",
+      "html": "<div class=\"ds-progress-track\"><div class=\"ds-progress-fill\" style=\"width:65%\"></div></div>",
+      "css": "@keyframes ds-shimmer { 0% { transform:translateX(-100%); } 100% { transform:translateX(300%); } } .ds-progress-track { height:6px; background:rgba(255,255,255,0.08); border-radius:999px; overflow:hidden; } .ds-progress-fill { height:100%; background:linear-gradient(90deg,#23abdf,#2ec4a0); border-radius:999px; position:relative; overflow:hidden; transition:width 0.5s cubic-bezier(0.16,1,0.3,1); } .ds-progress-fill::after { content:''; position:absolute; inset:0; width:40%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.28),transparent); animation:ds-shimmer 2s linear infinite; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Coastal Signal",
+    "overview": "Bu sistem bir kaptan köprüsünün görsel dilidir. Karanlık, fonksiyonel, her gösterge amaçlı yerleştirilmiş. Atmosfer sinematik ama klişesiz — sert, güvenilir, koşullar ne olursa olsun okunabilir.\n\nBu sistem şunları reddeder: parlak casual mobil oyun arayüzleri, rastgele neon karmaşası, efekt yığılmasıyla bozulan okunabilirlik, standart SaaS panel hissi.",
+    "keyCharacteristics": [
+      "Karanlık zemin, amaçlı parıltılar — dekoratif değil sinyal",
+      "Her etkileşim fiziksel geri bildirim verir (taktil, güvenli)",
+      "Altın yalnızca ödül ve uyarı için",
+      "Cyan yalnızca aktif durum ve navigasyon için",
+      "Okunabilirlik her zaman atmosferin önünde"
+    ],
+    "rules": [
+      { "name": "The Signal Rule",         "body": "Cyan yalnızca aktif/seçili/navigasyon için. Her cyan kullanımında: sinyal mi, dekorasyon mu?", "section": "colors" },
+      { "name": "The Gold Reserve Rule",   "body": "Altın yalnızca ödül bağlamında: XP, level-up, içerik CTA, cooldown. Başka yerde yasak.", "section": "colors" },
+      { "name": "The Uppercase Discipline Rule", "body": "Büyük harf yalnızca eyebrow etiket ve chip/badge. Buton, kart başlığı, body yasak.", "section": "typography" },
+      { "name": "The Tabular Numbers Rule","body": "Tüm oyun içi sayısal değerler font-variant-numeric: tabular-nums kullanır.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule","body": "Yüzeyler dinlenme halinde tonal katmanlama. Glow yalnızca aktif/hover/focus.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do her interaktif elemana touch-action: manipulation ekle.",
+      "Do tüm butonlara :active scale(0.97) press feedback ver.",
+      "Do cyan'ı yalnızca aktif/seçili/navigasyon için kullan.",
+      "Do altını yalnızca ödül bağlamında kullan.",
+      "Do progress barlarına shimmer ekle.",
+      "Do env(safe-area-inset-bottom) ile bottom nav'ı uyarla."
+    ],
+    "donts": [
+      "Don't gradient text kullan (background-clip: text).",
+      "Don't glassmorphism'i dekoratif amaçla kullan.",
+      "Don't parlak casual mobil oyun arayüzü yap.",
+      "Don't rastgele neon karmaşası ekle.",
+      "Don't saf siyah (#000) veya saf beyaz (#fff) kullan.",
+      "Don't border-left/right > 1px renkli vurgu çizgisi kart veya liste öğesine uygula.",
+      "Don't aynı boyut ve yapıda tekrar eden kart gridi yap."
+    ]
+  }
+}

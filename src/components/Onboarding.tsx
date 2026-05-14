@@ -1,7 +1,7 @@
 ﻿import './Onboarding.css';
 import { useRef, useState } from "react";
 import type { Dispatch, SetStateAction, TouchEvent as ReactTouchEvent } from "react";
-import { MicoSvg, MicoGuide } from "./MicoGuide";
+import { MicoSvg, MicoGuide, useTypewriterText } from "./MicoGuide";
 import type { Step, MarinaFilter, Gender } from "../types/game";
 import { PLAYER_PROFILES } from "../../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../../game-data/marinas";
@@ -44,6 +44,14 @@ export const getBoatSvg = (boatId: string) => {
 interface OnboardingProps {
   step: Step;
   setStep: (step: Step) => void;
+  memberFullName: string;
+  setMemberFullName: (value: string) => void;
+  memberUsername: string;
+  setMemberUsername: (value: string) => void;
+  memberEmail: string;
+  setMemberEmail: (value: string) => void;
+  memberPassword: string;
+  setMemberPassword: (value: string) => void;
   profileIndex: number;
   setProfileIndex: Dispatch<SetStateAction<number>>;
   marinaIndex: number;
@@ -80,8 +88,16 @@ const MICO_MESSAGES: Partial<Record<string, string>> = {
     "Teknen seni bekliyor! Ona güzel bir isim ver — artık senin, kimsenin değil.",
 };
 
+const ENABLE_ACCOUNT_SETUP = false;
+
+const getNewGameStartStep = (): Step => (ENABLE_ACCOUNT_SETUP ? "ACCOUNT_SETUP" : "PICK_PROFILE");
+
 export function Onboarding({
   step, setStep,
+  memberFullName, setMemberFullName,
+  memberUsername, setMemberUsername,
+  memberEmail, setMemberEmail,
+  memberPassword, setMemberPassword,
   profileIndex, setProfileIndex,
   marinaIndex, setMarinaIndex,
   marinaFilter, setMarinaFilter,
@@ -101,6 +117,11 @@ export function Onboarding({
   const captainSwipeStart = useRef<{ x: number; y: number } | null>(null);
   const marinaSwipeStart = useRef<{ x: number; y: number } | null>(null);
   const boatSwipeStart = useRef<{ x: number; y: number } | null>(null);
+  const welcomeMessage = WELCOME_SLIDES[welcomeSlide] ?? "";
+  const { text: typedWelcomeMessage, isComplete: welcomeTypingComplete } = useTypewriterText(
+    welcomeMessage,
+    step === "WELCOME",
+  );
 
   const handleCaptainTouchStart = (e: ReactTouchEvent<HTMLDivElement>) => {
     const touch = e.touches[0];
@@ -201,7 +222,7 @@ export function Onboarding({
 
         <div className="mico-welcome-card glass-card fade-in" key={welcomeSlide}>
           <span className="mico-welcome-name">Miço</span>
-          <p className="mico-welcome-text">{WELCOME_SLIDES[welcomeSlide]}</p>
+          <p className={`mico-welcome-text${welcomeTypingComplete ? "" : " mico-typewriter"}`}>{typedWelcomeMessage}</p>
           <div className="mico-welcome-dots" aria-hidden="true">
             {WELCOME_SLIDES.map((_, i) => (
               <span key={i} className={`mico-dot ${i === welcomeSlide ? "mico-dot--active" : ""}`} />
@@ -214,7 +235,7 @@ export function Onboarding({
           onClick={() => {
             if (isLast) {
               setWelcomeSlide(0);
-              setStep("MAIN_MENU");
+              setStep(ENABLE_ACCOUNT_SETUP ? "ACCOUNT_SETUP" : "MAIN_MENU");
             } else {
               setWelcomeSlide((s) => s + 1);
             }
@@ -274,12 +295,12 @@ export function Onboarding({
             <button className="primary-button primary-button--pulse" onClick={onLoadGame}>
               🧭 DEVAM ET · {saveBoatName}
             </button>
-            <button className="secondary-button" onClick={() => setStep("PICK_PROFILE")}>
+            <button className="secondary-button" onClick={() => setStep(getNewGameStartStep())}>
               ⚓ YENİ OYUN
             </button>
           </>
         ) : (
-          <button className="primary-button primary-button--pulse" onClick={() => setStep("PICK_PROFILE")}>
+          <button className="primary-button primary-button--pulse" onClick={() => setStep(getNewGameStartStep())}>
             ⚓ YENİ OYUN
           </button>
         )}
@@ -288,6 +309,99 @@ export function Onboarding({
       <div className="ob-social-proof">Topluluk büyüyor</div>
     </div>
   );
+
+  const renderAccountSetup = () => {
+    const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(memberEmail.trim());
+    const canContinue =
+      memberFullName.trim().length >= 3 &&
+      memberUsername.trim().length >= 3 &&
+      emailLooksValid &&
+      memberPassword.length >= 6;
+
+    return (
+      <div className="ob-account-screen ob-account-screen-v2">
+        <div className="ob-step-header">
+          <div className="ob-step-eyebrow">KAPTAN KAYDI</div>
+          <h2 className="ob-step-title">ÜYE OL VE DEVAM ET</h2>
+        </div>
+        <MicoGuide
+          message="Seni tanıyayım Kaptan. Mürettebat defterine temel bilgilerini yaz, sonra rotanı birlikte kuracağız."
+          visible
+        />
+
+        <div className="ob-account-card glass-card">
+          <div className="ob-account-grid">
+            <label className="ob-form-field">
+              <span className="ob-form-label">Ad Soyad</span>
+              <input
+                className="ob-form-input"
+                type="text"
+                placeholder="Adını ve soyadını yaz"
+                value={memberFullName}
+                onChange={(e) => setMemberFullName(e.target.value)}
+                autoComplete="name"
+              />
+            </label>
+
+            <label className="ob-form-field">
+              <span className="ob-form-label">Kullanıcı Adı</span>
+              <input
+                className="ob-form-input"
+                type="text"
+                placeholder="@kaptanadi"
+                value={memberUsername}
+                onChange={(e) => setMemberUsername(e.target.value.replace(/\s+/g, ""))}
+                autoCapitalize="off"
+                autoCorrect="off"
+                autoComplete="username"
+              />
+            </label>
+
+            <label className="ob-form-field">
+              <span className="ob-form-label">E-posta</span>
+              <input
+                className="ob-form-input"
+                type="email"
+                placeholder="kaptan@deniz.com"
+                value={memberEmail}
+                onChange={(e) => setMemberEmail(e.target.value)}
+                autoCapitalize="off"
+                autoCorrect="off"
+                autoComplete="email"
+              />
+            </label>
+
+            <label className="ob-form-field">
+              <span className="ob-form-label">Şifre</span>
+              <input
+                className="ob-form-input"
+                type="password"
+                placeholder="En az 6 karakter"
+                value={memberPassword}
+                onChange={(e) => setMemberPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </label>
+          </div>
+
+          <div className="ob-account-note">
+            Kayıt tamamlanınca kaptan profilini, çıkış marinanı ve tekneni seçeceksin.
+          </div>
+        </div>
+
+        <div className="ob-screen-actions">
+          <button className="secondary-button" onClick={() => setStep("WELCOME")}>Geri</button>
+          <button
+            className="primary-button primary-button--pulse"
+            onClick={() => setStep("PICK_PROFILE")}
+            disabled={!canContinue}
+          >
+            KAYDI TAMAMLA →
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const renderProfileSelection = () => {
     const topSkills = Object.entries(selectedProfile.skills)
@@ -438,9 +552,12 @@ export function Onboarding({
       return { temp: "24°C", icon: "☀️", label: "Güneşli" };
     };
     const weather = weatherForRegion(selectedMarina.region);
+    const activeFilterLabel =
+      marinaFilter === "all" ? "Tüm kıyılar" : marinaFilter === "ege" ? "Ege hattı" : marinaFilter === "akdeniz" ? "Akdeniz hattı" : "Marmara hattı";
+    const selectedMarinaRecommended = selectedMarina.bestProfiles.includes(selectedProfile.id);
 
     return (
-      <div className="ob-marina-screen ob-marina-screen-v2 ob-marina-screen-v3">
+      <div className="ob-marina-screen ob-marina-screen-v2 ob-marina-screen-v3 ob-marina-screen-v4">
         <div className="ob-step-header">
           <div className="ob-step-eyebrow">ADIM 2 / 4</div>
           <h2 className="ob-step-title">ÇIKIŞ LİMANINI SEÇ</h2>
@@ -465,6 +582,21 @@ export function Onboarding({
           onTouchEnd={(e) => handleMarinaTouchEnd(e, cyclePrev, cycleNext)}
           onTouchCancel={() => { marinaSwipeStart.current = null; }}
         >
+          <div className="ob-map-hud">
+            <div className="ob-map-hud-copy">
+              <span className="ob-map-kicker">Başlangıç rotası</span>
+              <strong>{selectedMarina.name}</strong>
+              <span>{selectedMarina.region} · {activeFilterLabel}</span>
+            </div>
+            <div className={`ob-map-hud-badge${selectedMarinaRecommended ? " is-recommended" : ""}`}>
+              {selectedMarinaRecommended ? "Profiline Uygun" : "Serbest Seçim"}
+            </div>
+          </div>
+          <div className="ob-map-sea-layers" aria-hidden="true">
+            <span className="ob-map-current ob-map-current--one" />
+            <span className="ob-map-current ob-map-current--two" />
+            <span className="ob-map-current ob-map-current--three" />
+          </div>
           <button
             className="ob-map-arrow ob-map-arrow--left"
             onClick={cyclePrev}
@@ -549,20 +681,46 @@ export function Onboarding({
                     className="ob-map-pin-anchor"
                     textAnchor="middle"
                   >⚓</text>
-                  <g className="ob-map-pin-premium" transform={`translate(${coords.cx}, ${coords.cy - 18})`}>
-                    <rect x={-15} y={-5} width={30} height={8} rx={2} className="ob-map-pin-premium-bg" />
-                    <text x={0} y={1} className="ob-map-pin-premium-text" textAnchor="middle">PREMIUM</text>
-                  </g>
-                  <text
-                    x={coords.cx}
-                    y={coords.cy + 9}
-                    className="ob-map-pin-label"
-                    textAnchor="middle"
-                  >{marina.name.toUpperCase()}</text>
+                  {isRecommended && (
+                    <g className="ob-map-pin-premium" transform={`translate(${coords.cx}, ${coords.cy - 18})`}>
+                      <rect x={-15} y={-5} width={30} height={8} rx={2} className="ob-map-pin-premium-bg" />
+                      <text x={0} y={1} className="ob-map-pin-premium-text" textAnchor="middle">UYUMLU</text>
+                    </g>
+                  )}
+                  {(isActive || isRecommended) && (
+                    <text
+                      x={coords.cx}
+                      y={coords.cy + 11}
+                      className="ob-map-pin-label"
+                      textAnchor="middle"
+                    >{marina.name}</text>
+                  )}
                 </g>
               );
             })}
           </svg>
+        </div>
+
+        <div className="ob-marina-rail" aria-label="Görünür marinalar">
+          {filteredMarinas.map((marina) => {
+            const idx = STARTING_MARINAS.findIndex((m) => m.id === marina.id);
+            const isActive = idx === marinaIndex;
+            const isRecommended = marina.bestProfiles.includes(selectedProfile.id);
+            return (
+              <button
+                key={marina.id}
+                type="button"
+                className={`ob-marina-rail-card${isActive ? " ob-marina-rail-card--active" : ""}`}
+                onClick={() => updateMarinaSelection(idx)}
+              >
+                <span className="ob-marina-rail-top">
+                  <span className="ob-marina-rail-name">{marina.name}</span>
+                  {isRecommended && <span className="ob-marina-rail-rec">Öneri</span>}
+                </span>
+                <span className="ob-marina-rail-sub">{marina.region}</span>
+              </button>
+            );
+          })}
         </div>
 
         <div
@@ -836,6 +994,7 @@ export function Onboarding({
   );
 
   if (step === "WELCOME") return renderWelcome();
+  if (step === "ACCOUNT_SETUP") return renderAccountSetup();
   if (step === "MAIN_MENU") return renderMainMenu();
   if (step === "PICK_PROFILE") return renderProfileSelection();
   if (step === "PICK_MARINA") return renderMarinaSelection();

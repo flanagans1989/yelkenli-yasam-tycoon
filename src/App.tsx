@@ -158,8 +158,8 @@ const createArrivalStoryHook = (route: (typeof WORLD_ROUTES)[number]): StoryHook
     id: `story_arrival_${route.id}_${Date.now()}`,
     source: "arrival",
     routeId: route.id,
-    title: "Bu yolculugun hikayesi hazir",
-    description: "Rotada yasadiklarin guclu bir icerik serisine donusebilir.",
+    title: "Bu yolculuğun hikayesi hazır",
+    description: "Rotada yaşadıklarının güçlü bir içerik serisine dönüşebilir.",
     ...bonuses,
     expiresAfterUses: 1,
   };
@@ -172,7 +172,7 @@ const createSeaEventStoryHook = (decisionId: string, routeId?: string): StoryHoo
       source: "sea_event",
       routeId,
       title: "Denizden yakalanan hikaye",
-      description: "Seyirde yakaladigin bu an, guclu bir icerik firsatina donustu.",
+      description: "Seyirde yakaladığın bu an, güçlü bir içerik fırsatına dönüştü.",
       bonusFollowersPct: 15,
       bonusCreditsPct: 10,
       sponsorInterest: 1,
@@ -185,8 +185,8 @@ const createSeaEventStoryHook = (decisionId: string, routeId?: string): StoryHoo
       id: `story_sea_${decisionId}_${Date.now()}`,
       source: "sea_event",
       routeId,
-      title: "Denizde ses getiren cekim",
-      description: "Riskli an dogru cekimle markalarin dikkatini cekebilecek bir hikayeye donustu.",
+      title: "Denizde ses getiren çekim",
+      description: "Riskli an doğru çekimle markaların dikkatini çekebilecek bir hikayeye dönüştü.",
       bonusFollowersPct: 12,
       bonusCreditsPct: 8,
       sponsorInterest: 1,
@@ -206,6 +206,10 @@ function App() {
   const [boatIndex, setBoatIndex] = useState(0);
   const [boatName, setBoatName] = useState("");
   const [onboardingMessage, setOnboardingMessage] = useState("");
+  const [memberFullName, setMemberFullName] = useState("");
+  const [memberUsername, setMemberUsername] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberPassword, setMemberPassword] = useState("");
   
   const [credits, setCredits] = useState(0);
   const [followers, setFollowers] = useState(0);
@@ -250,6 +254,14 @@ function App() {
 
   // UI dismissal state (session-only, not persisted)
   const [tavsiyeDismissed, setTavsiyeDismissed] = useState(false);
+
+  // Tekrar Yayınla — session-only, not persisted
+  const [lastUsedPlatformId, setLastUsedPlatformId] = useState<string | null>(null);
+  const [lastUsedContentType, setLastUsedContentType] = useState<string | null>(null);
+
+  // Upgrade confirmation — session-only
+  const [pendingUpgradeConfirmId, setPendingUpgradeConfirmId] = useState<string | null>(null);
+  const upgradePurchasingRef = useRef(false);
 
   // Sponsor MVP States
   const [brandTrust, setBrandTrust] = useState(10);
@@ -312,6 +324,7 @@ function App() {
   const hasInitializedSponsorOfferBannerRef = useRef(false);
   const suppressAchievementCelebrationRef = useRef(false);
   const suppressFollowerCelebrationRef = useRef(false);
+  const arrivalCommitInProgressRef = useRef(false);
 
   const triggerFlash = (type: "credits" | "followers") => {
     if (type === "credits") {
@@ -660,6 +673,10 @@ function App() {
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
       const saveObj = {
+        memberFullName,
+        memberUsername,
+        memberEmail,
+        memberPassword,
         profileIndex,
         marinaIndex,
         boatIndex,
@@ -724,7 +741,7 @@ function App() {
       setSaveBoatName(boatName);
     }
   }, [
-    step, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone,
+    step, memberFullName, memberUsername, memberEmail, memberPassword, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone,
     logs, purchasedUpgradeIds, upgradesInProgress, activeTab, currentLocationName, worldProgress, energy, water,
     fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining,
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, activeStoryHook, selectedUpgradeCategory,
@@ -813,7 +830,9 @@ function App() {
         ? parsed.currentRouteId
         : "greek_islands";
       const nextActiveTab = safeTab(parsed.activeTab);
-      const nextFollowers = (parsed.followers ?? 0) + offline.followers;
+      const safeBaseCredits = Math.max(0, Math.min(Number(parsed.credits ?? 0) || 0, 5_000_000));
+      const safeBaseFollowers = Math.max(0, Math.min(Number(parsed.followers ?? 0) || 0, 50_000_000));
+      const nextFollowers = safeBaseFollowers + offline.followers;
       const nextCompletedRouteIds = Array.isArray(parsed.completedRouteIds) ? parsed.completedRouteIds : [];
       const nextAcceptedSponsors = Array.isArray(parsed.acceptedSponsors) ? parsed.acceptedSponsors : [];
       const nextTotalContentProduced = parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0);
@@ -838,10 +857,14 @@ function App() {
       suppressFollowerCelebrationRef.current = true;
 
       setProfileIndex(nextProfileIndex);
+      setMemberFullName(parsed.memberFullName ?? "");
+      setMemberUsername(parsed.memberUsername ?? "");
+      setMemberEmail(parsed.memberEmail ?? "");
+      setMemberPassword(parsed.memberPassword ?? "");
       setMarinaIndex(nextMarinaIndex);
       setBoatIndex(nextBoatIndex);
       setBoatName(parsed.boatName ?? "");
-      setCredits((parsed.credits ?? 0) + offline.credits);
+      setCredits(safeBaseCredits + offline.credits);
       setFollowers(nextFollowers);
       setFirstContentDone(parsed.firstContentDone ?? false);
       setLogs(nextLogs);
@@ -863,9 +886,9 @@ function App() {
       setSelectedContentType(parsed.selectedContentType ?? null);
       setContentResult(parsed.contentResult ?? null);
       setSelectedUpgradeCategory(parsed.selectedUpgradeCategory ?? "energy");
-      setBrandTrust(parsed.brandTrust ?? 10);
+      setBrandTrust(Math.max(0, Math.min(100, Number(parsed.brandTrust ?? 10) || 10)));
       setSponsorOffers(parsed.sponsorOffers ?? []);
-      setAcceptedSponsors(nextAcceptedSponsors);
+      setAcceptedSponsors(nextAcceptedSponsors.slice(0, 12));
       setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
       setContentHistory(Array.isArray(parsed.contentHistory) ? parsed.contentHistory : []);
       setFirstVoyageEventTriggered(parsed.firstVoyageEventTriggered ?? false);
@@ -877,7 +900,7 @@ function App() {
       setLastContentAt(parsed.lastContentAt ?? null);
       setMarinaRestInProgress(marina.marinaRest);
       setMarinaRestCooldownTick(Date.now());
-      setCaptainXp(parsed.captainXp ?? 0);
+      setCaptainXp(Math.max(0, Number(parsed.captainXp ?? 0) || 0));
       setCaptainLevel(nextCaptainLevel);
       setDailyGoals(Array.isArray(parsed.dailyGoals) ? parsed.dailyGoals : makeDailyGoals());
       setLastDailyReset(parsed.lastDailyReset ?? "");
@@ -890,7 +913,7 @@ function App() {
       setSponsorObligations(parsed.sponsorObligations && typeof parsed.sponsorObligations === "object" ? parsed.sponsorObligations : {});
       setLoginStreak(parsed.loginStreak ?? 0);
       setLastLoginBonus(parsed.lastLoginBonus ?? "");
-      setMarinaTasks(Array.isArray(parsed.marinaTasks) ? parsed.marinaTasks : []);
+      setMarinaTasks(Array.isArray(parsed.marinaTasks) ? parsed.marinaTasks.slice(0, 8) : []);
       setLastMarinaTasksLocation(parsed.lastMarinaTasksLocation ?? "");
       setStep(safeLoadStep(parsed));
       setActiveTab(nextActiveTab);
@@ -967,7 +990,7 @@ function App() {
     setWater(100);
     triggerFlash("credits");
     setLogs(prev => [`Su ikmali yapıldı: ${cost} TL.`, ...prev.slice(0, 4)]);
-    completeMarinaTask("refill_water");
+    completeMarinaTask("refill_water", Math.max(0, MARINA_TASK_REWARD - cost));
   };
 
   const handleRefillFuel = () => {
@@ -983,7 +1006,7 @@ function App() {
     setFuel(100);
     triggerFlash("credits");
     setLogs(prev => [`Yakıt ikmali yapıldı: ${cost} TL.`, ...prev.slice(0, 4)]);
-    completeMarinaTask("refill_fuel");
+    completeMarinaTask("refill_fuel", Math.max(0, MARINA_TASK_REWARD - cost));
   };
 
   const getMarinaRestLabel = () => {
@@ -1012,7 +1035,7 @@ function App() {
     setBoatCondition(prev => Math.min(100, prev + 35));
     triggerFlash("credits");
     setLogs(prev => ["Tekne onarıldı. Durum 35 puan toparlandı.", ...prev.slice(0, 4)]);
-    completeMarinaTask("repair_boat");
+    completeMarinaTask("repair_boat", Math.max(0, MARINA_TASK_REWARD - 250));
   };
 
   const advanceDay = () => {
@@ -1176,6 +1199,8 @@ function App() {
     const comment = getContentComment(contentType, quality, isViral);
     const sponsorInterestGained = storyHook?.sponsorInterest ?? 0;
 
+    setLastUsedPlatformId(platformId);
+    setLastUsedContentType(contentType);
     setSelectedPlatformId(platformId);
     setSelectedContentType(contentType);
     setContentResult({
@@ -1188,7 +1213,7 @@ function App() {
       comment,
       storyHookTitle: storyHook?.title,
       storyHookSummary: storyHook
-        ? `Hikaye bonusu: +%${storyFollowerBonus} takipci · +%${storyCreditBonus} TL`
+        ? `Hikaye bonusu: +%${storyFollowerBonus} takipçi · +%${storyCreditBonus} TL`
         : undefined,
       sponsorInterestGained: sponsorInterestGained > 0 ? sponsorInterestGained : undefined,
     });
@@ -1208,26 +1233,26 @@ function App() {
     setFirstContentDone(true);
     setTotalContentProduced(prev => prev + 1);
     addFloater(`+${gainCredits.toLocaleString("tr-TR")} TL`, "credits");
-    setTimeout(() => addFloater(`+${gainFollowers.toLocaleString("tr-TR")} Takipci`, "followers"), 200);
+    setTimeout(() => addFloater(`+${gainFollowers.toLocaleString("tr-TR")} Takipçi`, "followers"), 200);
     if (sponsorInterestGained > 0) {
       setBrandTrust(prev => Math.min(100, prev + sponsorInterestGained));
-      setTimeout(() => addFloater(`+${sponsorInterestGained} Marka Guveni`, "followers"), 400);
+      setTimeout(() => addFloater(`+${sponsorInterestGained} Marka Güveni`, "followers"), 400);
     }
     triggerFlash("credits");
     triggerFlash("followers");
 
     const logMsg = storyHook
-      ? `${platform?.name} platformunda hikaye icerigi yayinlandi: +${gainFollowers} Takipci, +${gainCredits} TL.`
-      : `${platform?.name} platformunda icerik yayinlandi: +${gainFollowers} Takipci, +${gainCredits} TL.`;
+      ? `${platform?.name} platformunda hikaye içeriği yayınlandı: +${gainFollowers} takipçi, +${gainCredits} TL.`
+      : `${platform?.name} platformunda içerik yayınlandı: +${gainFollowers} takipçi, +${gainCredits} TL.`;
     setLogs(prev => [logMsg, ...prev.slice(0, 4)]);
     pushToast(
       "content",
-      storyHook ? "Hikaye Yayinlandi!" : "Icerik Yayinlandi!",
+      storyHook ? "Hikaye Yayınlandı!" : "İçerik Yayınlandı!",
       storyHook
-        ? `${storyHook.title}: +${gainFollowers.toLocaleString("tr-TR")} takipci, +${gainCredits.toLocaleString("tr-TR")} TL`
+        ? `${storyHook.title}: +${gainFollowers.toLocaleString("tr-TR")} takipçi, +${gainCredits.toLocaleString("tr-TR")} TL`
         : platform?.name
-          ? `+${gainFollowers.toLocaleString("tr-TR")} takipci kazandin. Platform: ${platform.name}`
-          : `+${gainFollowers.toLocaleString("tr-TR")} takipci kazandin.`,
+          ? `+${gainFollowers.toLocaleString("tr-TR")} takipçi kazandın. Platform: ${platform.name}`
+          : `+${gainFollowers.toLocaleString("tr-TR")} takipçi kazandın.`,
     );
     setLastContentAt(Date.now());
     setCaptainXp(prev => prev + 20);
@@ -1298,6 +1323,7 @@ function App() {
     if (typeof boatConditionDelta === "number") {
       setBoatCondition(prev => Math.max(0, Math.min(100, prev + boatConditionDelta)));
     }
+    const forceArrivalFromDecision = typeof remainingDaysDelta === "number" && voyageDaysRemaining + remainingDaysDelta <= 0;
     if (typeof remainingDaysDelta === "number") {
       setVoyageDaysRemaining(prev => Math.max(0, prev + remainingDaysDelta));
     }
@@ -1323,10 +1349,15 @@ function App() {
     }
     setCaptainXp(prev => prev + 30);
     setPendingDecisionId(null);
+    if (forceArrivalFromDecision) {
+      setStep("ARRIVAL_SCREEN");
+    }
   };
 
   const handleArrival = (targetTab: Tab = "liman") => {
+    if (arrivalCommitInProgressRef.current) return;
     if (!currentRoute) return;
+    arrivalCommitInProgressRef.current = true;
 
     const reward = getRouteCompletionRewards(currentRoute);
     const nextStoryHook = createArrivalStoryHook(currentRoute);
@@ -1347,7 +1378,7 @@ function App() {
       setCurrentRouteId(nextR.id);
     }
 
-    setLogs(prev => [`${currentRoute.name} rotasi tamamlandi. ${currentRoute.to} limanina varildi. +${reward.credits} TL, +${reward.followers} takipci odul alindi.`, ...prev.slice(0, 4)]);
+    setLogs(prev => [`${currentRoute.name} rotası tamamlandı. ${currentRoute.to} limanına varıldı. +${reward.credits} TL, +${reward.followers} takipçi ödül alındı.`, ...prev.slice(0, 4)]);
     setCaptainXp(prev => prev + 80);
     setContentResult(null);
     setActiveStoryHook(nextStoryHook);
@@ -1357,6 +1388,9 @@ function App() {
     setActiveTab(targetTab);
     setIcerikSubTab("produce");
     pushToast("voyage", "Yeni Yolculuk Hikayesi", nextStoryHook.description);
+    setTimeout(() => {
+      arrivalCommitInProgressRef.current = false;
+    }, 150);
   };
 
   const handleProduceContentV2 = () => {
@@ -1591,6 +1625,16 @@ function App() {
       return;
     }
 
+    if (hasRouteReadinessGap) {
+      pushToast("warning", "Hazırlık Eksik", "Rota için gereken tüm hazırlık kriterleri tamamlanmadan seyir başlatılamaz.");
+      return;
+    }
+
+    if (energy <= 0 || water <= 0 || fuel <= 0 || boatCondition <= 0) {
+      pushToast("warning", "Kritik Kaynak", "Enerji, su, yakıt ve tekne durumu pozitif olmadan seyir başlatılamaz.");
+      return;
+    }
+
     const minD = currentRoute.baseDurationDays.min;
     const maxD = currentRoute.baseDurationDays.max;
     const days = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
@@ -1615,28 +1659,39 @@ function App() {
     setActiveTab("liman");
   };
 
+  const UPGRADE_CONFIRM_THRESHOLD = 10000;
+
   const handleBuyUpgrade = (upgradeId: string) => {
+    if (upgradePurchasingRef.current) return;
     const upgrade = BOAT_UPGRADES.find(u => u.id === upgradeId);
     if (!upgrade) return;
-
+    const compatibility = upgrade.compatibility.find((item) => item.boatId === selectedBoat.id);
+    if (!compatibility?.compatible) {
+      setLogs(prev => ["Bu upgrade seçili tekneyle uyumlu değil.", ...prev.slice(0, 4)]);
+      return;
+    }
     if (upgradesInProgress.some((item) => item.upgradeId === upgradeId)) {
-      setLogs(prev => ["Bu upgrade zaten kurulumda. Ayni gelistirme iki kez baslatilamaz.", ...prev.slice(0, 4)]);
+      setLogs(prev => ["Bu upgrade zaten kurulumda. Aynı geliştirme iki kez başlatılamaz.", ...prev.slice(0, 4)]);
       return;
     }
-
     if (upgradesInProgress.length >= MAX_PARALLEL_UPGRADES) {
-      setLogs(prev => ["Tum kurulum slotlari dolu. Yeni upgrade icin aktif kurulumlardan birinin bitmesini bekle.", ...prev.slice(0, 4)]);
+      setLogs(prev => ["Tüm kurulum slotları dolu. Yeni upgrade için aktif kurulumlardan birinin bitmesini bekle.", ...prev.slice(0, 4)]);
       return;
     }
-
-    if (purchasedUpgradeIds.includes(upgradeId)) {
-      return;
-    }
-
+    if (purchasedUpgradeIds.includes(upgradeId)) return;
     if (credits < upgrade.cost) {
       setLogs(prev => ["Yetersiz bütçe. Bu upgrade için daha fazla kredi gerekiyor.", ...prev.slice(0, 4)]);
       return;
     }
+
+    // For expensive upgrades, require inline confirmation first
+    if (upgrade.cost >= UPGRADE_CONFIRM_THRESHOLD && pendingUpgradeConfirmId !== upgradeId) {
+      setPendingUpgradeConfirmId(upgradeId);
+      return;
+    }
+
+    setPendingUpgradeConfirmId(null);
+    upgradePurchasingRef.current = true;
 
     const installMs = getUpgradeInstallMs(upgrade);
     const startedAt = Date.now();
@@ -1644,7 +1699,8 @@ function App() {
     const installMinutes = Math.max(1, Math.ceil(installMs / 60000));
     const slot = ([0, 1, 2] as const).find((candidate) => !upgradesInProgress.some((item) => item.slot === candidate));
     if (slot === undefined) {
-      setLogs(prev => ["Tum kurulum slotlari dolu. Yeni upgrade icin aktif kurulumlardan birinin bitmesini bekle.", ...prev.slice(0, 4)]);
+      setLogs(prev => ["Tüm kurulum slotları dolu. Yeni upgrade için aktif kurulumlardan birinin bitmesini bekle.", ...prev.slice(0, 4)]);
+      upgradePurchasingRef.current = false;
       return;
     }
 
@@ -1653,7 +1709,10 @@ function App() {
     triggerFlash("credits");
     setLogs(prev => [`Kurulum başladı: ${upgrade.name}. Tahmini tamamlanma: ${installMinutes} dakika.`, ...prev.slice(0, 4)]);
     completeGoal("buy_upgrade");
+    upgradePurchasingRef.current = false;
   };
+
+  const handleCancelUpgradeConfirm = () => setPendingUpgradeConfirmId(null);
 
   const renderLimanTab = () => (
     <LimanTab
@@ -1679,6 +1738,8 @@ function App() {
       onGoContent={() => setActiveTab("icerik")}
       onGoRoute={() => setActiveTab("rota")}
       renderDailyGoals={renderDailyGoalsCard}
+      dailyGoalsCompletedCount={dailyGoals.filter(g => g.completed).length}
+      dailyGoalsTotal={dailyGoals.length}
       marinaTasks={marinaTasks}
     />
   );
@@ -1748,6 +1809,7 @@ function App() {
     const selectedPlatform = selectedPlatformId
       ? SOCIAL_PLATFORMS.find((platform) => platform.id === selectedPlatformId) ?? null
       : null;
+    const isFirstContentTutorialActive = step === "HUB" && tutorialStep === 0 && !firstContentDone;
     const contentCooldownMs = getContentCooldownMs(captainLevel, testMode);
     const contentCooldownRemaining = lastContentAt
       ? Math.max(0, contentCooldownMs - (Date.now() - lastContentAt))
@@ -1795,6 +1857,14 @@ function App() {
       mainRole: platform.mainRole,
       bestContentTypes: platform.bestContentTypes.map((id) => String(id)),
     }));
+    const handleSelectPlatform = (platformId: string) => {
+      const nextPlatform = SOCIAL_PLATFORMS.find((platform) => platform.id === platformId) ?? null;
+      const nextBestContentTypeIds = nextPlatform?.bestContentTypes.map((id) => String(id)) ?? [];
+      setSelectedPlatformId(platformId);
+      if (selectedContentType && !nextBestContentTypeIds.includes(selectedContentType)) {
+        setSelectedContentType(null);
+      }
+    };
 
     return (
       <IcerikTab
@@ -1822,7 +1892,7 @@ function App() {
         platforms={activePlatforms}
         platformVisuals={PLATFORM_VISUALS}
         selectedPlatformId={selectedPlatformId}
-        onSelectPlatform={setSelectedPlatformId}
+        onSelectPlatform={handleSelectPlatform}
         selectedPlatformName={selectedPlatform?.name}
         contentTypes={CONTENT_TYPES}
         selectedContentType={selectedContentType}
@@ -1834,6 +1904,13 @@ function App() {
         ctaDisabled={ctaDisabled}
         onProduceContent={handleProduceContentV2}
         contentResult={contentResult}
+        lastUsedPlatformId={lastUsedPlatformId}
+        lastUsedContentType={lastUsedContentType}
+        onRepeatLast={() => {
+          if (!lastUsedPlatformId || !lastUsedContentType) return;
+          setSelectedPlatformId(lastUsedPlatformId);
+          setSelectedContentType(lastUsedContentType);
+        }}
         onResetContentResult={() => {
           setContentResult(null);
           setSelectedPlatformId(null);
@@ -1861,6 +1938,13 @@ function App() {
           sponsorObligations,
         }}
         contentHistory={contentHistory}
+        tutorialLocked={isFirstContentTutorialActive}
+        guidedPlatformId="viewTube"
+        guidedContentTypeIds={
+          isFirstContentTutorialActive && selectedPlatformId === "viewTube"
+            ? selectedPlatformBestContentTypeIds
+            : []
+        }
       />
     );
   };
@@ -2006,6 +2090,8 @@ function App() {
         }}
         upgradeCards={upgradeCards}
         onBuyUpgrade={handleBuyUpgrade}
+        pendingUpgradeConfirmId={pendingUpgradeConfirmId}
+        onCancelUpgradeConfirm={handleCancelUpgradeConfirm}
         installedUpgradeLabels={purchasedUpgradeObjects.map(u => u.name)}
       />
     );
@@ -2031,11 +2117,14 @@ function App() {
     setDailyGoals(prev => prev.map(g => g.type === type && !g.completed ? { ...g, completed: true } : g));
   };
 
-  const completeMarinaTask = (type: MarinaTaskType) => {
+  const completeMarinaTask = (type: MarinaTaskType, rewardOverride?: number) => {
     setMarinaTasks(prev => prev.map(t => {
       if (t.type === type && !t.completed) {
-        setCredits(c => c + t.reward);
-        pushToast("content", "Marina Görevi Tamamlandı!", `${t.title} · +${t.reward} TL`);
+        const rewardToGrant = Math.max(0, Math.floor(rewardOverride ?? t.reward));
+        if (rewardToGrant > 0) {
+          setCredits(c => c + rewardToGrant);
+          pushToast("content", "Marina Görevi Tamamlandı!", `${t.title} · +${rewardToGrant} TL`);
+        }
         return { ...t, completed: true };
       }
       return t;
@@ -2142,7 +2231,12 @@ function App() {
     <HubScreen
       step={step}
       activeTab={activeTab}
-      setActiveTab={setActiveTab}
+      setActiveTab={(tab) => {
+        if (step === "HUB" && tutorialStep === 0 && !firstContentDone && tab !== "icerik") return;
+        if (tab === "icerik") setIcerikSubTab("produce");
+        setActiveTab(tab);
+      }}
+      lockedTab={step === "HUB" && tutorialStep === 0 && !firstContentDone ? "icerik" : null}
       boatName={boatName}
       selectedBoatName={selectedBoat.name}
       currentRoute={currentRoute}
@@ -2216,10 +2310,18 @@ function App() {
           <div className="game-toast-text">{activeToast.text}</div>
         </div>
       )}
-      {["WELCOME", "MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT", "PICK_GENDER"].includes(step) && (
+      {["WELCOME", "ACCOUNT_SETUP", "MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT", "PICK_GENDER"].includes(step) && (
         <Onboarding
           step={step}
           setStep={setStep}
+          memberFullName={memberFullName}
+          setMemberFullName={setMemberFullName}
+          memberUsername={memberUsername}
+          setMemberUsername={setMemberUsername}
+          memberEmail={memberEmail}
+          setMemberEmail={setMemberEmail}
+          memberPassword={memberPassword}
+          setMemberPassword={setMemberPassword}
           profileIndex={profileIndex}
           setProfileIndex={setProfileIndex}
           marinaIndex={marinaIndex}
@@ -2256,7 +2358,9 @@ function App() {
             actionLabel={["İçerik Üret →", "Tekneye Git →", "Rotaya Bak →"][tutorialStep]}
             onAction={() => {
               const tabs: Tab[] = ["icerik", "tekne", "rota"];
-              setActiveTab(tabs[tutorialStep] ?? "liman");
+              const nextTab = tabs[tutorialStep] ?? "liman";
+              if (nextTab === "icerik") setIcerikSubTab("produce");
+              setActiveTab(nextTab);
             }}
             onDismiss={() => setTutorialStep(3)}
           />

@@ -326,6 +326,7 @@ function App() {
   const suppressFollowerCelebrationRef = useRef(false);
   const arrivalCommitInProgressRef = useRef(false);
   const farewellTimeoutRef = useRef<number | null>(null);
+  const timeoutIdsRef = useRef<number[]>([]);
 
   const ONBOARDING_STEPS: Step[] = [
     "WELCOME",
@@ -687,6 +688,8 @@ function App() {
       if (farewellTimeoutRef.current !== null) {
         window.clearTimeout(farewellTimeoutRef.current);
       }
+      timeoutIdsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      timeoutIdsRef.current = [];
     };
   }, []);
 
@@ -823,8 +826,7 @@ function App() {
     setHasCompletedWorldTour(false);
     setActiveStoryHook(null);
     setTutorialStep(0);
-    requestStepTransition("HUB");
-    requestTabTransition("liman");
+    requestStepAndTabTransition("HUB", "liman");
   };
 
   const loadGame = () => {
@@ -980,6 +982,20 @@ function App() {
     }
   };
 
+  const requestStepAndTabTransition = (nextStep: Step, nextTab: Tab, opts?: { force?: boolean }) => {
+    requestStepTransition(nextStep, opts);
+    requestTabTransition(nextTab, opts);
+  };
+
+  const scheduleTimeout = (callback: () => void, delayMs: number): number => {
+    const timeoutId = window.setTimeout(() => {
+      timeoutIdsRef.current = timeoutIdsRef.current.filter((id) => id !== timeoutId);
+      callback();
+    }, delayMs);
+    timeoutIdsRef.current.push(timeoutId);
+    return timeoutId;
+  };
+
   const applyUpgradeEffects = (upgrade: (typeof BOAT_UPGRADES)[number]) => {
     const energyBoost = upgrade.effects.energy ?? 0;
     const waterBoost = upgrade.effects.water ?? 0;
@@ -1091,8 +1107,7 @@ function App() {
     const isCriticallyDepleted = energy <= 0 || water <= 0 || fuel <= 0 || boatCondition <= 0;
     if (isCriticallyDepleted) {
       // Emergency abort — return to port without route rewards
-      requestStepTransition("HUB");
-      requestTabTransition("liman");
+      requestStepAndTabTransition("HUB", "liman");
       setVoyageDaysRemaining(0);
       setCurrentSeaEvent("");
       setPendingDecisionId(null);
@@ -1279,10 +1294,10 @@ function App() {
     setFirstContentDone(true);
     setTotalContentProduced(prev => prev + 1);
     addFloater(`+${gainCredits.toLocaleString("tr-TR")} TL`, "credits");
-    setTimeout(() => addFloater(`+${gainFollowers.toLocaleString("tr-TR")} Takipçi`, "followers"), 200);
+    scheduleTimeout(() => addFloater(`+${gainFollowers.toLocaleString("tr-TR")} Takipçi`, "followers"), 200);
     if (sponsorInterestGained > 0) {
       setBrandTrust(prev => Math.min(100, prev + sponsorInterestGained));
-      setTimeout(() => addFloater(`+${sponsorInterestGained} Marka Güveni`, "followers"), 400);
+      scheduleTimeout(() => addFloater(`+${sponsorInterestGained} Marka Güveni`, "followers"), 400);
     }
     triggerFlash("credits");
     triggerFlash("followers");
@@ -1436,8 +1451,8 @@ function App() {
     setCredits(prev => prev + arrivalCredits);
     setFollowers(prev => prev + arrivalFollowers);
     addFloater(`+${arrivalCredits.toLocaleString("tr-TR")} TL`, "credits");
-    setTimeout(() => addFloater(`+${arrivalFollowers.toLocaleString("tr-TR")} Takipci`, "followers"), 200);
-    setTimeout(() => addFloater(`+80 XP`, "xp"), 400);
+    scheduleTimeout(() => addFloater(`+${arrivalFollowers.toLocaleString("tr-TR")} Takipci`, "followers"), 200);
+    scheduleTimeout(() => addFloater(`+80 XP`, "xp"), 400);
     triggerFlash("credits");
     triggerFlash("followers");
 
@@ -1463,8 +1478,7 @@ function App() {
     }
     setPendingDecisionId(null);
     setIsPrestigeVoyage(false);
-    requestStepTransition("HUB");
-    requestTabTransition(targetTab);
+    requestStepAndTabTransition("HUB", targetTab);
     setIcerikSubTab("produce");
     pushToast(
       "voyage",
@@ -1473,7 +1487,7 @@ function App() {
         ? `${currentRoute.name} prestij seyri tamamlandı. 1.5× ödül kazandın!`
         : nextStoryHook.description,
     );
-    setTimeout(() => {
+    scheduleTimeout(() => {
       arrivalCommitInProgressRef.current = false;
     }, 150);
   };
@@ -1742,9 +1756,8 @@ function App() {
     setIsPrestigeVoyage(false);
     audioManager.play("sailStart");
     setShowSailAnimation(true);
-    setTimeout(() => setShowSailAnimation(false), 2800);
-    requestStepTransition("SEA_MODE");
-    requestTabTransition("liman");
+    scheduleTimeout(() => setShowSailAnimation(false), 2800);
+    requestStepAndTabTransition("SEA_MODE", "liman");
   };
 
   const handleStartPrestigeVoyage = (routeId: string) => {
@@ -1769,9 +1782,8 @@ function App() {
     setIsPrestigeVoyage(true);
     audioManager.play("sailStart");
     setShowSailAnimation(true);
-    setTimeout(() => setShowSailAnimation(false), 2800);
-    requestStepTransition("SEA_MODE");
-    requestTabTransition("liman");
+    scheduleTimeout(() => setShowSailAnimation(false), 2800);
+    requestStepAndTabTransition("SEA_MODE", "liman");
   };
 
   const UPGRADE_CONFIRM_THRESHOLD = 10000;

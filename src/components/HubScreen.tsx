@@ -84,12 +84,17 @@ export function HubScreen({
       {step === "HUB" && renderProgressStrip && renderProgressStrip()}
 
       <main className={step === "SEA_MODE" ? "sea-content" : `hub-content hub-content--${activeTab}`}>
-        {activeTab === "liman" && step === "HUB" && renderLimanTab()}
-        {activeTab === "liman" && step === "SEA_MODE" && renderSeaModeTab()}
-        {activeTab === "icerik" && renderIcerikTab()}
-        {activeTab === "rota" && renderRotaTab()}
-        {activeTab === "tekne" && renderTekneTab()}
-        {activeTab === "kaptan" && renderKaptanTab()}
+        {step === "SEA_MODE" ? (
+          renderSeaModeTab()
+        ) : (
+          <>
+            {activeTab === "liman" && renderLimanTab()}
+            {activeTab === "icerik" && renderIcerikTab()}
+            {activeTab === "rota" && renderRotaTab()}
+            {activeTab === "tekne" && renderTekneTab()}
+            {activeTab === "kaptan" && renderKaptanTab()}
+          </>
+        )}
       </main>
 
       <nav className="bottom-tab-bar">

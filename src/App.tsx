@@ -693,6 +693,18 @@ function App() {
   }, [step, activeTab]);
 
   useEffect(() => {
+    if (step === "SEA_MODE" && !currentRoute) {
+      requestStepAndTabTransition("HUB", "liman", { force: true });
+      setPendingDecisionId(null);
+      setCurrentSeaEvent("");
+      return;
+    }
+    if (step === "ARRIVAL_SCREEN" && !currentRoute) {
+      requestStepAndTabTransition("HUB", "liman", { force: true });
+    }
+  }, [step, currentRoute]);
+
+  useEffect(() => {
     return () => {
       if (farewellTimeoutRef.current !== null) {
         window.clearTimeout(farewellTimeoutRef.current);

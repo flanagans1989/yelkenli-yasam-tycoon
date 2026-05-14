@@ -60,13 +60,19 @@ export const getContentCooldownMs = (captainLevel: number, isTestMode: boolean =
   return 30 * 60 * 1000;
 };
 
-export const getBoatUpgradeDurationMs = (captainLevel: number, isTestMode: boolean = false): number => {
+const UPGRADE_TIER_BASE_MS: Record<string, number> = {
+  small: 90 * 1000,
+  medium: 5 * 60 * 1000,
+  large: 12 * 60 * 1000,
+  ocean: 25 * 60 * 1000,
+};
+
+export const getBoatUpgradeDurationMs = (size: string, captainLevel: number, isTestMode: boolean = false): number => {
   if (isTestMode) return 5000;
-  if (captainLevel <= 1) return 60 * 1000;
-  if (captainLevel === 2) return 5 * 60 * 1000;
-  if (captainLevel === 3) return 8 * 60 * 1000;
-  if (captainLevel === 4) return 12 * 60 * 1000;
-  return 20 * 60 * 1000;
+  const base = UPGRADE_TIER_BASE_MS[size] ?? UPGRADE_TIER_BASE_MS.medium;
+  const discount = Math.min(captainLevel - 1, 10) * 0.05;
+  const multiplier = Math.max(0.5, 1 - discount);
+  return Math.round(base * multiplier);
 };
 
 export const getCaptainRankLabel = (level: number): string => {

@@ -1683,19 +1683,7 @@ function App() {
 
   const getUpgradeInstallMs = (upgrade: (typeof BOAT_UPGRADES)[number], captainLevelForDuration: number = captainLevel) => {
     if (testMode) return 5000;
-    const baseDurationMs = getBoatUpgradeDurationMs(captainLevelForDuration);
-
-    if (typeof upgrade.installDays === "number" && upgrade.installDays > 0) {
-      return upgrade.installDays * baseDurationMs;
-    }
-
-    if (upgrade.cost >= 15000 || upgrade.size === "large" || upgrade.size === "ocean") {
-      return baseDurationMs;
-    }
-    if (upgrade.cost >= 7000 || upgrade.size === "medium") {
-      return Math.max(60 * 1000, Math.ceil(baseDurationMs / 2));
-    }
-    return Math.max(60 * 1000, Math.ceil(baseDurationMs / 6));
+    return getBoatUpgradeDurationMs(upgrade.size, captainLevelForDuration);
   };
 
   const formatInstallDuration = (durationMs: number) => {

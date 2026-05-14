@@ -144,3 +144,23 @@ Kural:
 - Davranis degisikligi uygulanmadi.
 - Envanter ve uygulanabilir parcalama backlogu olustu.
 - build/lint/audit kapilari PASS.
+
+## 14) Faz 5 - Operasyon ve Kalite Kapisi
+
+Tamamlananlar:
+- CI minimum pipeline eklendi: .github/workflows/ci.yml
+- Asamalar: lint -> build -> audit:game -> audit:mobile-ui
+- Trigger: push + pull_request
+
+Task contract zorunlu alanlari:
+- Gorev ID
+- Net amac
+- Dokunulacak dosyalar
+- Dokunulmayacak dosyalar
+- Kabul kriteri
+- Calisacak komutlar
+- Beklenen kanit paketi (komut sonucu + git status + degisen dosya listesi)
+
+Faz 5 Cikis Durumu:
+- Teslim sureci kisiye bagimli olmaktan cikarildi.
+- Otomatik kalite kapisi tanimlandi.

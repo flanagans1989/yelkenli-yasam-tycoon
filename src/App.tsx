@@ -776,7 +776,7 @@ function App() {
   }, []);
 
   const saveSnapshot = buildSaveSnapshot({
-    memberFullName, memberUsername, memberEmail, memberPassword,
+    memberFullName, memberUsername, memberEmail,
     profileIndex, marinaIndex, boatIndex, boatName,
     credits, followers, firstContentDone, logs,
     purchasedUpgradeIds, upgradesInProgress,
@@ -933,7 +933,7 @@ function App() {
       setMemberFullName(parsed.memberFullName ?? "");
       setMemberUsername(parsed.memberUsername ?? "");
       setMemberEmail(parsed.memberEmail ?? "");
-      setMemberPassword(parsed.memberPassword ?? "");
+      setMemberPassword("");
       setMarinaIndex(nextMarinaIndex);
       setBoatIndex(nextBoatIndex);
       setBoatName(parsed.boatName ?? "");

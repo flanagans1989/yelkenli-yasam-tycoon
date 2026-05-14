@@ -17,7 +17,6 @@ export interface GameSaveSnapshotInput {
   memberFullName: string;
   memberUsername: string;
   memberEmail: string;
-  memberPassword: string;
   profileIndex: number;
   marinaIndex: number;
   boatIndex: number;
@@ -93,7 +92,6 @@ export function buildSaveSnapshot(input: GameSaveSnapshotInput): GameSaveSnapsho
     memberFullName: input.memberFullName,
     memberUsername: input.memberUsername,
     memberEmail: input.memberEmail,
-    memberPassword: input.memberPassword,
     profileIndex: input.profileIndex,
     marinaIndex: input.marinaIndex,
     boatIndex: input.boatIndex,

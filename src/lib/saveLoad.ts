@@ -102,35 +102,43 @@ export function classifySaveLoadFailure(error: unknown): SaveLoadFailureReason {
   return "unknown_error";
 }
 
+function stripSensitiveSaveFields(parsed: any) {
+  if (!parsed || typeof parsed !== "object") return parsed;
+  const rest = { ...parsed };
+  delete rest.memberPassword;
+  return rest;
+}
+
 export function migrateSave(parsed: any) {
   if (!parsed || typeof parsed !== "object") return null;
 
+  const sanitizedParsed = stripSensitiveSaveFields(parsed);
   const version = parsed.saveVersion ?? 1;
 
   if (version === 1) {
     const dailyGoalsCompleted =
-      Array.isArray(parsed.dailyGoals) &&
-      parsed.dailyGoals.length > 0 &&
-      parsed.dailyGoals.every((goal: any) => goal?.completed);
+      Array.isArray(sanitizedParsed.dailyGoals) &&
+      sanitizedParsed.dailyGoals.length > 0 &&
+      sanitizedParsed.dailyGoals.every((goal: any) => goal?.completed);
 
     return {
-      ...parsed,
+      ...sanitizedParsed,
       saveVersion: SAVE_VERSION,
-      hasSave: parsed.hasSave ?? true,
-      totalContentProduced: parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0),
+      hasSave: sanitizedParsed.hasSave ?? true,
+      totalContentProduced: sanitizedParsed.totalContentProduced ?? (sanitizedParsed.firstContentDone ? 1 : 0),
       hasCompletedDailyGoalsOnce:
-        parsed.hasCompletedDailyGoalsOnce ?? Boolean(dailyGoalsCompleted && parsed.dailyRewardClaimed),
-      hasCompletedWorldTour: parsed.hasCompletedWorldTour ?? false,
+        sanitizedParsed.hasCompletedDailyGoalsOnce ?? Boolean(dailyGoalsCompleted && sanitizedParsed.dailyRewardClaimed),
+      hasCompletedWorldTour: sanitizedParsed.hasCompletedWorldTour ?? false,
     };
   }
 
   if (version === SAVE_VERSION) {
     return {
-      ...parsed,
-      hasSave: parsed.hasSave ?? true,
-      totalContentProduced: parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0),
-      hasCompletedDailyGoalsOnce: parsed.hasCompletedDailyGoalsOnce ?? false,
-      hasCompletedWorldTour: parsed.hasCompletedWorldTour ?? false,
+      ...sanitizedParsed,
+      hasSave: sanitizedParsed.hasSave ?? true,
+      totalContentProduced: sanitizedParsed.totalContentProduced ?? (sanitizedParsed.firstContentDone ? 1 : 0),
+      hasCompletedDailyGoalsOnce: sanitizedParsed.hasCompletedDailyGoalsOnce ?? false,
+      hasCompletedWorldTour: sanitizedParsed.hasCompletedWorldTour ?? false,
     };
   }
 

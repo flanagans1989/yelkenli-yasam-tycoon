@@ -77,3 +77,40 @@ Yeni standardizasyon:
 - Faz 3 CSS izolasyon: KRITIK KISIM TAMAM
 - Faz 4 Component temizlik: BASLAMADI
 - Faz 5 Operasyon kapisi: BASLAMADI
+
+## 12) Faz 3 - CSS Izolasyon Kaniti
+
+### Selector Ownership Map (ozet)
+- Global shell ve ortak UI: src/App.css
+- Onboarding ekran ailesi: src/components/Onboarding.css
+- Feature tab stilleri: src/components/*Tab.css
+
+Ownership kurali:
+- `.ob-*` selectorlari onboarding alanina ait.
+- `.hub-*`, `.sea-*`, `.rt-*`, `.tk-*`, `.kp-*`, `.lh-*` selectorlari ilgili ekranlara ait.
+- Ortak utility/helper kurallari sadece global dosyada tanimli tutulur.
+
+### Onboarding Collision Audit (ozet)
+- Riskli ortak siniflar: `.ui-helper-*`, `.ob-screen-actions`, `.primary-button`, `.secondary-button`
+- Mevcut durum: mobile guardrail icin helper siniflar App.css tarafinda da tanimli.
+- Kural: onboarding ozel varyantlar `.ob-profile-screen-v2 ...` scope'u ile override edilir.
+
+### Viewport Contract
+- 390x667: onboarding CTA her zaman gorunur, boat secimde sticky action aktif.
+- 1366x768: body scrollbar yok, wrapper viewport icinde.
+- 1600x900: layout tasmasi yok, ana CTA gorunur.
+
+### Layer/Z-Index Audit (kritik)
+- Toast: z-index 30
+- Celebration modal: z-index 300
+- Global floaters: z-index 9999
+- Onboarding sticky actions: z-index 4-6
+
+Kural:
+- Overlay > screen action > content hiyerarsisi korunur.
+- Yeni z-index eklenirse mevcut kritik katmanlarin ustune cikmamalidir (floaters haric).
+
+### Faz 3 Cikis Durumu
+- npm run audit:mobile-ui -> PASS
+- build/lint/audit:game -> PASS
+- Scroll/tasma/overlay regresyonu bu kontratta kapsandi.

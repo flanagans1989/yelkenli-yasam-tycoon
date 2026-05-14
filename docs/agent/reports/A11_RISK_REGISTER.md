@@ -41,3 +41,9 @@ Tarih: 2026-05-14
 - Seviye: yuksek
 - Cozum: viewport contract + smoke matrix
 - Agent gorevi: evet
+
+## Faz 3 Ek Risk Notlari
+
+- Risk: App.css icinde ayni konuya ait tekrarli bloklar birikmeye devam edebilir.
+- Etki: ownership siniri zayiflar, yan etki riski artar.
+- Kontrol: her CSS degisimi sonrası scope kontrolu + mobile audit + smoke checklist zorunlu.

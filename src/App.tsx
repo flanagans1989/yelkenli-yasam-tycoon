@@ -37,12 +37,14 @@ import { ACHIEVEMENTS, ACHIEVEMENT_ICONS } from "./data/achievements";
 import { getContentComment } from "./data/contentComments";
 import { getDailyGoalTheme, getCaptainLevel, getContentCooldownMs, getBoatUpgradeDurationMs, getCaptainRankLabel } from "./data/captainData";
 import {
-  SAVE_KEY, SAVE_VERSION,
+  SAVE_KEY,
   migrateSave, calculateOfflineIncome, processUpgradesFromSave,
   processMarinaRestFromSave, buildOfflineMessages, safeLoadStep,
-  computeChecksum, validateSaveChecksum, stripChecksum, classifySaveLoadFailure,
+  validateSaveChecksum, stripChecksum, classifySaveLoadFailure,
 } from "./lib/saveLoad";
 import type { UpgradeInProgressItem, MarinaRestInProgress } from "./lib/saveLoad";
+import { buildSaveSnapshot } from "./lib/buildSaveSnapshot";
+import { useAutoSave } from "./hooks/useAutoSave";
 import { calculateContentQuality, calculateContentRewards, formatSeaDecisionEffectSummary } from "./lib/gameLogic";
 
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
@@ -714,89 +716,40 @@ function App() {
     };
   }, []);
 
+  const saveSnapshot = buildSaveSnapshot({
+    memberFullName, memberUsername, memberEmail, memberPassword,
+    profileIndex, marinaIndex, boatIndex, boatName,
+    credits, followers, firstContentDone, logs,
+    purchasedUpgradeIds, upgradesInProgress,
+    step, activeTab,
+    currentLocationName, worldProgress,
+    energy, water, fuel, boatCondition,
+    currentRouteId, completedRouteIds,
+    voyageTotalDays, voyageDaysRemaining,
+    currentSeaEvent, pendingDecisionId,
+    selectedPlatformId, selectedContentType, contentResult,
+    selectedUpgradeCategory,
+    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount,
+    contentHistory, icerikSubTab,
+    lastContentAt, marinaRestInProgress,
+    captainXp, captainLevel,
+    dailyGoals, lastDailyReset, dailyRewardClaimed,
+    totalContentProduced, hasCompletedDailyGoalsOnce,
+    firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor,
+    activeStoryHook, tutorialStep, gender,
+    completedFollowerMilestones, sponsorObligations,
+    loginStreak, lastLoginBonus,
+    marinaTasks, lastMarinaTasksLocation,
+    hasCompletedWorldTour,
+  });
+  useAutoSave(saveSnapshot);
+
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
-      const saveObj = {
-        memberFullName,
-        memberUsername,
-        memberEmail,
-        memberPassword,
-        profileIndex,
-        marinaIndex,
-        boatIndex,
-        boatName,
-        credits,
-        followers,
-        firstContentDone,
-        logs,
-        purchasedUpgradeIds,
-        upgradesInProgress,
-        step,
-        activeTab,
-        currentLocationName,
-        worldProgress,
-        energy,
-        water,
-        fuel,
-        boatCondition,
-        currentRouteId,
-        completedRouteIds,
-        voyageTotalDays,
-        voyageDaysRemaining,
-        currentSeaEvent,
-        pendingDecisionId,
-        selectedPlatformId,
-        selectedContentType,
-        contentResult,
-        selectedUpgradeCategory,
-        brandTrust,
-        sponsorOffers,
-        acceptedSponsors,
-        sponsoredContentCount,
-        contentHistory,
-        icerikSubTab,
-        lastContentAt,
-        marinaRestInProgress,
-        captainXp,
-        captainLevel,
-        dailyGoals,
-        lastDailyReset,
-        dailyRewardClaimed,
-        totalContentProduced,
-        hasCompletedDailyGoalsOnce,
-        lastSavedAt: Date.now(),
-        saveVersion: SAVE_VERSION,
-        hasSave: true,
-        firstVoyageEventTriggered,
-        testMode,
-        hasReceivedFirstSponsor,
-        activeStoryHook,
-        tutorialStep,
-        gender,
-        completedFollowerMilestones,
-        sponsorObligations,
-        loginStreak,
-        lastLoginBonus,
-        marinaTasks,
-        lastMarinaTasksLocation,
-        hasCompletedWorldTour,
-      };
-      const saveWithChecksum = { ...saveObj, _checksum: computeChecksum(saveObj) };
-      localStorage.setItem(SAVE_KEY, JSON.stringify(saveWithChecksum));
       setHasSave(true);
       setSaveBoatName(boatName);
     }
-  }, [
-    step, memberFullName, memberUsername, memberEmail, memberPassword, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone,
-    logs, purchasedUpgradeIds, upgradesInProgress, activeTab, currentLocationName, worldProgress, energy, water,
-    fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining,
-    currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, activeStoryHook, selectedUpgradeCategory,
-    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, contentHistory, icerikSubTab, lastContentAt, marinaRestInProgress,
-    captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
-    hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor, activeStoryHook,
-    tutorialStep, gender, completedFollowerMilestones, sponsorObligations, loginStreak, lastLoginBonus,
-    marinaTasks, lastMarinaTasksLocation, hasCompletedWorldTour
-  ]);
+  }, [step, boatName]);
 
   const finalizeGame = () => {
     if (boatName.trim() === "") {

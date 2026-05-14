@@ -97,6 +97,11 @@ export type SaveLoadFailureReason =
   | "migration_failed"
   | "unknown_error";
 
+export type SaveMigrationResult = {
+  save: any;
+  usedBestEffortFallback: boolean;
+};
+
 export function classifySaveLoadFailure(error: unknown): SaveLoadFailureReason {
   if (error instanceof SyntaxError) return "invalid_json";
   return "unknown_error";
@@ -109,7 +114,19 @@ function stripSensitiveSaveFields(parsed: any) {
   return rest;
 }
 
-export function migrateSave(parsed: any) {
+function applySaveDefaults(parsed: any, dailyGoalsCompleted: boolean = false) {
+  return {
+    ...parsed,
+    saveVersion: SAVE_VERSION,
+    hasSave: parsed.hasSave ?? true,
+    totalContentProduced: parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0),
+    hasCompletedDailyGoalsOnce:
+      parsed.hasCompletedDailyGoalsOnce ?? Boolean(dailyGoalsCompleted && parsed.dailyRewardClaimed),
+    hasCompletedWorldTour: parsed.hasCompletedWorldTour ?? false,
+  };
+}
+
+export function migrateSave(parsed: any): SaveMigrationResult | null {
   if (!parsed || typeof parsed !== "object") return null;
 
   const sanitizedParsed = stripSensitiveSaveFields(parsed);
@@ -122,23 +139,27 @@ export function migrateSave(parsed: any) {
       sanitizedParsed.dailyGoals.every((goal: any) => goal?.completed);
 
     return {
-      ...sanitizedParsed,
-      saveVersion: SAVE_VERSION,
-      hasSave: sanitizedParsed.hasSave ?? true,
-      totalContentProduced: sanitizedParsed.totalContentProduced ?? (sanitizedParsed.firstContentDone ? 1 : 0),
-      hasCompletedDailyGoalsOnce:
-        sanitizedParsed.hasCompletedDailyGoalsOnce ?? Boolean(dailyGoalsCompleted && sanitizedParsed.dailyRewardClaimed),
-      hasCompletedWorldTour: sanitizedParsed.hasCompletedWorldTour ?? false,
+      save: applySaveDefaults(sanitizedParsed, dailyGoalsCompleted),
+      usedBestEffortFallback: false,
     };
   }
 
   if (version === SAVE_VERSION) {
     return {
-      ...sanitizedParsed,
-      hasSave: sanitizedParsed.hasSave ?? true,
-      totalContentProduced: sanitizedParsed.totalContentProduced ?? (sanitizedParsed.firstContentDone ? 1 : 0),
-      hasCompletedDailyGoalsOnce: sanitizedParsed.hasCompletedDailyGoalsOnce ?? false,
-      hasCompletedWorldTour: sanitizedParsed.hasCompletedWorldTour ?? false,
+      save: applySaveDefaults(sanitizedParsed),
+      usedBestEffortFallback: false,
+    };
+  }
+
+  if (typeof version === "number" && Number.isFinite(version) && version > SAVE_VERSION) {
+    const dailyGoalsCompleted =
+      Array.isArray(sanitizedParsed.dailyGoals) &&
+      sanitizedParsed.dailyGoals.length > 0 &&
+      sanitizedParsed.dailyGoals.every((goal: any) => goal?.completed);
+
+    return {
+      save: applySaveDefaults(sanitizedParsed, dailyGoalsCompleted),
+      usedBestEffortFallback: true,
     };
   }
 

@@ -603,7 +603,8 @@ function App() {
     if (saved) {
       try {
         const rawParsed = JSON.parse(saved);
-        const parsed = migrateSave(stripChecksum(rawParsed));
+        const migrated = migrateSave(stripChecksum(rawParsed));
+        const parsed = migrated?.save;
         if (parsed?.hasSave) {
           setHasSave(true);
           setSaveBoatName(parsed.boatName || "Bilinmeyen Tekne");
@@ -962,11 +963,19 @@ function App() {
         localStorage.removeItem(SAVE_KEY);
         return;
       }
-      const parsed = migrateSave(stripChecksum(rawParsed));
+      const migrated = migrateSave(stripChecksum(rawParsed));
+      const parsed = migrated?.save;
       if (!parsed) {
         pushToast("warning", "Kayit Surumu Desteklenmiyor", "Kayit surumu acilamadi. Yeni oyunla devam et.");
         setLogs((prev) => ["Kayit surumu gecersiz. Guvenli fallback uygulandi.", ...prev.slice(0, 4)]);
         return;
+      }
+      if (migrated.usedBestEffortFallback) {
+        pushToast(
+          "warning",
+          "Kayit Surumu Yeni",
+          "Kayit daha yeni bir surumden geliyor. Guvenli best-effort fallback ile yuklendi.",
+        );
       }
 
       const nextCaptainLevel = parsed.captainLevel ?? 1;
@@ -980,7 +989,10 @@ function App() {
       const { messages, nextSeaEvent } = buildOfflineMessages(
         offline.credits, offline.followers, upgrades.completedUpgradeObjects, marina.completedOffline,
       );
-      const nextLogs = [...messages, ...(parsed.logs ?? [])].filter(Boolean).slice(0, 5) as string[];
+      const versionFallbackLog = migrated.usedBestEffortFallback
+        ? "Kayit daha yeni bir surumden geldi. Guvenli best-effort fallback uygulandi."
+        : "";
+      const nextLogs = [versionFallbackLog, ...messages, ...(parsed.logs ?? [])].filter(Boolean).slice(0, 5) as string[];
       const nextProfileIndex = clampIndex(parsed.profileIndex, PLAYER_PROFILES.length);
       const nextMarinaIndex = clampIndex(parsed.marinaIndex, STARTING_MARINAS.length);
       const nextBoatIndex = clampIndex(parsed.boatIndex, STARTING_BOATS.length);

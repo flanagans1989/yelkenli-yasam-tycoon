@@ -100,7 +100,7 @@ import {
   SAVE_KEY,
   migrateSave, calculateOfflineIncome, processUpgradesFromSave,
   processMarinaRestFromSave, buildOfflineMessages, safeLoadStep,
-  validateSaveChecksum, stripChecksum, classifySaveLoadFailure,
+  validateSaveChecksum, stripChecksum, classifySaveLoadFailure, getSafeNow,
 } from "./lib/saveLoad";
 import type { UpgradeInProgressItem, MarinaRestInProgress } from "./lib/saveLoad";
 import { buildSaveSnapshot } from "./lib/buildSaveSnapshot";
@@ -428,6 +428,7 @@ function App() {
   const arrivalCommitInProgressRef = useRef(false);
   const farewellTimeoutRef = useRef<number | null>(null);
   const timeoutIdsRef = useRef<number[]>([]);
+  const lastHiddenAtRef = useRef<number | null>(null);
 
   const ONBOARDING_STEPS: Step[] = [
     "WELCOME",
@@ -621,6 +622,52 @@ function App() {
     window.addEventListener("pointerdown", resume, { once: true });
     return () => window.removeEventListener("pointerdown", resume);
   }, []);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        lastHiddenAtRef.current = getSafeNow();
+        return;
+      }
+
+      if (document.visibilityState !== "visible") return;
+
+      const hiddenAt = lastHiddenAtRef.current;
+      lastHiddenAtRef.current = null;
+      if (hiddenAt == null) return;
+
+      const offline = calculateOfflineIncome(hiddenAt, step, captainLevel);
+      if (offline.credits > 0 || offline.followers > 0) {
+        setCredits((prev) => prev + offline.credits);
+        setFollowers((prev) => prev + offline.followers);
+        setLogs((prev) => [
+          `Arka planda içerikler işlemeye devam etti: +${offline.credits.toLocaleString("tr-TR")} TL, +${offline.followers.toLocaleString("tr-TR")} takipçi.`,
+          ...prev.slice(0, 4),
+        ]);
+        pushToast(
+          "content",
+          "Arka Plan Geliri",
+          `+${offline.credits.toLocaleString("tr-TR")} TL · +${offline.followers.toLocaleString("tr-TR")} takipçi`,
+        );
+        if (offline.credits > 0) triggerFlash("credits");
+        if (offline.followers > 0) triggerFlash("followers");
+      }
+
+      if (lastContentAt) {
+        setContentCooldownTick(Date.now());
+      }
+
+      if (marinaRestInProgress) {
+        setMarinaRestCooldownTick(Date.now());
+        if (step === "HUB" && marinaRestInProgress.completesAt <= getSafeNow()) {
+          completeMarinaRestService();
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [captainLevel, lastContentAt, marinaRestInProgress, pushToast, step, triggerFlash]);
 
   useEffect(() => {
     if (!isNativeAndroidPlatform()) return;

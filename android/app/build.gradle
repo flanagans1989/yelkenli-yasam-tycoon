@@ -1,5 +1,20 @@
 apply plugin: 'com.android.application'
 
+import groovy.json.JsonSlurper
+
+def packageJson = new JsonSlurper().parse(file('../../package.json'))
+def packageVersion = String.valueOf(packageJson.version ?: '1.0.0')
+def versionParts = packageVersion.tokenize('.').collect { token ->
+    token.replaceAll(/[^0-9].*$/, '').trim()
+}
+while (versionParts.size() < 3) {
+    versionParts << '0'
+}
+def versionNumbers = versionParts.take(3).collect { token ->
+    token.isInteger() ? token.toInteger() : 0
+}
+def derivedVersionCode = (versionNumbers[0] * 10000) + (versionNumbers[1] * 100) + versionNumbers[2]
+
 android {
     namespace = "com.deraks.yelkenliyasamtycoon"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +22,8 @@ android {
         applicationId "com.deraks.yelkenliyasamtycoon"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode derivedVersionCode
+        versionName packageVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

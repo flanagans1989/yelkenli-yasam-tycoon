@@ -1,7 +1,7 @@
 {
   "name": "yelkenli-yasam-tycoon",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,7 @@
     "audit:mobile-ui": "node scripts/audit-mobile-ui.mjs",
     "audit:game": "node scripts/audit-encoding.mjs && node scripts/audit-game-logic.mjs",
     "assets:android": "npx @capacitor/assets generate --android --assetPath assets --iconBackgroundColor \"#0E3A5F\" --iconBackgroundColorDark \"#0E3A5F\" --splashBackgroundColor \"#0E3A5F\" --splashBackgroundColorDark \"#0E3A5F\"",
-    "mobile:sync": "npm run build && npx cap sync android",
+    "mobile:sync": "powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 && npx cap sync android",
     "mobile:debug": "npm run mobile:sync && cd android && gradlew.bat assembleDebug"
   },
   "dependencies": {

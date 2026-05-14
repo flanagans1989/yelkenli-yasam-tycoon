@@ -866,6 +866,13 @@ export function Onboarding({
           <span>{remainingBudget.toLocaleString("tr-TR")} TL ile başlarsın</span>
           <span className="ob-budget-tier">{budgetTier}</span>
         </div>
+
+        <div className="ui-helper-note" style={{ padding: "12px 14px", marginTop: "12px" }}>
+          <span className="ui-helper-title">Mobil İpucu</span>
+          <span className="ui-helper-copy">
+            Tekne kartları kaydırılabilir, seçim butonu ise altta sabit kalır. Dar ekranlarda son kartların altında da güvenli boşluk korunur.
+          </span>
+        </div>
         </div>
 
         <div className="ob-screen-actions">

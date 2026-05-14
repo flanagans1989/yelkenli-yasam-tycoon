@@ -5605,8 +5605,17 @@ button, input, select, textarea {
 }
 
 /* A11-T01 mobile UI guardrail contract (kept in App.css intentionally for script verification) */
+.ob-boat-screen-v2 {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .ob-boat-screen-v2 .ob-boat-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px));
 }
@@ -5657,12 +5666,27 @@ button, input, select, textarea {
   .ob-boat-screen-v2 .ob-boat-scroll {
     padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
   }
+
+  .ob-boat-screen-v2 .ui-helper-note {
+    padding: 10px 12px;
+  }
 }
 
 /* Narrow-width mobile protection contract */
+@media (max-width: 390px) {
+  .ob-boat-screen-v2 .ob-boat-scroll {
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+}
+
 @media (max-width: 430px) {
   .ob-boat-screen-v2 .ob-boat-scroll {
     padding-right: 2px;
+  }
+
+  .ob-boat-screen-v2 .ui-helper-copy {
+    font-size: 11.5px;
   }
 }
 

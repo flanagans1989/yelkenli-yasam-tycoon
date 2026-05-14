@@ -8,6 +8,72 @@ export const MAX_OFFLINE_REWARD_MINUTES = 120;
 export const OFFLINE_CREDITS_PER_MINUTE = 15;
 export const OFFLINE_FOLLOWERS_PER_MINUTE = 1;
 
+// Time manipulation guard: anchored at module load time once per session.
+export const SESSION_START_REAL_MS: number = Date.now();
+export const SESSION_START_PERF_MS: number = performance.now();
+
+/**
+ * Returns a safe current timestamp that resists within-session clock manipulation.
+ * If the wall clock has drifted more than 5 minutes ahead of the performance-based
+ * estimate, the estimated time is returned instead.
+ */
+export function getSafeNow(): number {
+  const estimatedNow = SESSION_START_REAL_MS + performance.now() - SESSION_START_PERF_MS;
+  const wallNow = Date.now();
+  if (wallNow - estimatedNow > 300_000) {
+    return estimatedNow;
+  }
+  return wallNow;
+}
+
+// Checksum / save-state integrity
+const CHECKSUM_SECRET = "yelkenli_v2_integrity";
+
+function djb2Hash(str: string): number {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash) + str.charCodeAt(i);
+    hash |= 0; // keep 32-bit integer
+  }
+  return hash >>> 0; // unsigned
+}
+
+/**
+ * Computes a djb2-based checksum for the save object (excluding `_checksum`).
+ * XORed with the secret string hash for light obfuscation.
+ * Returns a base-36 string.
+ */
+export function computeChecksum(obj: object): string {
+  const clone = Object.fromEntries(
+    Object.entries(obj).filter(([k]) => k !== "_checksum")
+  );
+  const sorted = JSON.stringify(clone, Object.keys(clone).sort());
+  const dataHash = djb2Hash(sorted);
+  const secretHash = djb2Hash(CHECKSUM_SECRET);
+  const result = (dataHash ^ secretHash) >>> 0;
+  return result.toString(36);
+}
+
+/**
+ * Returns true if the parsed save object has a valid `_checksum` field.
+ */
+export function validateSaveChecksum(parsed: any): boolean {
+  if (!parsed || typeof parsed !== "object") return false;
+  const storedChecksum = parsed._checksum;
+  if (typeof storedChecksum !== "string") return false;
+  const expected = computeChecksum(parsed);
+  return storedChecksum === expected;
+}
+
+/**
+ * Returns a copy of the parsed save object with `_checksum` removed.
+ */
+export function stripChecksum(parsed: any): any {
+  if (!parsed || typeof parsed !== "object") return parsed;
+  const { _checksum: _removed, ...rest } = parsed;
+  return rest;
+}
+
 export type UpgradeInProgressItem = {
   upgradeId: string;
   completesAt: number;
@@ -42,6 +108,7 @@ export function migrateSave(parsed: any) {
       totalContentProduced: parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0),
       hasCompletedDailyGoalsOnce:
         parsed.hasCompletedDailyGoalsOnce ?? Boolean(dailyGoalsCompleted && parsed.dailyRewardClaimed),
+      hasCompletedWorldTour: parsed.hasCompletedWorldTour ?? false,
     };
   }
 
@@ -51,6 +118,7 @@ export function migrateSave(parsed: any) {
       hasSave: parsed.hasSave ?? true,
       totalContentProduced: parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0),
       hasCompletedDailyGoalsOnce: parsed.hasCompletedDailyGoalsOnce ?? false,
+      hasCompletedWorldTour: parsed.hasCompletedWorldTour ?? false,
     };
   }
 
@@ -61,7 +129,7 @@ export function calculateOfflineIncome(lastSavedAt: unknown): { credits: number;
   if (typeof lastSavedAt !== "number" || !Number.isFinite(lastSavedAt)) {
     return { credits: 0, followers: 0, minutes: 0 };
   }
-  const offlineMs = Math.max(0, Date.now() - lastSavedAt);
+  const offlineMs = Math.max(0, getSafeNow() - lastSavedAt);
   const cappedMinutes = Math.min(Math.floor(offlineMs / 60000), MAX_OFFLINE_MINUTES);
   const minutes = Math.min(cappedMinutes, MAX_OFFLINE_REWARD_MINUTES);
   return {
@@ -160,7 +228,7 @@ export function processMarinaRestFromSave(savedMarinaRest: unknown): ProcessedMa
     : Math.max(0, completesAt - startedAt);
 
   if (!Number.isFinite(completesAt)) return { marinaRest: null, completedOffline: false };
-  if (completesAt <= Date.now()) return { marinaRest: null, completedOffline: true };
+  if (completesAt <= getSafeNow()) return { marinaRest: null, completedOffline: true };
   return { marinaRest: { startedAt, completesAt, durationMs }, completedOffline: false };
 }
 

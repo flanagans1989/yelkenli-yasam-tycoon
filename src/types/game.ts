@@ -45,7 +45,7 @@ export type MarinaFilter = "all" | "ege" | "akdeniz" | "marmara";
 export type DailyGoal = {
   id: string;
   title: string;
-  type: "produce_content" | "complete_route" | "buy_upgrade";
+  type: "produce_content" | "complete_route" | "buy_upgrade" | "prestige_route" | "earn_credits";
   completed: boolean;
 };
 

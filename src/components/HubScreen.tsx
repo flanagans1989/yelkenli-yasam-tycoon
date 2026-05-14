@@ -26,6 +26,8 @@ interface HubScreenProps {
   renderRotaTab: () => ReactNode;
   renderTekneTab: () => ReactNode;
   renderKaptanTab: () => ReactNode;
+  audioEnabled?: boolean;
+  onToggleAudio?: () => void;
 }
 
 export function HubScreen({
@@ -49,6 +51,8 @@ export function HubScreen({
   renderRotaTab,
   renderTekneTab,
   renderKaptanTab,
+  audioEnabled = true,
+  onToggleAudio,
 }: HubScreenProps) {
   const isTabLocked = (tab: Tab) => Boolean(lockedTab && lockedTab !== tab);
 
@@ -67,7 +71,12 @@ export function HubScreen({
           </div>
           <div className="hub-stats">
             <div className={`stat${flashCredits ? " flash-green" : ""}`}><span>ğŸ’°</span> {credits.toLocaleString("tr-TR")}</div>
-            <div className={`stat${flashFollowers ? " flash-green" : ""}`}><span>ğŸ‘¥</span> {followers.toLocaleString("tr-TR")}</div>
+            <div className={`stat${flashFollowers ? " flash-green" : ""}`}><span>ğŸ’¥</span> {followers.toLocaleString("tr-TR")}</div>
+            {onToggleAudio && (
+              <button className="hub-mute-btn" onClick={onToggleAudio} aria-label={audioEnabled ? "Sesi kapat" : "Sesi aç"}>
+                {audioEnabled ? "🔊" : "🔇"}
+              </button>
+            )}
           </div>
         </header>
       )}

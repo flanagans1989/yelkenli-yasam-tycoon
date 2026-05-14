@@ -27,7 +27,17 @@ const DAILY_GOAL_THEMES = [
   },
 ];
 
-export const getDailyGoalTheme = (dateKey: string) => {
+export const ENDGAME_DAILY_GOAL_THEME = {
+  title: "Dünya Turu Efsanesi",
+  goals: {
+    produce_content: "2 içerik üret",
+    complete_route: "Bir rotayı prestij seyriyle tamamla",
+    buy_upgrade: "İçerikten 5.000 TL kazan",
+  },
+};
+
+export const getDailyGoalTheme = (dateKey: string, hasCompletedWorldTour: boolean = false) => {
+  if (hasCompletedWorldTour) return ENDGAME_DAILY_GOAL_THEME;
   const fallbackTheme = DAILY_GOAL_THEMES[0];
   if (!dateKey) return fallbackTheme;
   const seed = dateKey.split("-").reduce((sum, part) => sum + Number(part || 0), 0);

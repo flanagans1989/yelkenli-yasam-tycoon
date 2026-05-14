@@ -55,6 +55,8 @@ interface RotaTabProps {
   onGoUpgradeCategory?: (categoryId: string) => void;
   openReadiness?: boolean;
   onReadinessOpened?: () => void;
+  hasCompletedWorldTour?: boolean;
+  onStartPrestigeVoyage?: (routeId: string) => void;
 }
 
 const RISK_LABELS: Record<string, string> = {
@@ -109,6 +111,8 @@ export function RotaTab({
   onGoUpgradeCategory,
   openReadiness,
   onReadinessOpened,
+  hasCompletedWorldTour,
+  onStartPrestigeVoyage,
 }: RotaTabProps) {
   const [readinessOpen, setReadinessOpen] = useState(false);
 
@@ -186,6 +190,30 @@ export function RotaTab({
               <span className="rt-completed-check">✓</span>
               <span className="rt-completed-name">{r.name}</span>
               <span className="rt-completed-to">{r.to}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {hasCompletedWorldTour && (
+        <div className="rt-prestige-card glass-card">
+          <div className="rt-completed-header">
+            <span className="rt-completed-label">⭐ Tekrar Keşfet — Prestij Seyirleri</span>
+          </div>
+          <p className="rt-prestige-desc">Tamamladığın rotaları 1.5× ödülle yeniden keşfet.</p>
+          {WORLD_ROUTES.filter(r => completedRouteIds.includes(r.id)).map(r => (
+            <div key={r.id} className="rt-completed-item rt-prestige-item">
+              <span className="rt-completed-check">⭐</span>
+              <span className="rt-completed-name">{r.name}</span>
+              <span className="rt-completed-to">{r.from} → {r.to}</span>
+              {!isSeaMode && onStartPrestigeVoyage && (
+                <button
+                  className="rt-prestige-btn"
+                  onClick={() => onStartPrestigeVoyage(r.id)}
+                >
+                  Yeniden Git
+                </button>
+              )}
             </div>
           ))}
         </div>

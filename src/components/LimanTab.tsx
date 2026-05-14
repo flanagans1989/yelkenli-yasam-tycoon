@@ -30,6 +30,7 @@ interface LimanTabProps {
   dailyGoalsCompletedCount: number;
   dailyGoalsTotal: number;
   marinaTasks: MarinaTask[];
+  hasCompletedWorldTour?: boolean;
 }
 
 const RESOURCE_DEFS: Array<{
@@ -69,6 +70,7 @@ export function LimanTab({
   dailyGoalsCompletedCount,
   dailyGoalsTotal,
   marinaTasks,
+  hasCompletedWorldTour,
 }: LimanTabProps) {
   const [marinaOpen, setMarinaOpen] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
@@ -118,7 +120,11 @@ export function LimanTab({
       <header className="lh-stage">
         <span className="lh-stage-eyebrow">⚓ MARİNA ÜSSÜ</span>
         <h2 className="lh-stage-title">{currentLocationName}</h2>
-        <p className="lh-stage-sub">Kaptanın limanı · Sıradaki hamleye hazır</p>
+        <p className="lh-stage-sub">
+          {hasCompletedWorldTour
+            ? "Dünya Turu Kaptanı · Efsane Kaptan"
+            : "Kaptanın limanı · Sıradaki hamleye hazır"}
+        </p>
       </header>
 
       {/* ── Boat hero stage ── */}

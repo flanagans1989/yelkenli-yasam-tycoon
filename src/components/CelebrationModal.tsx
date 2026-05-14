@@ -2,7 +2,8 @@ export type CelebrationItem =
   | { type: "levelup"; level: number; rank: string; bonus: number }
   | { type: "achievement"; title: string; description: string; icon: string }
   | { type: "daily_goals" }
-  | { type: "sponsor"; brandName: string };
+  | { type: "sponsor"; brandName: string }
+  | { type: "world_tour" };
 
 interface CelebrationModalProps {
   celebration: CelebrationItem;
@@ -78,6 +79,28 @@ export function CelebrationModal({ celebration, onDismiss }: CelebrationModalPro
           <div className="cel-achievement-desc">Bu senin ilk büyük marka anlaşman! Dünya turu için artık güçlü bir destekçin var.</div>
           <button className="primary-button cel-dismiss-btn" onClick={onDismiss}>
             Harika!
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (celebration.type === "world_tour") {
+    return (
+      <div className="cel-modal" role="dialog" aria-modal="true" aria-label="Dünya turu tamamlandı">
+        <div className="cel-backdrop" aria-hidden="true" onClick={onDismiss} />
+        <div className="cel-card glass-card cel-card--levelup">
+          {renderParticles()}
+          <span className="cel-eyebrow cel-eyebrow--gold">DÜNYA TURU TAMAMLANDI!</span>
+          <div className="cel-level-badge">
+            <span className="cel-level-num">🌍</span>
+          </div>
+          <div className="cel-rank">Efsane Kaptan</div>
+          <div className="cel-achievement-desc" style={{ marginTop: "0.5rem" }}>
+            Tüm rotalar keşfedildi. Artık prestij seyirleri açıldı!
+          </div>
+          <button className="primary-button primary-button--pulse cel-dismiss-btn" onClick={onDismiss}>
+            Efsane!
           </button>
         </div>
       </div>

@@ -1,6 +1,8 @@
+﻿import './LimanTab.css';
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { getBoatSvg } from "./Onboarding";
+import type { MarinaTask } from "../types/game";
 
 interface LimanTabProps {
   selectedBoatId: string;
@@ -25,6 +27,10 @@ interface LimanTabProps {
   onGoContent: () => void;
   onGoRoute: () => void;
   renderDailyGoals: () => ReactNode;
+  dailyGoalsCompletedCount: number;
+  dailyGoalsTotal: number;
+  marinaTasks: MarinaTask[];
+  hasCompletedWorldTour?: boolean;
 }
 
 const RESOURCE_DEFS: Array<{
@@ -61,9 +67,14 @@ export function LimanTab({
   onGoContent,
   onGoRoute,
   renderDailyGoals,
+  dailyGoalsCompletedCount,
+  dailyGoalsTotal,
+  marinaTasks,
+  hasCompletedWorldTour,
 }: LimanTabProps) {
   const [marinaOpen, setMarinaOpen] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
+  const [dailyGoalsOpen, setDailyGoalsOpen] = useState(false);
 
   const hasCompletedFirstRoute = completedRouteIds.length > 0;
   const isResourceLow = energy < 30 || water < 30 || fuel < 30 || boatCondition < 30;
@@ -109,7 +120,11 @@ export function LimanTab({
       <header className="lh-stage">
         <span className="lh-stage-eyebrow">⚓ MARİNA ÜSSÜ</span>
         <h2 className="lh-stage-title">{currentLocationName}</h2>
-        <p className="lh-stage-sub">Kaptanın limanı · Sıradaki hamleye hazır</p>
+        <p className="lh-stage-sub">
+          {hasCompletedWorldTour
+            ? "Dünya Turu Kaptanı · Efsane Kaptan"
+            : "Kaptanın limanı · Sıradaki hamleye hazır"}
+        </p>
       </header>
 
       {/* ── Boat hero stage ── */}
@@ -185,8 +200,40 @@ export function LimanTab({
         })}
       </section>
 
-      {/* ── Daily Goals (slotted from App.tsx) ── */}
-      {renderDailyGoals()}
+      {/* ── Daily Goals (collapsible) ── */}
+      <div className="lh-accordion lh-accordion-v2 glass-card">
+        <button className="lh-accordion-hdr" onClick={() => setDailyGoalsOpen(p => !p)}>
+          <span>
+            <span className="lh-accordion-icon">🎯</span>
+            Günlük Görevler
+          </span>
+          <span className="lh-daily-goals-strip">
+            <span className={`lh-daily-goals-count${dailyGoalsCompletedCount === dailyGoalsTotal ? " is-done" : ""}`}>
+              {dailyGoalsCompletedCount}/{dailyGoalsTotal}
+            </span>
+            <span className={`lh-chevron${dailyGoalsOpen ? " lh-chevron--open" : ""}`}>›</span>
+          </span>
+        </button>
+        {dailyGoalsOpen && (
+          <div className="lh-accordion-body lh-accordion-body--goals">
+            {renderDailyGoals()}
+          </div>
+        )}
+      </div>
+
+      {/* ── Marina Tasks ── */}
+      {marinaTasks.length > 0 && (
+        <div className="lh-marina-tasks glass-card">
+          <span className="lh-marina-tasks-eyebrow">⚓ Marina Görevleri</span>
+          {marinaTasks.map(task => (
+            <div key={task.id} className={`lh-marina-task-row${task.completed ? " is-done" : ""}`}>
+              <span className="lh-marina-task-check">{task.completed ? "✓" : "○"}</span>
+              <span className="lh-marina-task-title">{task.title}</span>
+              <span className="lh-marina-task-reward">+{task.reward} TL</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Beginner Guide (hidden once both milestones done) ── */}
       {!guideComplete && (

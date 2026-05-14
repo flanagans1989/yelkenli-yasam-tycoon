@@ -1,11 +1,13 @@
+﻿import './TekneTab.css';
 import type { ReactNode } from "react";
 import type { UpgradeCategoryId } from "../../game-data/upgrades";
 
 type TekneStatItem = {
-  key: "energy" | "water" | "safety" | "nav";
+  key: string;
   icon: string;
   label: string;
   value: number;
+  color?: string;
 };
 
 type ActiveInstallItem = {
@@ -49,6 +51,9 @@ type TekneTabProps = {
   onBackToRotaMissing: () => void;
   upgradeCards: UpgradeCardItem[];
   onBuyUpgrade: (upgradeId: string) => void;
+  pendingUpgradeConfirmId?: string | null;
+  onCancelUpgradeConfirm?: () => void;
+  installedUpgradeLabels?: string[];
 };
 
 export function TekneTab({
@@ -67,6 +72,9 @@ export function TekneTab({
   onBackToRotaMissing,
   upgradeCards,
   onBuyUpgrade,
+  pendingUpgradeConfirmId = null,
+  onCancelUpgradeConfirm,
+  installedUpgradeLabels = [],
 }: TekneTabProps) {
   return (
     <div className="tab-content tk-tab-v2 fade-in">
@@ -79,7 +87,7 @@ export function TekneTab({
           </div>
           <div className="tk-hero-id">
             <span className="tk-hero-eyebrow">⚙ TERSANE</span>
-            <h2 className="tk-hero-name">{boatName}</h2>
+            <h2 className="tk-hero-name tk-hero-name--xl">{boatName}</h2>
             <p className="tk-hero-class">{selectedBoatName} · {selectedBoatLengthFt} ft</p>
           </div>
           <div className="tk-hero-credits">
@@ -98,13 +106,26 @@ export function TekneTab({
           </div>
         </div>
 
+        {installedUpgradeLabels.length > 0 && (
+          <div className="tk-installed-badges">
+            {installedUpgradeLabels.slice(0, 6).map((label, i) => (
+              <span key={i} className="tk-installed-badge">✓ {label}</span>
+            ))}
+            {installedUpgradeLabels.length > 6 && (
+              <span className="tk-installed-badge tk-installed-badge--more">+{installedUpgradeLabels.length - 6} daha</span>
+            )}
+          </div>
+        )}
+
         <div className="tk-stats-grid">
           {tkStats.map((s) => (
             <div key={s.key} className="tk-stat-chip" data-stat={s.key}>
               <span className="tk-stat-icon">{s.icon}</span>
               <div className="tk-stat-body">
                 <span className="tk-stat-label">{s.label}</span>
-                <strong className="tk-stat-val">{s.value}</strong>
+                <strong className="tk-stat-val" style={s.color ? { color: s.color } : undefined}>
+                  {s.value > 0 ? `+${s.value}` : s.value}
+                </strong>
               </div>
             </div>
           ))}
@@ -192,22 +213,45 @@ export function TekneTab({
             )}
 
             {!upgrade.isPurchased && upgrade.isCompatible && (
-              <button
-                className={`tk-upg-cta${upgrade.buyDisabled ? " is-disabled" : ""}`}
-                onClick={() => onBuyUpgrade(upgrade.id)}
-                disabled={upgrade.buyDisabled}
-              >
-                <span className="tk-upg-cta-icon">{upgrade.isInstalling ? "🔧" : upgrade.slotsFull ? "⏳" : upgrade.cantAfford ? "✕" : "⚙"}</span>
-                <span className="tk-upg-cta-label">
-                  {upgrade.isInstalling
-                    ? "Kurulumda"
-                    : upgrade.slotsFull
-                      ? "Slot Dolu"
-                      : upgrade.cantAfford
-                        ? "Yetersiz Bütçe"
-                        : "Satın Al"}
-                </span>
-              </button>
+              pendingUpgradeConfirmId === upgrade.id ? (
+                <div className="tk-upg-confirm">
+                  <p className="tk-upg-confirm-text">
+                    {upgrade.cost.toLocaleString("tr-TR")} TL harcanacak. Onaylıyor musun?
+                  </p>
+                  <div className="tk-upg-confirm-actions">
+                    <button
+                      className="tk-upg-cta"
+                      onClick={() => onBuyUpgrade(upgrade.id)}
+                    >
+                      <span className="tk-upg-cta-icon">⚙</span>
+                      <span className="tk-upg-cta-label">Onayla</span>
+                    </button>
+                    <button
+                      className="tk-upg-cta tk-upg-cta--cancel"
+                      onClick={() => onCancelUpgradeConfirm?.()}
+                    >
+                      <span className="tk-upg-cta-label">Vazgeç</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  className={`tk-upg-cta${upgrade.buyDisabled ? " is-disabled" : ""}`}
+                  onClick={() => onBuyUpgrade(upgrade.id)}
+                  disabled={upgrade.buyDisabled}
+                >
+                  <span className="tk-upg-cta-icon">{upgrade.isInstalling ? "🔧" : upgrade.slotsFull ? "⏳" : upgrade.cantAfford ? "✕" : "⚙"}</span>
+                  <span className="tk-upg-cta-label">
+                    {upgrade.isInstalling
+                      ? "Kurulumda"
+                      : upgrade.slotsFull
+                        ? "Slot Dolu"
+                        : upgrade.cantAfford
+                          ? "Yetersiz Bütçe"
+                          : "Satın Al"}
+                  </span>
+                </button>
+              )
             )}
           </div>
         ))}

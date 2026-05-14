@@ -1,4 +1,5 @@
-﻿import { useState, useEffect } from "react";
+﻿import './RotaTab.css';
+import { useState, useEffect } from "react";
 import { WORLD_ROUTES } from "../../game-data/routes";
 
 interface RouteReadinessValue {
@@ -54,6 +55,8 @@ interface RotaTabProps {
   onGoUpgradeCategory?: (categoryId: string) => void;
   openReadiness?: boolean;
   onReadinessOpened?: () => void;
+  hasCompletedWorldTour?: boolean;
+  onStartPrestigeVoyage?: (routeId: string) => void;
 }
 
 const RISK_LABELS: Record<string, string> = {
@@ -108,6 +111,8 @@ export function RotaTab({
   onGoUpgradeCategory,
   openReadiness,
   onReadinessOpened,
+  hasCompletedWorldTour,
+  onStartPrestigeVoyage,
 }: RotaTabProps) {
   const [readinessOpen, setReadinessOpen] = useState(false);
 
@@ -116,7 +121,7 @@ export function RotaTab({
       setReadinessOpen(true);
       onReadinessOpened?.();
     }
-  }, [openReadiness]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [openReadiness]);
 
   const readinessItems = [
     { label: "Okyanus Hazırlığı", value: routeReadiness.oceanReadiness },
@@ -130,6 +135,10 @@ export function RotaTab({
   const weakItems = readinessItems.filter(({ value }) => value.current < value.required);
   const isReady = weakItems.length === 0;
   const completedCount = completedRouteIds.length;
+
+  const upcomingRoutes = WORLD_ROUTES.filter(
+    r => !completedRouteIds.includes(r.id) && r.id !== currentRoute?.id
+  ).slice(0, 3);
 
   return (
     <div className="rt-tab rt-tab-v2 fade-in">
@@ -153,6 +162,62 @@ export function RotaTab({
           <div className="rt-arc-bar-fill" style={{ width: `${Math.round((completedCount / WORLD_ROUTES.length) * 100)}%` }} />
         </div>
       </div>
+
+      {upcomingRoutes.length > 0 && (
+        <div className="rt-upcoming-card glass-card">
+          <span className="rt-upcoming-eyebrow">🗺 Önümüzdeki Rotalar</span>
+          {upcomingRoutes.map((r, i) => (
+            <div key={r.id} className="rt-upcoming-row">
+              <span className="rt-upcoming-num">{completedCount + (currentRoute ? 1 : 0) + i + 1}</span>
+              <div className="rt-upcoming-body">
+                <span className="rt-upcoming-name">{r.name}</span>
+                <span className="rt-upcoming-meta">{r.from} → {r.to} · {r.baseDurationDays.min}–{r.baseDurationDays.max} gün</span>
+              </div>
+              <span className={`rt-upcoming-risk rt-risk-pill ${getRiskClass(r.riskLevel)}`}>{RISK_LABELS[r.riskLevel] ?? r.riskLevel}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {completedCount > 0 && (
+        <div className="rt-completed-list glass-card">
+          <div className="rt-completed-header">
+            <span className="rt-completed-label">Tamamlanan Rotalar</span>
+            <span className="rt-completed-count">{completedCount}</span>
+          </div>
+          {WORLD_ROUTES.filter(r => completedRouteIds.includes(r.id)).slice(-3).reverse().map(r => (
+            <div key={r.id} className="rt-completed-item">
+              <span className="rt-completed-check">✓</span>
+              <span className="rt-completed-name">{r.name}</span>
+              <span className="rt-completed-to">{r.to}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {hasCompletedWorldTour && (
+        <div className="rt-prestige-card glass-card">
+          <div className="rt-completed-header">
+            <span className="rt-completed-label">⭐ Tekrar Keşfet — Prestij Seyirleri</span>
+          </div>
+          <p className="rt-prestige-desc">Tamamladığın rotaları 1.5× ödülle yeniden keşfet.</p>
+          {WORLD_ROUTES.filter(r => completedRouteIds.includes(r.id)).map(r => (
+            <div key={r.id} className="rt-completed-item rt-prestige-item">
+              <span className="rt-completed-check">⭐</span>
+              <span className="rt-completed-name">{r.name}</span>
+              <span className="rt-completed-to">{r.from} → {r.to}</span>
+              {!isSeaMode && onStartPrestigeVoyage && (
+                <button
+                  className="rt-prestige-btn"
+                  onClick={() => onStartPrestigeVoyage(r.id)}
+                >
+                  Yeniden Git
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {currentRoute ? (
         <>

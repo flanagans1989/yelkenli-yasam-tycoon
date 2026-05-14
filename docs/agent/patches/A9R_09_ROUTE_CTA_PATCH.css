@@ -1,0 +1,33 @@
+/* === A9R_09 PATCH START === */
+.a9r-cta {
+    font-size: 18px;
+    padding: 12px 24px;
+    border-radius: 6px;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.a9r-cta:hover {
+    background-color: #0056b3;
+}
+
+.a9r-cta:active {
+    background-color: #004085;
+}
+
+.a9r-cta.disabled,
+.a9r-cta.loading {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (min-width: 768px) {
+    .a9r-cta {
+        font-size: 20px;
+        padding: 14px 32px;
+    }
+}
+/* === A9R_09 PATCH END === */

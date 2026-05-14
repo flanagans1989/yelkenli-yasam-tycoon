@@ -1,10 +1,11 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import type { Step, Tab } from "../types/game";
 
 interface HubScreenProps {
   step: Step;
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
+  lockedTab?: Tab | null;
   boatName: string;
   selectedBoatName: string;
   currentRoute?: {
@@ -25,12 +26,15 @@ interface HubScreenProps {
   renderRotaTab: () => ReactNode;
   renderTekneTab: () => ReactNode;
   renderKaptanTab: () => ReactNode;
+  audioEnabled?: boolean;
+  onToggleAudio?: () => void;
 }
 
 export function HubScreen({
   step,
   activeTab,
   setActiveTab,
+  lockedTab = null,
   boatName,
   selectedBoatName,
   currentRoute,
@@ -47,13 +51,17 @@ export function HubScreen({
   renderRotaTab,
   renderTekneTab,
   renderKaptanTab,
+  audioEnabled = true,
+  onToggleAudio,
 }: HubScreenProps) {
+  const isTabLocked = (tab: Tab) => Boolean(lockedTab && lockedTab !== tab);
+
   return (
     <div className={step === "SEA_MODE" ? "sea-mode-wrapper fade-in" : `hub-wrapper hub-wrapper--${activeTab} fade-in`}>
       {step === "SEA_MODE" ? (
         <header className="sea-topbar">
           <h2>{boatName}</h2>
-          <p>{currentRoute?.name}: {currentRoute?.from} ➔ {currentRoute?.to}</p>
+          <p>{currentRoute?.name}: {currentRoute?.from} → {currentRoute?.to}</p>
         </header>
       ) : (
         <header className="hub-topbar">
@@ -62,8 +70,13 @@ export function HubScreen({
             <small>{selectedBoatName}</small>
           </div>
           <div className="hub-stats">
-            <div className={`stat${flashCredits ? " flash-green" : ""}`}><span>💰</span> {credits.toLocaleString("tr-TR")}</div>
-            <div className={`stat${flashFollowers ? " flash-green" : ""}`}><span>👥</span> {followers.toLocaleString("tr-TR")}</div>
+            <div className={`stat${flashCredits ? " flash-green" : ""}`}><span>ğŸ’°</span> {credits.toLocaleString("tr-TR")}</div>
+            <div className={`stat${flashFollowers ? " flash-green" : ""}`}><span>ğŸ’¥</span> {followers.toLocaleString("tr-TR")}</div>
+            {onToggleAudio && (
+              <button className="hub-mute-btn" onClick={onToggleAudio} aria-label={audioEnabled ? "Sesi kapat" : "Sesi aç"}>
+                {audioEnabled ? "🔊" : "🔇"}
+              </button>
+            )}
           </div>
         </header>
       )}
@@ -80,20 +93,45 @@ export function HubScreen({
       </main>
 
       <nav className="bottom-tab-bar">
-        <button className={`tab ${activeTab === "liman" ? "active" : ""}`} onClick={() => setActiveTab("liman")}>
-          <span>{step === "SEA_MODE" ? "🌊" : "🏠"}</span> {step === "SEA_MODE" ? "Deniz" : "Liman"}
+        <button
+          className={`tab ${activeTab === "liman" ? "active" : ""}${isTabLocked("liman") ? " is-disabled" : ""}`}
+          onClick={() => setActiveTab("liman")}
+          disabled={isTabLocked("liman")}
+        >
+          <span className="tab-icon">{step === "SEA_MODE" ? "🌊" : "ğŸ "}</span>
+          <span className="tab-label">{step === "SEA_MODE" ? "Deniz" : "Liman"}</span>
         </button>
-        <button className={`tab ${activeTab === "icerik" ? "active" : ""}${!firstContentDone ? " tab-notif" : ""}`} onClick={() => setActiveTab("icerik")}>
-          <span>📹</span> İçerik
+        <button
+          className={`tab ${activeTab === "icerik" ? "active" : ""}${!firstContentDone ? " tab-notif" : ""}${isTabLocked("icerik") ? " is-disabled" : ""}`}
+          onClick={() => setActiveTab("icerik")}
+          disabled={isTabLocked("icerik")}
+        >
+          <span className="tab-icon">ğŸ“¹</span>
+          <span className="tab-label">İçerik</span>
         </button>
-        <button className={`tab ${activeTab === "rota" ? "active" : ""}${firstContentDone && step === "HUB" && completedRouteIds.length === 0 ? " tab-notif" : ""}`} onClick={() => setActiveTab("rota")}>
-          <span>🗺️</span> Rota
+        <button
+          className={`tab ${activeTab === "rota" ? "active" : ""}${firstContentDone && step === "HUB" && completedRouteIds.length === 0 ? " tab-notif" : ""}${isTabLocked("rota") ? " is-disabled" : ""}`}
+          onClick={() => setActiveTab("rota")}
+          disabled={isTabLocked("rota")}
+        >
+          <span className="tab-icon">🗺️</span>
+          <span className="tab-label">Rota</span>
         </button>
-        <button className={`tab ${activeTab === "tekne" ? "active" : ""}`} onClick={() => setActiveTab("tekne")}>
-          <span>🔧</span> Tekne
+        <button
+          className={`tab ${activeTab === "tekne" ? "active" : ""}${isTabLocked("tekne") ? " is-disabled" : ""}`}
+          onClick={() => setActiveTab("tekne")}
+          disabled={isTabLocked("tekne")}
+        >
+          <span className="tab-icon">ğŸ”§</span>
+          <span className="tab-label">Tekne</span>
         </button>
-        <button className={`tab ${activeTab === "kaptan" ? "active" : ""}`} onClick={() => setActiveTab("kaptan")}>
-          <span>👤</span> Kaptan
+        <button
+          className={`tab ${activeTab === "kaptan" ? "active" : ""}${isTabLocked("kaptan") ? " is-disabled" : ""}`}
+          onClick={() => setActiveTab("kaptan")}
+          disabled={isTabLocked("kaptan")}
+        >
+          <span className="tab-icon">ğŸ‘¤</span>
+          <span className="tab-label">Kaptan</span>
         </button>
       </nav>
     </div>

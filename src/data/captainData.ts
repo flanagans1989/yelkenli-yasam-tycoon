@@ -1,0 +1,79 @@
+export const CAPTAIN_LEVEL_THRESHOLDS = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 6000, 8200, 11000, 14500, 19000, 25000];
+
+const DAILY_GOAL_THEMES = [
+  {
+    title: "Büyüme Günü",
+    goals: {
+      produce_content: "1 içerik üret",
+      complete_route: "1 rota tamamla",
+      buy_upgrade: "1 upgrade başlat",
+    },
+  },
+  {
+    title: "Tekne Hazırlığı",
+    goals: {
+      produce_content: "Kamerayı aç ve 1 içerik üret",
+      complete_route: "Denize çıkıp 1 rota tamamla",
+      buy_upgrade: "Teknen için 1 geliştirme başlat",
+    },
+  },
+  {
+    title: "Sponsor Yolculuğu",
+    goals: {
+      produce_content: "Takipçileri büyütmek için 1 içerik üret",
+      complete_route: "Dünya turunda 1 rota ilerle",
+      buy_upgrade: "Markalara hazırlanmak için 1 upgrade başlat",
+    },
+  },
+];
+
+export const ENDGAME_DAILY_GOAL_THEME = {
+  title: "Dünya Turu Efsanesi",
+  goals: {
+    produce_content: "2 içerik üret",
+    complete_route: "Bir rotayı prestij seyriyle tamamla",
+    buy_upgrade: "İçerikten 5.000 TL kazan",
+  },
+};
+
+export const getDailyGoalTheme = (dateKey: string, hasCompletedWorldTour: boolean = false) => {
+  if (hasCompletedWorldTour) return ENDGAME_DAILY_GOAL_THEME;
+  const fallbackTheme = DAILY_GOAL_THEMES[0];
+  if (!dateKey) return fallbackTheme;
+  const seed = dateKey.split("-").reduce((sum, part) => sum + Number(part || 0), 0);
+  return DAILY_GOAL_THEMES[seed % DAILY_GOAL_THEMES.length] ?? fallbackTheme;
+};
+
+export const getCaptainLevel = (xp: number): number => {
+  for (let i = CAPTAIN_LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (xp >= CAPTAIN_LEVEL_THRESHOLDS[i]) return i + 1;
+  }
+  return 1;
+};
+
+export const getContentCooldownMs = (captainLevel: number, isTestMode: boolean = false): number => {
+  if (isTestMode) return 3000;
+  if (captainLevel <= 1) return 90 * 1000;
+  if (captainLevel === 2) return 8 * 60 * 1000;
+  if (captainLevel === 3) return 12 * 60 * 1000;
+  if (captainLevel === 4) return 18 * 60 * 1000;
+  return 30 * 60 * 1000;
+};
+
+export const getBoatUpgradeDurationMs = (captainLevel: number, isTestMode: boolean = false): number => {
+  if (isTestMode) return 5000;
+  if (captainLevel <= 1) return 60 * 1000;
+  if (captainLevel === 2) return 5 * 60 * 1000;
+  if (captainLevel === 3) return 8 * 60 * 1000;
+  if (captainLevel === 4) return 12 * 60 * 1000;
+  return 20 * 60 * 1000;
+};
+
+export const getCaptainRankLabel = (level: number): string => {
+  if (level >= 13) return "Dünya Turu Kaptanı";
+  if (level >= 9)  return "Okyanus Yolcusu";
+  if (level >= 6)  return "Deneyimli Kaptan";
+  if (level >= 4)  return "Açık Deniz Adayı";
+  if (level >= 2)  return "Kıyı Seyircisi";
+  return "Acemi Kaptan";
+};

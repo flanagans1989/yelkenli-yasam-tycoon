@@ -1,0 +1,79 @@
+/* === A9R_07 PATCH START === */
+.a9r-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 16px;
+    padding: 16px;
+}
+
+.a9r-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    position: relative;
+    transition: transform 0.3s ease-in-out;
+}
+
+.a9r-card:hover,
+.a9r-card:focus-visible {
+    transform: scale(1.05);
+    outline: none;
+}
+
+.a9r-card.selected {
+    border: 2px solid #007bff;
+    z-index: 1;
+}
+
+.a9r-hint {
+    font-size: 14px;
+    color: #6c757d;
+    margin-top: 8px;
+}
+
+@media (min-width: 600px) {
+    .a9r-card-grid {
+        gap: 24px;
+        padding: 24px;
+    }
+
+    .a9r-card {
+        border-radius: 12px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+}
+
+@media (min-width: 768px) {
+    .a9r-card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+
+    .a9r-card {
+        border-radius: 14px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+}
+
+@media (min-width: 992px) {
+    .a9r-card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+
+    .a9r-card {
+        border-radius: 16px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+    }
+}
+
+@media (min-width: 1200px) {
+    .a9r-card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+
+    .a9r-card {
+        border-radius: 18px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+}
+/* === A9R_07 PATCH END === */

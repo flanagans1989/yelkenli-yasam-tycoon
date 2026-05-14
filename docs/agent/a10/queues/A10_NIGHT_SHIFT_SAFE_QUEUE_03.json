@@ -1,0 +1,437 @@
+{
+  "queue_id": "A10_NIGHT_SHIFT_SAFE_QUEUE_03",
+  "queue_title": "A10 Night Shift Safe Queue 03 - Technical Planning",
+  "version": "v1",
+  "created_for_branch": "agent/day-01",
+  "safety_level": "SAFE_DOCS_ONLY",
+  "purpose": "Teknik mimari, save/load, mobile uyumluluk ve Android build konularinda planlama dokumanlari uretmek.",
+  "global_rules": [
+    "No source code edits",
+    "No package edits",
+    "No script edits",
+    "No automatic commit/push",
+    "One task equals one output file",
+    "Every task must have validation",
+    "Hard stop on forbidden changes"
+  ],
+  "tasks": [
+    {
+      "task_id": "Task 01",
+      "title": "Save Load System Extension Plan",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Mevcut save/load sistemini yeni oyun state alanlari icin nasil genisletmek gerektigini dokumanlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T01_SAVE_LOAD_EXTENSION_PLAN.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md",
+        "docs/PROJECT_STATUS.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Mevcut save alanları, genisletme adımlari ve migration stratejisi olmali.",
+      "minimum_output_rule": "En az 40 satir ve 3 extension senaryosu.",
+      "soft_fail_rule": "Migration stratejisi eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Save/load kodu degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Teknik planlama dokumani uretir.",
+      "expected_commit_message": "docs(a10): add save load extension plan"
+    },
+    {
+      "task_id": "Task 02",
+      "title": "Mobile UI Component Inventory",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/checklist",
+      "goal": "Oyundaki mobile-first UI bilesenlerini katalog haline getirerek kapsam ve eksik alanları belgelemek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T02_MOBILE_UI_COMPONENT_INVENTORY.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/UI_RULES.md",
+        "docs/agent/UI_OVERFLOW_AUDIT.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Bilesen listesi, her bilesinin amaci ve tespit edilen eksikler olmali.",
+      "minimum_output_rule": "En az 40 satir ve 12 bilesen kaydı.",
+      "soft_fail_rule": "12'den az bilesen veya eksikler bolumu yoksa SOFT_FAIL.",
+      "hard_stop_rule": "UI kaynak dosyasi degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Envanter ve katalog dokumani uretir.",
+      "expected_commit_message": "docs(a10): add mobile UI component inventory"
+    },
+    {
+      "task_id": "Task 03",
+      "title": "Android Build Checklist",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/checklist",
+      "goal": "Android debug build icin adim adim kontrol listesi ve hata giderme rehberi olusturmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T03_ANDROID_BUILD_CHECKLIST.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/TEST_CHECKLIST.md",
+        "docs/PROJECT_STATUS.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Build adimlari, dogrulama kontrolleri ve hata senaryolari olmali.",
+      "minimum_output_rule": "En az 35 satir ve 15 kontrol maddesi.",
+      "soft_fail_rule": "Hata senaryosu bolumu eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Build script degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "6 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Build sureci rehberi uretir.",
+      "expected_commit_message": "docs(a10): add Android build checklist"
+    },
+    {
+      "task_id": "Task 04",
+      "title": "TypeScript Type Safety Plan",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Oyun state'i icin TypeScript tip guvenligi iyilestirme planini olusturmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T04_TYPESCRIPT_TYPE_SAFETY_PLAN.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md",
+        "docs/AI_WORKFLOW.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json",
+        "tsconfig.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Mevcut tip zayifliklari, oncelikli iyilestirmeler ve etkileri olmali.",
+      "minimum_output_rule": "En az 35 satir ve 5 iyilestirme alani.",
+      "soft_fail_rule": "Etki analizi eksikse SOFT_FAIL.",
+      "hard_stop_rule": "tsconfig veya kaynak koda dokunma onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Planlama dokumani uretir.",
+      "expected_commit_message": "docs(a10): add TypeScript type safety plan"
+    },
+    {
+      "task_id": "Task 05",
+      "title": "Performance Optimization Plan",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Mobil cihazlarda oyun performansini iyilestirmek icin dusuk riskli optimizasyon firsatlarini belgelemek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T05_PERFORMANCE_OPTIMIZATION_PLAN.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/UI_RULES.md",
+        "docs/GAME_DESIGN_RULES.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Performans risk alanlari, dusuk riskli optimizasyonlar ve beklenen etkiler olmali.",
+      "minimum_output_rule": "En az 38 satir ve 6 optimizasyon onerisi.",
+      "soft_fail_rule": "Oneri sayisi 6'dan azsa SOFT_FAIL.",
+      "hard_stop_rule": "Dogrudan kod degisikligi onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Optimizasyon planlama dokumani.",
+      "expected_commit_message": "docs(a10): add performance optimization plan"
+    },
+    {
+      "task_id": "Task 06",
+      "title": "State Architecture Review",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/analysis",
+      "goal": "React state mimarisinin mevcut oyun sistemi buyuklugune uygunlugunu degerlerndirmek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T06_STATE_ARCHITECTURE_REVIEW.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/GAME_DESIGN_RULES.md",
+        "docs/agent/APP_RESPONSIBILITY_MAP.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Mevcut mimari gucler, riskler ve mimari karar onerileri olmali.",
+      "minimum_output_rule": "En az 40 satir, guc/risk tablosu ve 3 karar onerisi.",
+      "soft_fail_rule": "Risk bolumu eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Mimari yeniden yazma onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "9 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Mimari degerlendirme raporu uretir.",
+      "expected_commit_message": "docs(a10): add state architecture review"
+    },
+    {
+      "task_id": "Task 07",
+      "title": "Smoke Test Protocol",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/checklist",
+      "goal": "Her yeni ozellik sonrasi uygulanacak standart duman testi protokolunu belgelerlemek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T07_SMOKE_TEST_PROTOCOL.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/TEST_CHECKLIST.md",
+        "docs/smoke-test.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Sistemler, test adimlari ve gecti/kaldi kriterleri olmali.",
+      "minimum_output_rule": "En az 40 satir ve 10 sistem testi.",
+      "soft_fail_rule": "Gecti/kaldi kriterleri olmayan test varsa SOFT_FAIL.",
+      "hard_stop_rule": "Test kodu yazma veya degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Test protokolu dokumani uretir.",
+      "expected_commit_message": "docs(a10): add smoke test protocol"
+    },
+    {
+      "task_id": "Task 08",
+      "title": "Offline Passive Income Design Review",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/analysis",
+      "goal": "Cevrimdisi pasif gelir mekanigini denge ve koyma/alma deneyimi acisindan incelemek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T08_OFFLINE_PASSIVE_INCOME_DESIGN_REVIEW.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/11_Ekonomi_Sistemi.md",
+        "docs/GAME_DESIGN_RULES.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Mevcut mekanik, denge riskleri ve oyuncu deneyimi onerileri olmali.",
+      "minimum_output_rule": "En az 35 satir ve 4 oneri.",
+      "soft_fail_rule": "Denge riskleri belirtilmemisse SOFT_FAIL.",
+      "hard_stop_rule": "Pasif gelir hesaplama koduna mudahale onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Analiz raporu uretir.",
+      "expected_commit_message": "docs(a10): add offline passive income design review"
+    },
+    {
+      "task_id": "Task 09",
+      "title": "Notification System Design",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Rota tamamlama, upgrade hazir ve gunluk reset icin bildirim sistemi tasarim dokümanini olusturmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T09_NOTIFICATION_SYSTEM_DESIGN.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/notification-system.md",
+        "docs/notification-refactor-plan.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Bildirim turleri, tetikleyiciler ve kullanici deneyimi kurallari olmali.",
+      "minimum_output_rule": "En az 40 satir ve 5 bildirim tipi tanimi.",
+      "soft_fail_rule": "Tetikleyiciler veya UX kurallari eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Bildirim kodu degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Bildirim sistemi tasarim dokumani.",
+      "expected_commit_message": "docs(a10): add notification system design"
+    },
+    {
+      "task_id": "Task 10",
+      "title": "Code Organization Review",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/analysis",
+      "goal": "Mevcut dosya ve klasor yapisini gozden gecirerek buyume icin risk noktalarini tespit etmek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T10_CODE_ORGANIZATION_REVIEW.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/AI_WORKFLOW.md",
+        "docs/agent/APP_RESPONSIBILITY_MAP.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Mevcut yapi, buyume riskleri ve refactor onerileri olmali.",
+      "minimum_output_rule": "En az 38 satir ve 4 risk noktasi.",
+      "soft_fail_rule": "Risk noktalari eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Dosya tasima veya yeniden adlandirma onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Organizasyon analiz raporu uretir.",
+      "expected_commit_message": "docs(a10): add code organization review"
+    },
+    {
+      "task_id": "Task 11",
+      "title": "Critical Systems Dependency Map",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/analysis",
+      "goal": "Kritik oyun sistemleri (ekonomi, save/load, XP, gunluk hedefler) arasindaki bagimliliklari haritalamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T11_CRITICAL_SYSTEMS_DEPENDENCY_MAP.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/agent/CRITICAL_FLOWS_AUDIT.md",
+        "docs/agent/APP_RESPONSIBILITY_MAP.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Sistem listesi, bagimlilik iliskileri ve kirilgan noktalar olmali.",
+      "minimum_output_rule": "En az 40 satir, bagimlilik tablosu ve 5 kirilgan nokta.",
+      "soft_fail_rule": "Kirilgan noktalar eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Sistem bagimliligi degistiren kod onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "9 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Mimari haritalama dokumani uretir.",
+      "expected_commit_message": "docs(a10): add critical systems dependency map"
+    },
+    {
+      "task_id": "Task 12",
+      "title": "Regression Risk Register",
+      "batch_suggestion": "Batch 9",
+      "task_type": "audit/checklist",
+      "goal": "Her yeni ozellik eklendikinde gerileme riski tasıyan sistemleri ve test onceliklerini tanimlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T12_REGRESSION_RISK_REGISTER.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/TEST_CHECKLIST.md",
+        "docs/agent/CRITICAL_FLOWS_AUDIT.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Risk kaydi tablosu: sistem, gerileme senaryosu, oncelik seviyesi olmali.",
+      "minimum_output_rule": "En az 40 satir ve 10 risk kaydi satirı.",
+      "soft_fail_rule": "Oncelik seviyesi eksik kayit varsa SOFT_FAIL.",
+      "hard_stop_rule": "Test kodu veya CI konfigurasyonu degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Risk kayit dokumani uretir.",
+      "expected_commit_message": "docs(a10): add regression risk register"
+    },
+    {
+      "task_id": "Task 13",
+      "title": "Feature Freeze Criteria Doc",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "MVP ozellik dondurma kriterlerini, gerekli koşulları ve karar suresini dokumanlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T13_FEATURE_FREEZE_CRITERIA_DOC.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/14_MVP_Yapim_Plani.md",
+        "docs/PROJECT_STATUS.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Dondurma kriterleri, kontrol listesi ve karar akisi olmali.",
+      "minimum_output_rule": "En az 35 satir ve 8 dondurma kriteri.",
+      "soft_fail_rule": "Karar akisi eksikse SOFT_FAIL.",
+      "hard_stop_rule": "MVP kapsami daraltma veya genisletme kodu onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Proje yonetim dokumani uretir.",
+      "expected_commit_message": "docs(a10): add feature freeze criteria doc"
+    },
+    {
+      "task_id": "Task 14",
+      "title": "Development Velocity Tracker Template",
+      "batch_suggestion": "Batch 9",
+      "task_type": "design/planning",
+      "goal": "Haftalik gelistirme hizi takibi icin tekrarlanabilir sablon olusturmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-03/T14_DEVELOPMENT_VELOCITY_TRACKER_TEMPLATE.md",
+      "allowed_input_context": [
+        "CLAUDE.md",
+        "docs/CHANGELOG.md",
+        "docs/PROJECT_STATUS.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Haftalik metrikler, tablo sablonu ve dolum rehberi olmali.",
+      "minimum_output_rule": "En az 35 satir ve 6 metrik alani.",
+      "soft_fail_rule": "Dolum rehberi eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Changelog veya proje dosyasi degistirme onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "6 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Sablon dokumani uretir.",
+      "expected_commit_message": "docs(a10): add development velocity tracker template"
+    }
+  ],
+  "acceptance_criteria": [
+    "14 tasks listed",
+    "Each task has one output file",
+    "All outputs are under docs/agent/a10/night-shift-03/",
+    "No task touches source code",
+    "No task touches package files",
+    "No task requires build",
+    "No task commits or pushes",
+    "Every task has validation rule",
+    "Every task has soft fail and hard stop rule"
+  ]
+}

@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from "react";
+﻿import './ArrivalScreen.css';
+import { useEffect, useState } from "react";
 import { WORLD_ROUTES } from "../../game-data/routes";
 
 function useCountUp(target: number, delayMs: number, durationMs: number): number {
@@ -35,6 +36,7 @@ interface ArrivalScreenProps {
   currentRouteId: string;
   milestoneText: string;
   nextRouteName?: string;
+  isPrestige?: boolean;
   onPublishStory?: () => void;
   onDone: () => void;
 }
@@ -52,6 +54,7 @@ export function ArrivalScreen({
   currentRouteId,
   milestoneText,
   nextRouteName,
+  isPrestige,
   onDone,
 }: ArrivalScreenProps) {
   const displayCredits = useCountUp(rewardCredits, 800, 1200);
@@ -68,7 +71,7 @@ export function ArrivalScreen({
       <div className="ar-content">
         <div className="ar-hero">
           <div className="ar-hero-glow" aria-hidden="true" />
-          <span className="ar-eyebrow">VARIŞ ✦</span>
+          <span className="ar-eyebrow">{isPrestige ? "⭐ PRESTİJ SEYR ✦" : "VARIŞ ✦"}</span>
           <div className="ar-pin">📍</div>
           <h1 className="ar-port-name">{portName}</h1>
           {feeling && <p className="ar-feeling">"{feeling}"</p>}

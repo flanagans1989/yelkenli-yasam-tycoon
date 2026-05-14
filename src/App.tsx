@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
+import { audioManager } from "./lib/audioManager";
+import { useAudioSettings } from "./lib/useAudioSettings";
 
-import type { Step, Tab, ContentResult, MarinaFilter, StoryHook } from "./types/game";
+import type { Step, Tab, ContentResult, MarinaFilter, StoryHook, Gender, DailyGoal, ToastType, ToastItem, ContentHistoryItem, MarinaTask, MarinaTaskType } from "./types/game";
 import { PLAYER_PROFILES } from "../game-data/playerProfiles";
 import type { PlayerProfile } from "../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../game-data/marinas";
@@ -15,6 +17,7 @@ import { BOAT_UPGRADES, UPGRADE_CATEGORIES } from "../game-data/upgrades";
 import type { UpgradeCategoryId } from "../game-data/upgrades";
 import { getSponsorTierByFollowers, SPONSOR_TIERS } from "../game-data/economy";
 import { AppBackground } from "./components/AppBackground";
+import { MicoGuide } from "./components/MicoGuide";
 import { Onboarding, getBoatSvg } from "./components/Onboarding";
 import { HubScreen } from "./components/HubScreen";
 import { LimanTab } from "./components/LimanTab";
@@ -26,453 +29,68 @@ import { ArrivalScreen } from "./components/ArrivalScreen";
 import { CelebrationModal } from "./components/CelebrationModal";
 import { IcerikTab } from "./components/IcerikTab";
 import type { CelebrationItem } from "./components/CelebrationModal";
+import { SEA_DECISION_EVENTS } from "./data/seaEvents";
+import { ACHIEVEMENTS, ACHIEVEMENT_ICONS } from "./data/achievements";
+import { getContentComment } from "./data/contentComments";
+import { getDailyGoalTheme, getCaptainLevel, getContentCooldownMs, getBoatUpgradeDurationMs, getCaptainRankLabel } from "./data/captainData";
+import {
+  SAVE_KEY, SAVE_VERSION,
+  migrateSave, calculateOfflineIncome, processUpgradesFromSave,
+  processMarinaRestFromSave, buildOfflineMessages, safeLoadStep,
+  computeChecksum, validateSaveChecksum, stripChecksum,
+} from "./lib/saveLoad";
+import type { UpgradeInProgressItem, MarinaRestInProgress } from "./lib/saveLoad";
+import { calculateContentQuality, calculateContentRewards, formatSeaDecisionEffectSummary } from "./lib/gameLogic";
 
-const SAVE_KEY = "yelkenli_save";
-const SAVE_VERSION = 2;
-const MAX_OFFLINE_MINUTES = 480;
-const OFFLINE_CREDITS_PER_MINUTE = 15;
-const OFFLINE_FOLLOWERS_PER_MINUTE = 1;
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
 const MARINA_REST_DURATION_MS = 2 * 60 * 1000;
 
-const CAPTAIN_LEVEL_THRESHOLDS = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 6000, 8200, 11000, 14500, 19000, 25000];
-
-const DAILY_GOAL_THEMES = [
-  {
-    title: "Büyüme Günü",
-    goals: {
-      produce_content: "1 içerik üret",
-      complete_route: "1 rota tamamla",
-      buy_upgrade: "1 upgrade başlat",
-    },
-  },
-  {
-    title: "Tekne Hazırlığı",
-    goals: {
-      produce_content: "Kamerayı aç ve 1 içerik üret",
-      complete_route: "Denize çıkıp 1 rota tamamla",
-      buy_upgrade: "Teknen için 1 geliştirme başlat",
-    },
-  },
-  {
-    title: "Sponsor Yolculuğu",
-    goals: {
-      produce_content: "Takipçileri büyütmek için 1 içerik üret",
-      complete_route: "Dünya turunda 1 rota ilerle",
-      buy_upgrade: "Markalara hazırlanmak için 1 upgrade başlat",
-    },
-  },
-];
-
-const getDailyGoalTheme = (dateKey: string) => {
-  const fallbackTheme = DAILY_GOAL_THEMES[0];
-  if (!dateKey) return fallbackTheme;
-
-  const seed = dateKey.split("-").reduce((sum, part) => sum + Number(part || 0), 0);
-  return DAILY_GOAL_THEMES[seed % DAILY_GOAL_THEMES.length] ?? fallbackTheme;
-};
-
-const getCaptainLevel = (xp: number): number => {
-  for (let i = CAPTAIN_LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
-    if (xp >= CAPTAIN_LEVEL_THRESHOLDS[i]) return i + 1;
-  }
-  return 1;
-};
-
-const getContentCooldownMs = (captainLevel: number, isTestMode: boolean = false): number => {
-  if (isTestMode) return 3000;
-  if (captainLevel <= 1) return 90 * 1000;
-  if (captainLevel === 2) return 8 * 60 * 1000;
-  if (captainLevel === 3) return 12 * 60 * 1000;
-  if (captainLevel === 4) return 18 * 60 * 1000;
-  return 30 * 60 * 1000;
-};
-
-const getBoatUpgradeDurationMs = (captainLevel: number, isTestMode: boolean = false): number => {
-  if (isTestMode) return 5000;
-  if (captainLevel <= 1) return 60 * 1000;
-  if (captainLevel === 2) return 5 * 60 * 1000;
-  if (captainLevel === 3) return 8 * 60 * 1000;
-  if (captainLevel === 4) return 12 * 60 * 1000;
-  return 20 * 60 * 1000;
-};
-
 const MAX_PARALLEL_UPGRADES = 3;
+const VALID_TABS: Tab[] = ["liman", "icerik", "rota", "tekne", "kaptan"];
 
-const makeDailyGoals = (dateKey: string = new Date().toISOString().slice(0, 10)): DailyGoal[] => {
+const MARINA_TASK_REWARD = 500;
+
+function clampIndex(value: unknown, length: number): number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value < length ? value : 0;
+}
+
+function safeTab(value: unknown): Tab {
+  return typeof value === "string" && VALID_TABS.includes(value as Tab) ? (value as Tab) : "liman";
+}
+
+function makeMarinaTasksForLocation(location: string): MarinaTask[] {
+  const hash = location.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const secondTypes: MarinaTaskType[] = ["refill_water", "refill_fuel", "check_sponsors", "repair_boat"];
+  const secondType = secondTypes[hash % secondTypes.length];
+  const secondTitles: Record<MarinaTaskType, string> = {
+    refill_water: "Su tanklarını doldur",
+    refill_fuel: "Yakıt ikmali yap",
+    check_sponsors: "Sponsor tekliflerini kontrol et",
+    repair_boat: "Tekneyi onar (%50+)",
+    produce_content: "İçerik yayınla",
+  };
+  return [
+    { id: "mt_content", type: "produce_content", title: "Bu limanda bir içerik üret", reward: MARINA_TASK_REWARD, completed: false },
+    { id: "mt_second", type: secondType, title: secondTitles[secondType], reward: MARINA_TASK_REWARD, completed: false },
+  ];
+}
+
+const makeDailyGoals = (dateKey: string = new Date().toISOString().slice(0, 10), isEndgame: boolean = false): DailyGoal[] => {
+  if (isEndgame) {
+    return [
+      { id: "dg_content", title: "2 içerik üret", type: "produce_content", completed: false },
+      { id: "dg_prestige", title: "Bir rotayı prestij seyriyle tamamla", type: "prestige_route", completed: false },
+      { id: "dg_credits", title: "İçerikten 5.000 TL kazan", type: "earn_credits", completed: false },
+    ];
+  }
   const theme = getDailyGoalTheme(dateKey);
+  const goals = theme.goals as { produce_content: string; complete_route: string; buy_upgrade: string };
 
   return [
-    { id: "dg_content", title: theme.goals.produce_content, type: "produce_content", completed: false },
-    { id: "dg_route", title: theme.goals.complete_route, type: "complete_route", completed: false },
-    { id: "dg_upgrade", title: theme.goals.buy_upgrade, type: "buy_upgrade", completed: false },
+    { id: "dg_content", title: goals.produce_content, type: "produce_content", completed: false },
+    { id: "dg_route", title: goals.complete_route, type: "complete_route", completed: false },
+    { id: "dg_upgrade", title: goals.buy_upgrade, type: "buy_upgrade", completed: false },
   ];
-};
-
-type UpgradeInProgressItem = {
-  upgradeId: string;
-  completesAt: number;
-  startedAt: number;
-  durationMs: number;
-  slot: 0 | 1 | 2;
-};
-
-type MarinaRestInProgress = {
-  startedAt: number;
-  completesAt: number;
-  durationMs: number;
-};
-
-type SeaDecisionEffect = {
-  credits?: number;
-  followers?: number;
-  energy?: number;
-  water?: number;
-  fuel?: number;
-  boatCondition?: number;
-  remainingDays?: number;
-};
-
-type SeaDecisionChoice = {
-  label: string;
-  resultText: string;
-  effect: SeaDecisionEffect;
-};
-
-type SeaDecisionEvent = {
-  id: string;
-  title: string;
-  description: string;
-  choiceA: SeaDecisionChoice;
-  choiceB: SeaDecisionChoice;
-};
-
-type DailyGoal = {
-  id: string;
-  title: string;
-  type: "produce_content" | "complete_route" | "buy_upgrade";
-  completed: boolean;
-};
-
-type ToastType = "upgrade" | "achievement" | "sponsor" | "content" | "voyage" | "sea_decision" | "warning";
-
-type ToastItem = {
-  id: number;
-  type: ToastType;
-  title: string;
-  text: string;
-};
-
-type AchievementProgress = {
-  totalContentProduced: number;
-  totalRoutesCompleted: number;
-  totalUpgradesStarted: number;
-  captainLevel: number;
-  hasCompletedDailyGoalsOnce: boolean;
-  followers: number;
-  acceptedSponsorsCount: number;
-  completedRouteIds: string[];
-};
-
-type AchievementDefinition = {
-  id: string;
-  title: string;
-  description: string;
-  isUnlocked: (progress: AchievementProgress) => boolean;
-};
-
-const ACHIEVEMENTS: AchievementDefinition[] = [
-  {
-    id: "first_content",
-    title: "İlk İçerik",
-    description: "1 içerik üret.",
-    isUnlocked: (p) => p.totalContentProduced >= 1,
-  },
-  {
-    id: "first_route",
-    title: "İlk Rota",
-    description: "1 rota tamamla.",
-    isUnlocked: (p) => p.totalRoutesCompleted >= 1,
-  },
-  {
-    id: "first_upgrade",
-    title: "İlk Upgrade",
-    description: "1 upgrade başlat.",
-    isUnlocked: (p) => p.totalUpgradesStarted >= 1,
-  },
-  {
-    id: "first_sponsor",
-    title: "İlk Anlaşma",
-    description: "İlk sponsor anlaşmasını imzala.",
-    isUnlocked: (p) => p.acceptedSponsorsCount >= 1,
-  },
-  {
-    id: "followers_1k",
-    title: "Bin Takipçi",
-    description: "1.000 takipçiye ulaş.",
-    isUnlocked: (p) => p.followers >= 1000,
-  },
-  {
-    id: "rising_captain",
-    title: "Yükselen Kaptan",
-    description: "Kaptan seviyesi 3'e ulaş.",
-    isUnlocked: (p) => p.captainLevel >= 3,
-  },
-  {
-    id: "locked_in",
-    title: "Hedefe Kilitlen",
-    description: "Günlük görevleri 3/3 en az 1 kez tamamla.",
-    isUnlocked: (p) => p.hasCompletedDailyGoalsOnce,
-  },
-  {
-    id: "sea_dog",
-    title: "Deniz Kurdu",
-    description: "5 rota tamamla.",
-    isUnlocked: (p) => p.totalRoutesCompleted >= 5,
-  },
-  {
-    id: "steady_creator",
-    title: "İstikrarlı Üretici",
-    description: "10 içerik üret.",
-    isUnlocked: (p) => p.totalContentProduced >= 10,
-  },
-  {
-    id: "followers_10k",
-    title: "On Bin Takipçi",
-    description: "10.000 takipçiye ulaş.",
-    isUnlocked: (p) => p.followers >= 10000,
-  },
-  {
-    id: "content_machine",
-    title: "İçerik Makinesi",
-    description: "25 içerik üret.",
-    isUnlocked: (p) => p.totalContentProduced >= 25,
-  },
-  {
-    id: "atlantic_done",
-    title: "Atlantik Kaptanı",
-    description: "Atlantik Geçişini tamamla.",
-    isUnlocked: (p) => p.completedRouteIds.includes("atlantic_crossing"),
-  },
-  {
-    id: "world_tour_done",
-    title: "Dünya Turu Kaptanı",
-    description: "Tüm 17 rotayı tamamla.",
-    isUnlocked: (p) => p.totalRoutesCompleted >= 17,
-  },
-];
-
-const SEA_DECISION_EVENTS: SeaDecisionEvent[] = [
-  {
-    id: "fuel_running_low",
-    title: "Yakıt Krizi",
-    description: "Depo beklenenden hızlı tükeniyor. Limana yanaşmak yakıt kazandırır ama para ve zaman harcar. Devam etmek süreyi korur ama hem yakıtı hem tekneyi zorlar.",
-    choiceA: {
-      label: "Limana yanaş",
-      resultText: "Kısa mola yapıldı. Yakıt takviyesi alındı, marina ücreti ödendi.",
-      effect: { fuel: 20, credits: -400, remainingDays: 2 },
-    },
-    choiceB: {
-      label: "Devam et",
-      resultText: "Süre korundu ama depo ve tekne durumu yıprandı.",
-      effect: { fuel: -18, boatCondition: -8 },
-    },
-  },
-  {
-    id: "mild_storm_signs",
-    title: "Fırtına Yaklaşıyor",
-    description: "Hava durumu kötüleşiyor. Güvenli rotaya geçmek enerji ve zaman harcar. Doğrudan devam etmek tekneyi ve su rezervini tehdit eder.",
-    choiceA: {
-      label: "Güvenli rotaya geç",
-      resultText: "Fırtınadan uzak tutuldu. Enerji ve zaman harcandı ama hasar önlendi.",
-      effect: { energy: -10, remainingDays: 3 },
-    },
-    choiceB: {
-      label: "Doğrudan devam et",
-      resultText: "Fırtına içinden geçildi. Tekne hasar gördü, su rezervi azaldı.",
-      effect: { boatCondition: -15, water: -8 },
-    },
-  },
-  {
-    id: "technical_noise",
-    title: "Teknik Arıza",
-    description: "Motor bölümünden ciddi bir ses geliyor. Şimdi tamir etmek para ve enerji ister. Ertelemek tekneyi büyük hasara açar.",
-    choiceA: {
-      label: "Dur, tamir et",
-      resultText: "Tamir yapıldı. Para ve enerji harcandı ama büyük hasar önlendi.",
-      effect: { credits: -450, energy: -5, boatCondition: -2 },
-    },
-    choiceB: {
-      label: "Erteyle, devam et",
-      resultText: "Arıza büyüdü. Tekne ciddi hasar gördü.",
-      effect: { boatCondition: -16 },
-    },
-  },
-  {
-    id: "content_opportunity",
-    title: "İçerik Fırsatı",
-    description: "Işık ve deniz mükemmel konumda. Çekim yapmak enerji harcar ama takipçi ve gelir getirir. Dinlenmek enerjiyi geri kazandırır.",
-    choiceA: {
-      label: "Çek ve yayınla",
-      resultText: "Yüksek kaliteli çekim yapıldı. Takipçi ve kredi geldi.",
-      effect: { energy: -14, followers: 220, credits: 200 },
-    },
-    choiceB: {
-      label: "Dinlen",
-      resultText: "Enerji korundu ve bir miktar toparlandı.",
-      effect: { energy: 8 },
-    },
-  },
-  {
-    id: "sudden_wind_shift",
-    title: "Ani Rüzgar Değişimi",
-    description: "Rüzgar bir anda yön değiştirdi. Yelken trimini düzeltmek zaman kaybettirir ama tekneyi rahatlatır. Bastırmak ise süre kazandırır ama tekneyi zorlar.",
-    choiceA: {
-      label: "Trim düzelt",
-      resultText: "Yelkenler yeniden ayarlandı. Seyir sakinledi ama rota biraz uzadı.",
-      effect: { energy: -6, remainingDays: 2, boatCondition: 3 },
-    },
-    choiceB: {
-      label: "Bastır, devam et",
-      resultText: "Hız korundu ama tekne sarsıldı ve ekip yoruldu.",
-      effect: { boatCondition: -7, energy: -8 },
-    },
-  },
-  {
-    id: "night_watch_fatigue",
-    title: "Gece Vardiyası Yorgunluğu",
-    description: "Uzun gece vardiyası dikkati düşürdü. Kısa dinlenme güvenliği artırır ama tempoyu keser. Devam etmek süreyi korur ama kaynak tüketimini zorlar.",
-    choiceA: {
-      label: "Kısa mola ver",
-      resultText: "Ekip nefes aldı. Enerji toparlandı ama yol biraz uzadı.",
-      effect: { energy: 10, remainingDays: 2 },
-    },
-    choiceB: {
-      label: "Devam et",
-      resultText: "Tempo korundu ama yorgunluk büyüdü ve su tüketimi arttı.",
-      effect: { energy: -12, water: -6 },
-    },
-  },
-  {
-    id: "cove_anchor_decision",
-    title: "Koyda Demirleme Kararı",
-    description: "Korunaklı bir koy göründü. Demirlemek su ve enerji toparlatır ama zaman kaybettirir. Açıkta devam etmek süreyi korur ama kaynak baskısını artırır.",
-    choiceA: {
-      label: "Koyda kal",
-      resultText: "Kısa dinlenme yapıldı. Su ve enerji toparlandı.",
-      effect: { water: 10, energy: 7, remainingDays: 2 },
-    },
-    choiceB: {
-      label: "Açıkta devam et",
-      resultText: "Süre korundu ama ekip ve tekne daha fazla zorlandı.",
-      effect: { energy: -8, boatCondition: -5 },
-    },
-  },
-  {
-    id: "risky_social_shot",
-    title: "Riskli Çekim Açısı",
-    description: "Muhteşem bir açı yakalandı. Riskli çekim takipçi getirebilir ama tekne düzenini bozabilir. Güvenli kalmak fırsatı kaçırır ama tekneyi korur.",
-    choiceA: {
-      label: "Çekimi dene",
-      resultText: "Çekim ses getirdi. Takipçi geldi ama tekne ve ekip zorlandı.",
-      effect: { followers: 180, credits: 120, energy: -10, boatCondition: -4 },
-    },
-    choiceB: {
-      label: "Güvenli kal",
-      resultText: "Risk alınmadı. Tekne düzeni korundu, tempo sakin kaldı.",
-      effect: { boatCondition: 4, energy: 4 },
-    },
-  },
-  {
-    id: "fishing_boat_encounter",
-    title: "Balıkçı Teknesiyle Karşılaşma",
-    description: "Yakındaki balıkçı teknesi rota hakkında uyarı veriyor. Tavsiyeyi dinlemek küçük bir masraf ister ama güvenlik sağlar. Görmezden gelmek bedava ama belirsizlik yaratır.",
-    choiceA: {
-      label: "Bilgi al",
-      resultText: "Rota bilgisi paylaşıldı. Küçük bir ödeme yapıldı, risk azaldı.",
-      effect: { credits: -180, boatCondition: 4, fuel: 6 },
-    },
-    choiceB: {
-      label: "Yola devam et",
-      resultText: "Para korunmuş oldu ama rota daha sert geçti.",
-      effect: { fuel: -8, boatCondition: -6 },
-    },
-  },
-  {
-    id: "equipment_loose",
-    title: "Ekipman Sabitleme Sorunu",
-    description: "Güvertede bazı ekipmanlar gevşedi. Şimdi sabitlemek enerji kaybettirir ama hasarı önler. Ertelemek süreyi korur ama deniz büyürse sorun çıkarabilir.",
-    choiceA: {
-      label: "Şimdi sabitle",
-      resultText: "Ekipman güvene alındı. Efor harcandı ama tekne korundu.",
-      effect: { energy: -7, boatCondition: 5 },
-    },
-    choiceB: {
-      label: "Sonra hallet",
-      resultText: "İlerleme korundu ama ekipman sallandı ve tekne yıprandı.",
-      effect: { boatCondition: -8, remainingDays: -1 },
-    },
-  },
-];
-
-type CommentBands = { low: string[]; medium: string[]; high: string[]; viral: string[] };
-
-const CONTENT_COMMENTS: Record<string, CommentBands> = {
-  marina_life: {
-    low: ["Marina sahnesi sıradan gelmiş, izleyiciler daha fazlasını bekliyordu.", "Işık ve kompozisyon dengesiz; bir dahaki sefere daha iyi kurgu denenebilir."],
-    medium: ["Marina rutinleri izleyiciye tanıdık geldi; sadık takipçi kitlesi büyüyor.", "Sakin ama güvenilir bir içerik. Sabah rutin izleme artıyor."],
-    high: ["Marina yaşamı bu kalitede çok az kanalda görülüyor. Fark edildin.", "Günlük hayat içeriği bu sefer gerçekten özel bir şeye dönüştü."],
-    viral: ["Marina videosu patladı! Herkes 'sen neredesin?' diye soruyor.", "Marina rutini viral oldu. Hayatın bir film gibi akıyor artık."],
-  },
-  boat_tour: {
-    low: ["Tekne turu pek ilgi çekmedi; çekim açıları daha dikkatli seçilebilirdi.", "İzleyiciler tekneyi görüyor ama hikaye yok; kayıp fırsat."],
-    medium: ["Tekne turu güzel ama anlatım biraz düz kalmış. Yine de büyüme var.", "Görsel iyi, hikaye daha güçlü olabilirdi. Düzenli takipçiler sevdi."],
-    high: ["Bu tekne turu kanalın yüzüne dönüşüyor. Klip olarak paylaşılmaya başlandı.", "İzleyiciler tekneye aşık oldu. Yorumlarda 'benim evim gibiydi' yazıyorlar."],
-    viral: ["Tekne turu her yerden paylaşılıyor. Marka teklifleri gelmeye başladı!", "Teknenin içi viral oldu. Tasarım siteleri bile paylaştı."],
-  },
-  maintenance_upgrade: {
-    low: ["Teknik içerik kalabalığı korkutuyor. Daha basite çekilebilir.", "Bakım videosu kuru gelmiş; yeni izleyiciler bağlanamıyor."],
-    medium: ["Teknik içerik nişini büyüttü. Ciddi denizciler ilgilendi.", "Bakım serisi takipçi çekmeye başladı. Uzman algısı güçleniyor."],
-    high: ["Bu tarz teknik içerik çok az kanalda var. Denizcilik topluluğu seni fark etti.", "Yelkenli tamircileri dahi paylaşıyor. Otoriteye dönüşüyorsun."],
-    viral: ["Bakım videosu viral oldu. 'Neden kimse bunu anlatmadı' yorumları dolup taşıyor.", "Upgrade serisi patladı! Teknik kanallar seni referans gösteriyor."],
-  },
-  city_trip: {
-    low: ["Şehir gezisi vasat kaldı; turistik görüntüler izleyiciyi etkilemedi.", "Şehir içeriği için daha özgün bir bakış açısı gerekiyor."],
-    medium: ["Şehir vibe'ı güzel aktarılmış. Yeni bir kitleye ulaştın.", "Yemek ve şehir karması iyi iş çıkardı. Seyahat kitlesi büyüyor."],
-    high: ["Bu şehir videosu seyahat topluluğunda konuşuluyor. Rota önerisi geldi!", "Şehrin ruhunu yakaladın. İzleyiciler aynı rotaya çıkmak istiyor."],
-    viral: ["Şehir gezisi viral oldu. Turizm hesapları bile paylaştı!", "Bu video o şehrin en çok izlenen tanıtımı oldu. Yerel medya aradı."],
-  },
-  nature_bay: {
-    low: ["Koy güzel ama video sıradan kalmış; atmosfer yeterince aktarılamamış.", "Doğa güzelliği kadraja yansımamış; teknik sorunlar var."],
-    medium: ["Koy manzarası izleyiciyi rahatlattı. Sabah rutin izleme artıyor.", "Doğa içeriği dengeli çıktı. Yavaş ama sürekli büyüme geliyor."],
-    high: ["Bu koyu kimse bilmiyordu; sen gösterdin. Lokasyon viral olmak üzere.", "Mavi su ve sessizlik videosu binlerce paylaşım aldı."],
-    viral: ["Bu koy videosu 'keşfedilmemiş cennet' olarak viral oldu!", "Doğa içeriği patladı. Seyahat bloggerları koordinat istiyor."],
-  },
-  sailing_vlog: {
-    low: ["Seyir vlogu düz anlatımla geçmiş. İzleyici denizde ne hissettiğini anlayamıyor.", "Açık deniz sahnesi etkileyici ama kurgu zayıf."],
-    medium: ["Seyir vlogu yelkenci topluluğunda ilgi gördü. Gerçek denizcilik kitlesi büyüyor.", "Deniz hikayesi samimi aktarılmış. Düzenli izleyiciler sevdi."],
-    high: ["Bu seyir videosu dünya turunu belgeleyen en iyi içeriklerden biri.", "Dalga sesi ve yelken dolusu bir video. İzleyiciler yorum bırakmayı bırakamıyor."],
-    viral: ["Seyir vlogu patladı! Açık deniz hayali kuranlar seni takip ediyor.", "Yelkenli yaşamı bu videoyla yeniden tanımladın. Büyük kanallar paylaştı."],
-  },
-  ocean_diary: {
-    low: ["Günlük samimi ama monoton kalmış. Denizin ruhunu yansıtmıyor.", "Deniz günlüğü ham; kurgu ve ses dengesi gereksiniyor."],
-    medium: ["Okyanus günlüğü izleyiciyi seyahate ortak etti. Bağ güçleniyor.", "Günlük format işliyor. Haftalık takip eden yeni kitle geliyor."],
-    high: ["Okyanus ortasında çekilen bu günlük izleyiciyi derinden etkiledi. Yorumlar dolup taşıyor.", "Dünya turunun en otantik anını yakaladın. Medya ilgisi başladı."],
-    viral: ["Okyanus günlüğü viral oldu! 'Bu gerçek mi?' sorusu yorumlara yağıyor.", "Deniz ortasındaki günlüğün sıfırdan binlerce insanı derinden sarstı."],
-  },
-  storm_vlog: {
-    low: ["Fırtına anının dramı çıkarılamamış; yüzeysel kalmış.", "Fırtına gerilimi var ama kurgu hikayeyi öldürmüş."],
-    medium: ["Fırtına anını kameraya almak cesaret işi. İzleyiciler heyecanla izledi.", "Hava olayı videosu gerçek bir içerik dinamiği yarattı."],
-    high: ["Bu fırtına videosu büyük macera kanallarında konuşuluyor.", "Dalga ve rüzgar arasında çekilen bu video denizcilik arşivine girdi."],
-    viral: ["Fırtına videosu dünya çapında paylaşıldı! Macera kanalları senden bahsediyor.", "Bu fırtına anı sosyal medyayı salladı. Haber siteleri embed aldı."],
-  },
-};
-
-const getContentComment = (contentType: string, quality: number, isViral: boolean): string => {
-  const pool = CONTENT_COMMENTS[contentType];
-  if (!pool) return "İzleyici bu hikayeyi sevdi.";
-  const arr = isViral ? pool.viral : quality >= 70 ? pool.high : quality >= 40 ? pool.medium : pool.low;
-  return arr[Math.floor(Math.random() * arr.length)] ?? "İzleyici bu hikayeyi sevdi.";
 };
 
 const getBaseOceanReadiness = (boatId: string) => {
@@ -495,29 +113,12 @@ const upgradeEffectLabels: Record<string, string> = {
   engine: "Motor",
 };
 
-const getCaptainRankLabel = (level: number): string => {
-  if (level >= 13) return "Dünya Turu Kaptanı";
-  if (level >= 9)  return "Okyanus Yolcusu";
-  if (level >= 6)  return "Deneyimli Kaptan";
-  if (level >= 4)  return "Açık Deniz Adayı";
-  if (level >= 2)  return "Kıyı Seyircisi";
-  return "Acemi Kaptan";
-};
-
-const ACHIEVEMENT_ICONS: Record<string, string> = {
-  first_content:    "🎬",
-  first_route:      "⚓",
-  first_upgrade:    "🔧",
-  first_sponsor:    "🤝",
-  followers_1k:     "👥",
-  rising_captain:   "⭐",
-  locked_in:        "🎯",
-  sea_dog:          "🌊",
-  steady_creator:   "📱",
-  followers_10k:    "🌟",
-  content_machine:  "📹",
-  atlantic_done:    "🌊",
-  world_tour_done:  "🏆",
+const getLocationBonusLabel = (region: string): { contentType: string; label: string } | null => {
+  const r = region.toLocaleLowerCase("tr-TR");
+  if (r.includes("ege")) return { contentType: "nature_bay", label: "📍 Ege: Koy/Doğa +10 kalite" };
+  if (r.includes("akdeniz") || r.includes("antalya")) return { contentType: "sailing_vlog", label: "📍 Akdeniz: Seyir Vlogu +10 kalite" };
+  if (r.includes("marmara") || r.includes("istanbul")) return { contentType: "city_trip", label: "📍 Marmara: Şehir Gezisi +10 kalite" };
+  return null;
 };
 
 const getRouteCompletionRewards = (route: (typeof WORLD_ROUTES)[number]) => {
@@ -568,8 +169,8 @@ const createArrivalStoryHook = (route: (typeof WORLD_ROUTES)[number]): StoryHook
     id: `story_arrival_${route.id}_${Date.now()}`,
     source: "arrival",
     routeId: route.id,
-    title: "Bu yolculugun hikayesi hazir",
-    description: "Rotada yasadiklarin guclu bir icerik serisine donusebilir.",
+    title: "Bu yolculuğun hikayesi hazır",
+    description: "Rotada yaşadıklarının güçlü bir içerik serisine dönüşebilir.",
     ...bonuses,
     expiresAfterUses: 1,
   };
@@ -582,7 +183,7 @@ const createSeaEventStoryHook = (decisionId: string, routeId?: string): StoryHoo
       source: "sea_event",
       routeId,
       title: "Denizden yakalanan hikaye",
-      description: "Seyirde yakaladigin bu an, guclu bir icerik firsatina donustu.",
+      description: "Seyirde yakaladığın bu an, güçlü bir içerik fırsatına dönüştü.",
       bonusFollowersPct: 15,
       bonusCreditsPct: 10,
       sponsorInterest: 1,
@@ -595,8 +196,8 @@ const createSeaEventStoryHook = (decisionId: string, routeId?: string): StoryHoo
       id: `story_sea_${decisionId}_${Date.now()}`,
       source: "sea_event",
       routeId,
-      title: "Denizde ses getiren cekim",
-      description: "Riskli an dogru cekimle markalarin dikkatini cekebilecek bir hikayeye donustu.",
+      title: "Denizde ses getiren çekim",
+      description: "Riskli an doğru çekimle markaların dikkatini çekebilecek bir hikayeye dönüştü.",
       bonusFollowersPct: 12,
       bonusCreditsPct: 8,
       sponsorInterest: 1,
@@ -607,41 +208,9 @@ const createSeaEventStoryHook = (decisionId: string, routeId?: string): StoryHoo
   return null;
 };
 
-function migrateSave(parsed: any) {
-  if (!parsed || typeof parsed !== "object") return null;
-
-  const version = parsed.saveVersion ?? 1;
-
-  if (version === 1) {
-    const dailyGoalsCompleted =
-      Array.isArray(parsed.dailyGoals) &&
-      parsed.dailyGoals.length > 0 &&
-      parsed.dailyGoals.every((goal: any) => goal?.completed);
-
-    return {
-      ...parsed,
-      saveVersion: SAVE_VERSION,
-      hasSave: parsed.hasSave ?? true,
-      totalContentProduced: parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0),
-      hasCompletedDailyGoalsOnce:
-        parsed.hasCompletedDailyGoalsOnce ?? Boolean(dailyGoalsCompleted && parsed.dailyRewardClaimed),
-    };
-  }
-
-  if (version === SAVE_VERSION) {
-    return {
-      ...parsed,
-      hasSave: parsed.hasSave ?? true,
-      totalContentProduced: parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0),
-      hasCompletedDailyGoalsOnce: parsed.hasCompletedDailyGoalsOnce ?? false,
-    };
-  }
-
-  return null;
-}
-
 function App() {
-  const [step, setStep] = useState<Step>("MAIN_MENU");
+  const { audioEnabled, setAudioEnabled } = useAudioSettings();
+  const [step, setStep] = useState<Step>("WELCOME");
   const [activeTab, setActiveTab] = useState<Tab>("liman");
   const [profileIndex, setProfileIndex] = useState(0);
   const [marinaIndex, setMarinaIndex] = useState(0);
@@ -649,6 +218,10 @@ function App() {
   const [boatIndex, setBoatIndex] = useState(0);
   const [boatName, setBoatName] = useState("");
   const [onboardingMessage, setOnboardingMessage] = useState("");
+  const [memberFullName, setMemberFullName] = useState("");
+  const [memberUsername, setMemberUsername] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberPassword, setMemberPassword] = useState("");
   
   const [credits, setCredits] = useState(0);
   const [followers, setFollowers] = useState(0);
@@ -679,6 +252,7 @@ function App() {
   const [selectedPlatformId, setSelectedPlatformId] = useState<string | null>(null);
   const [selectedContentType, setSelectedContentType] = useState<string | null>(null);
   const [contentResult, setContentResult] = useState<ContentResult | null>(null);
+  const [contentHistory, setContentHistory] = useState<ContentHistoryItem[]>([]);
   const [lastContentAt, setLastContentAt] = useState<number | null>(null);
   const [, setContentCooldownTick] = useState(0);
   const [marinaRestInProgress, setMarinaRestInProgress] = useState<MarinaRestInProgress | null>(null);
@@ -693,15 +267,29 @@ function App() {
   // UI dismissal state (session-only, not persisted)
   const [tavsiyeDismissed, setTavsiyeDismissed] = useState(false);
 
+  // Tekrar Yayınla — session-only, not persisted
+  const [lastUsedPlatformId, setLastUsedPlatformId] = useState<string | null>(null);
+  const [lastUsedContentType, setLastUsedContentType] = useState<string | null>(null);
+
+  // Upgrade confirmation — session-only
+  const [pendingUpgradeConfirmId, setPendingUpgradeConfirmId] = useState<string | null>(null);
+  const upgradePurchasingRef = useRef(false);
+
   // Sponsor MVP States
   const [brandTrust, setBrandTrust] = useState(10);
   const [sponsorOffers, setSponsorOffers] = useState<any[]>([]);
   const [acceptedSponsors, setAcceptedSponsors] = useState<string[]>([]);
   const [sponsoredContentCount, setSponsoredContentCount] = useState(0);
+  const [sponsorObligations, setSponsorObligations] = useState<Record<string, number>>({});
   const [icerikSubTab, setIcerikSubTab] = useState<"produce" | "sponsor">("produce");
 
   const [hasSave, setHasSave] = useState(false);
   const [saveBoatName, setSaveBoatName] = useState("");
+  const [tutorialStep, setTutorialStep] = useState(3);
+  const [gender, setGender] = useState<Gender>("unspecified");
+  const [showMicoFarewell, setShowMicoFarewell] = useState(false);
+  const [showSailAnimation, setShowSailAnimation] = useState(false);
+  const [isPrestigeVoyage, setIsPrestigeVoyage] = useState(false);
   const [testMode, setTestMode] = useState(false);
   const [hasReceivedFirstSponsor, setHasReceivedFirstSponsor] = useState(false);
 
@@ -726,8 +314,13 @@ function App() {
   const [dailyGoals, setDailyGoals] = useState<DailyGoal[]>(makeDailyGoals);
   const [lastDailyReset, setLastDailyReset] = useState<string>("");
   const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
+  const [loginStreak, setLoginStreak] = useState(0);
+  const [lastLoginBonus, setLastLoginBonus] = useState<string>("");
+  const [marinaTasks, setMarinaTasks] = useState<MarinaTask[]>([]);
+  const [lastMarinaTasksLocation, setLastMarinaTasksLocation] = useState<string>("");
   const [totalContentProduced, setTotalContentProduced] = useState(0);
   const [hasCompletedDailyGoalsOnce, setHasCompletedDailyGoalsOnce] = useState(false);
+  const [hasCompletedWorldTour, setHasCompletedWorldTour] = useState(false);
   const [activeStoryHook, setActiveStoryHook] = useState<StoryHook | null>(null);
   const toastIdRef = useRef(0);
   const [toastQueue, setToastQueue] = useState<ToastItem[]>([]);
@@ -736,12 +329,16 @@ function App() {
 
   const [celebrationQueue, setCelebrationQueue] = useState<CelebrationItem[]>([]);
   const [activeCelebration, setActiveCelebration] = useState<CelebrationItem | null>(null);
+  const [completedFollowerMilestones, setCompletedFollowerMilestones] = useState<string[]>([]);
   const prevCaptainLevelRef = useRef<number | null>(null);
 
   const previousUnlockedAchievementIdsRef = useRef<string[]>([]);
   const hasInitializedAchievementBannerRef = useRef(false);
   const previousSponsorOfferIdsRef = useRef<string[]>([]);
   const hasInitializedSponsorOfferBannerRef = useRef(false);
+  const suppressAchievementCelebrationRef = useRef(false);
+  const suppressFollowerCelebrationRef = useRef(false);
+  const arrivalCommitInProgressRef = useRef(false);
 
   const triggerFlash = (type: "credits" | "followers") => {
     if (type === "credits") {
@@ -758,9 +355,9 @@ function App() {
     setToastQueue(prev => [...prev, { id, type, title, text }]);
   };
 
-  const selectedProfile: PlayerProfile = PLAYER_PROFILES[profileIndex];
-  const selectedMarina: StartingMarina = STARTING_MARINAS[marinaIndex];
-  const selectedBoat: StartingBoat = STARTING_BOATS[boatIndex];
+  const selectedProfile: PlayerProfile = PLAYER_PROFILES[clampIndex(profileIndex, PLAYER_PROFILES.length)] ?? PLAYER_PROFILES[0];
+  const selectedMarina: StartingMarina = STARTING_MARINAS[clampIndex(marinaIndex, STARTING_MARINAS.length)] ?? STARTING_MARINAS[0];
+  const selectedBoat: StartingBoat = STARTING_BOATS[clampIndex(boatIndex, STARTING_BOATS.length)] ?? STARTING_BOATS[0];
 
   const currentRoute = WORLD_ROUTES.find((route) => route.id === currentRouteId);
 
@@ -811,6 +408,13 @@ function App() {
       .filter((achievement) => achievement.unlocked)
       .map((achievement) => achievement.id);
 
+    if (suppressAchievementCelebrationRef.current) {
+      previousUnlockedAchievementIdsRef.current = unlockedAchievementIds;
+      hasInitializedAchievementBannerRef.current = true;
+      suppressAchievementCelebrationRef.current = false;
+      return;
+    }
+
     if (!hasInitializedAchievementBannerRef.current) {
       previousUnlockedAchievementIdsRef.current = unlockedAchievementIds;
       hasInitializedAchievementBannerRef.current = true;
@@ -833,6 +437,25 @@ function App() {
       }]);
     }
   }, [achievementStatuses]);
+
+  useEffect(() => {
+    if (suppressFollowerCelebrationRef.current) {
+      suppressFollowerCelebrationRef.current = false;
+      return;
+    }
+
+    const milestones: { key: string; threshold: number; label: string; desc: string }[] = [
+      { key: "1k", threshold: 1_000, label: "1.000 Takipçi!", desc: "İlk binini aştın! Sosyal medyada görünürlüğün artıyor." },
+      { key: "10k", threshold: 10_000, label: "10.000 Takipçi!", desc: "10K kulübe hoş geldin! Micro-influencer seviyesindesin." },
+      { key: "100k", threshold: 100_000, label: "100.000 Takipçi!", desc: "100K! Artık büyük markalar seni arıyor." },
+    ];
+    for (const m of milestones) {
+      if (followers >= m.threshold && !completedFollowerMilestones.includes(m.key)) {
+        setCompletedFollowerMilestones(prev => [...prev, m.key]);
+        setCelebrationQueue(q => [...q, { type: "achievement" as const, title: m.label, description: m.desc, icon: "🎉" }]);
+      }
+    }
+  }, [followers, completedFollowerMilestones]);
 
   useEffect(() => {
     const sponsorOfferIds = sponsorOffers.map((offer) => offer.id);
@@ -870,22 +493,29 @@ function App() {
       setHasReceivedFirstSponsor(true);
       setActiveCelebration({ type: "sponsor", brandName: tier?.name ?? "İlk Marka" });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [followers]);
 
   useEffect(() => {
     const saved = localStorage.getItem(SAVE_KEY);
     if (saved) {
       try {
-        const parsed = migrateSave(JSON.parse(saved));
+        const rawParsed = JSON.parse(saved);
+        const parsed = migrateSave(stripChecksum(rawParsed));
         if (parsed?.hasSave) {
           setHasSave(true);
           setSaveBoatName(parsed.boatName || "Bilinmeyen Tekne");
+          setStep("MAIN_MENU");
         }
       } catch (e) {
         console.error("Save load error", e);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    const resume = () => audioManager.resume();
+    window.addEventListener("pointerdown", resume, { once: true });
+    return () => window.removeEventListener("pointerdown", resume);
   }, []);
 
   useEffect(() => {
@@ -963,6 +593,7 @@ function App() {
       return;
     }
     if (captainLevel > prevCaptainLevelRef.current) {
+      audioManager.play("levelUp");
       const bonus = captainLevel * 500;
       setCelebrationQueue(q => [...q, {
         type: "levelup" as const,
@@ -984,12 +615,27 @@ function App() {
     if (step === "HUB") {
       const today = new Date().toISOString().slice(0, 10);
       if (lastDailyReset !== today) {
-        setDailyGoals(makeDailyGoals());
+        setDailyGoals(makeDailyGoals(today, hasCompletedWorldTour));
         setLastDailyReset(today);
         setDailyRewardClaimed(false);
       }
+      if (lastLoginBonus !== today) {
+        const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+        const isConsecutive = lastLoginBonus === yesterday;
+        const newStreak = isConsecutive ? loginStreak + 1 : 1;
+        setLoginStreak(newStreak);
+        setLastLoginBonus(today);
+        const bonus = 500 + Math.min(newStreak - 1, 6) * 100;
+        setCredits(c => c + bonus);
+        setCaptainXp(x => x + 10);
+        pushToast(
+          "content",
+          `Günlük Giriş Bonusu — Gün ${newStreak}`,
+          `+${bonus} TL · +10 XP · ${newStreak > 1 ? `${newStreak} günlük seri!` : "Yarın için geri gel!"}`,
+        );
+      }
     }
-  }, [step, lastDailyReset]);
+  }, [step, lastDailyReset, lastLoginBonus, loginStreak, hasCompletedWorldTour]);
 
   useEffect(() => {
     const allDone = dailyGoals.length > 0 && dailyGoals.every(g => g.completed);
@@ -1001,9 +647,33 @@ function App() {
         "Günlük görevler tamamlandı! +2.500 TL bonus.",
         ...prev.slice(0, 4),
       ]);
+      audioManager.play("dailyComplete");
       setCelebrationQueue(q => [...q, { type: "daily_goals" as const }]);
     }
   }, [dailyGoals, dailyRewardClaimed]);
+
+  useEffect(() => {
+    if (step === "HUB" && currentLocationName && currentLocationName !== lastMarinaTasksLocation) {
+      setMarinaTasks(makeMarinaTasksForLocation(currentLocationName));
+      setLastMarinaTasksLocation(currentLocationName);
+    }
+  }, [step, currentLocationName, lastMarinaTasksLocation]);
+
+  useEffect(() => {
+    if (tutorialStep === 0 && firstContentDone) setTutorialStep(1);
+  }, [firstContentDone, tutorialStep]);
+
+  useEffect(() => {
+    if (tutorialStep === 1 && upgradesInProgress.length > 0) setTutorialStep(2);
+  }, [upgradesInProgress.length, tutorialStep]);
+
+  useEffect(() => {
+    if (tutorialStep === 2 && step === "SEA_MODE") {
+      setTutorialStep(3);
+      setShowMicoFarewell(true);
+      setTimeout(() => setShowMicoFarewell(false), 5000);
+    }
+  }, [step, tutorialStep]);
 
   useEffect(() => {
     if (activeToast || toastQueue.length === 0) return;
@@ -1026,6 +696,10 @@ function App() {
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
       const saveObj = {
+        memberFullName,
+        memberUsername,
+        memberEmail,
+        memberPassword,
         profileIndex,
         marinaIndex,
         boatIndex,
@@ -1058,6 +732,7 @@ function App() {
         sponsorOffers,
         acceptedSponsors,
         sponsoredContentCount,
+        contentHistory,
         icerikSubTab,
         lastContentAt,
         marinaRestInProgress,
@@ -1075,19 +750,31 @@ function App() {
         testMode,
         hasReceivedFirstSponsor,
         activeStoryHook,
+        tutorialStep,
+        gender,
+        completedFollowerMilestones,
+        sponsorObligations,
+        loginStreak,
+        lastLoginBonus,
+        marinaTasks,
+        lastMarinaTasksLocation,
+        hasCompletedWorldTour,
       };
-      localStorage.setItem(SAVE_KEY, JSON.stringify(saveObj));
+      const saveWithChecksum = { ...saveObj, _checksum: computeChecksum(saveObj) };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(saveWithChecksum));
       setHasSave(true);
       setSaveBoatName(boatName);
     }
   }, [
-    step, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone,
+    step, memberFullName, memberUsername, memberEmail, memberPassword, profileIndex, marinaIndex, boatIndex, boatName, credits, followers, firstContentDone,
     logs, purchasedUpgradeIds, upgradesInProgress, activeTab, currentLocationName, worldProgress, energy, water,
     fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining,
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, activeStoryHook, selectedUpgradeCategory,
-    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt, marinaRestInProgress,
+    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, contentHistory, icerikSubTab, lastContentAt, marinaRestInProgress,
     captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
-    hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor, activeStoryHook
+    hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor, activeStoryHook,
+    tutorialStep, gender, completedFollowerMilestones, sponsorObligations, loginStreak, lastLoginBonus,
+    marinaTasks, lastMarinaTasksLocation, hasCompletedWorldTour
   ]);
 
   const finalizeGame = () => {
@@ -1119,6 +806,13 @@ function App() {
     setSponsorOffers([]);
     setAcceptedSponsors([]);
     setSponsoredContentCount(0);
+    setContentHistory([]);
+    setCompletedFollowerMilestones([]);
+    setSponsorObligations({});
+    setLoginStreak(0);
+    setLastLoginBonus("");
+    setMarinaTasks([]);
+    setLastMarinaTasksLocation("");
     setIcerikSubTab("produce");
     setLastContentAt(null);
     setMarinaRestInProgress(null);
@@ -1129,7 +823,9 @@ function App() {
     setDailyRewardClaimed(false);
     setTotalContentProduced(0);
     setHasCompletedDailyGoalsOnce(false);
+    setHasCompletedWorldTour(false);
     setActiveStoryHook(null);
+    setTutorialStep(0);
     setStep("HUB");
     setActiveTab("liman");
   };
@@ -1139,162 +835,95 @@ function App() {
     if (!saved) return;
 
     try {
-      const parsed = migrateSave(JSON.parse(saved));
+      const rawParsed = JSON.parse(saved);
+      if (!validateSaveChecksum(rawParsed)) {
+        console.warn("Save checksum invalid — kayıt bozuk veya değiştirilmiş.");
+        pushToast("warning", "Kayıt Bozuk", "Kayıt dosyası geçersiz veya değiştirilmiş.");
+        localStorage.removeItem(SAVE_KEY);
+        return;
+      }
+      const parsed = migrateSave(stripChecksum(rawParsed));
       if (!parsed) return;
 
-      const savedPurchasedUpgradeIds = parsed.purchasedUpgradeIds ?? [];
-      const savedUpgradesInProgress = Array.isArray(parsed.upgradesInProgress) ? parsed.upgradesInProgress : null;
-      const savedUpgradeInProgress = parsed.upgradeInProgress ?? null;
-      const savedCredits = parsed.credits ?? 0;
-      const savedLogs = parsed.logs ?? [];
-      const savedLastSavedAt = parsed.lastSavedAt;
+      const offline = calculateOfflineIncome(parsed.lastSavedAt);
+      const upgrades = processUpgradesFromSave(
+        Array.isArray(parsed.upgradesInProgress) ? parsed.upgradesInProgress : null,
+        parsed.upgradeInProgress ?? null,
+        parsed.purchasedUpgradeIds ?? [],
+      );
+      const marina = processMarinaRestFromSave(parsed.marinaRestInProgress);
+      const { messages, nextSeaEvent } = buildOfflineMessages(
+        offline.credits, offline.followers, upgrades.completedUpgradeObjects, marina.completedOffline,
+      );
+      const nextLogs = [...messages, ...(parsed.logs ?? [])].filter(Boolean).slice(0, 5) as string[];
+      const nextProfileIndex = clampIndex(parsed.profileIndex, PLAYER_PROFILES.length);
+      const nextMarinaIndex = clampIndex(parsed.marinaIndex, STARTING_MARINAS.length);
+      const nextBoatIndex = clampIndex(parsed.boatIndex, STARTING_BOATS.length);
+      const nextRouteId = WORLD_ROUTES.some((route) => route.id === parsed.currentRouteId)
+        ? parsed.currentRouteId
+        : "greek_islands";
+      const nextActiveTab = safeTab(parsed.activeTab);
+      const safeBaseCredits = Math.max(0, Math.min(Number(parsed.credits ?? 0) || 0, 5_000_000));
+      const safeBaseFollowers = Math.max(0, Math.min(Number(parsed.followers ?? 0) || 0, 50_000_000));
+      const nextFollowers = safeBaseFollowers + offline.followers;
+      const nextCompletedRouteIds = Array.isArray(parsed.completedRouteIds) ? parsed.completedRouteIds : [];
+      const nextAcceptedSponsors = Array.isArray(parsed.acceptedSponsors) ? parsed.acceptedSponsors : [];
+      const nextTotalContentProduced = parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0);
+      const nextCaptainLevel = parsed.captainLevel ?? 1;
+      const nextHasCompletedDailyGoalsOnce = parsed.hasCompletedDailyGoalsOnce ?? false;
+      const loadedAchievementIds = ACHIEVEMENTS
+        .filter((achievement) => achievement.isUnlocked({
+          totalContentProduced: nextTotalContentProduced,
+          totalRoutesCompleted: nextCompletedRouteIds.length,
+          totalUpgradesStarted: upgrades.purchasedUpgradeIds.length + upgrades.upgradesInProgress.length,
+          captainLevel: nextCaptainLevel,
+          hasCompletedDailyGoalsOnce: nextHasCompletedDailyGoalsOnce,
+          followers: nextFollowers,
+          acceptedSponsorsCount: nextAcceptedSponsors.length,
+          completedRouteIds: nextCompletedRouteIds,
+        }))
+        .map((achievement) => achievement.id);
 
-      let offlineMinutes = 0;
-      let offlineCredits = 0;
-      let offlineFollowers = 0;
-      let nextPurchasedUpgradeIds = savedPurchasedUpgradeIds;
-      let nextUpgradesInProgress: UpgradeInProgressItem[] = [];
-      const completedUpgradeIds: string[] = [];
-      let nextMarinaRestInProgress: MarinaRestInProgress | null = null;
-      let marinaRestCompletedOffline = false;
+      previousUnlockedAchievementIdsRef.current = loadedAchievementIds;
+      hasInitializedAchievementBannerRef.current = true;
+      suppressAchievementCelebrationRef.current = true;
+      suppressFollowerCelebrationRef.current = true;
 
-      if (typeof savedLastSavedAt === "number" && Number.isFinite(savedLastSavedAt)) {
-        const offlineMs = Math.max(0, Date.now() - savedLastSavedAt);
-        offlineMinutes = Math.min(Math.floor(offlineMs / 60000), MAX_OFFLINE_MINUTES);
-        offlineCredits = Math.max(0, offlineMinutes * OFFLINE_CREDITS_PER_MINUTE);
-        offlineFollowers = Math.max(0, offlineMinutes * OFFLINE_FOLLOWERS_PER_MINUTE);
-      }
-
-      const isValidUpgradeId = (upgradeId: string) => BOAT_UPGRADES.some((upgrade) => upgrade.id === upgradeId);
-      const usedSlots = new Set<number>();
-      const registerSavedUpgrade = (rawItem: unknown, fallbackSlot: 0 | 1 | 2) => {
-        if (!rawItem || typeof rawItem !== "object") return;
-        const item = rawItem as Partial<UpgradeInProgressItem> & { upgradeId?: unknown; completesAt?: unknown };
-        if (typeof item.upgradeId !== "string" || !isValidUpgradeId(item.upgradeId)) return;
-        if (nextPurchasedUpgradeIds.includes(item.upgradeId)) return;
-        if (nextUpgradesInProgress.some((existing) => existing.upgradeId === item.upgradeId)) return;
-        if (typeof item.completesAt !== "number" || !Number.isFinite(item.completesAt)) return;
-
-        if (item.completesAt <= Date.now()) {
-          completedUpgradeIds.push(item.upgradeId);
-          return;
-        }
-
-        let slot = fallbackSlot;
-        if (typeof item.slot === "number" && item.slot >= 0 && item.slot < MAX_PARALLEL_UPGRADES && !usedSlots.has(item.slot)) {
-          slot = item.slot as 0 | 1 | 2;
-        } else {
-          const nextSlot = ([0, 1, 2] as const).find((candidate) => !usedSlots.has(candidate));
-          if (nextSlot === undefined) return;
-          slot = nextSlot;
-        }
-
-        const startedAt =
-          typeof item.startedAt === "number" && Number.isFinite(item.startedAt)
-            ? item.startedAt
-            : Math.min(Date.now(), item.completesAt);
-        const durationMs =
-          typeof item.durationMs === "number" && Number.isFinite(item.durationMs)
-            ? item.durationMs
-            : Math.max(0, item.completesAt - startedAt);
-
-        usedSlots.add(slot);
-        nextUpgradesInProgress.push({
-          upgradeId: item.upgradeId,
-          completesAt: item.completesAt,
-          startedAt,
-          durationMs,
-          slot,
-        });
-      };
-
-      if (savedUpgradesInProgress) {
-        savedUpgradesInProgress.forEach((item: unknown, index: number) => {
-          const fallbackSlot = (index < MAX_PARALLEL_UPGRADES ? index : 0) as 0 | 1 | 2;
-          registerSavedUpgrade(item, fallbackSlot);
-        });
-      } else if (savedUpgradeInProgress) {
-        registerSavedUpgrade(savedUpgradeInProgress, 0);
-      }
-
-      const savedMarinaRest = parsed.marinaRestInProgress;
-      if (savedMarinaRest && typeof savedMarinaRest === "object") {
-        const startedAtRaw = (savedMarinaRest as { startedAt?: unknown }).startedAt;
-        const completesAtRaw = (savedMarinaRest as { completesAt?: unknown }).completesAt;
-        const durationMsRaw = (savedMarinaRest as { durationMs?: unknown }).durationMs;
-        const startedAt = typeof startedAtRaw === "number" && Number.isFinite(startedAtRaw) ? startedAtRaw : Date.now();
-        const completesAt = typeof completesAtRaw === "number" && Number.isFinite(completesAtRaw) ? completesAtRaw : NaN;
-        const durationMs = typeof durationMsRaw === "number" && Number.isFinite(durationMsRaw)
-          ? durationMsRaw
-          : Math.max(0, completesAt - startedAt);
-
-        if (Number.isFinite(completesAt)) {
-          if (completesAt <= Date.now()) {
-            marinaRestCompletedOffline = true;
-          } else {
-            nextMarinaRestInProgress = { startedAt, completesAt, durationMs };
-          }
-        }
-      }
-
-      const completedUpgradeObjects = [...new Set(completedUpgradeIds)]
-        .map((upgradeId) => BOAT_UPGRADES.find((upgrade) => upgrade.id === upgradeId))
-        .filter(Boolean) as typeof BOAT_UPGRADES;
-
-      completedUpgradeObjects.forEach((upgrade) => {
-        if (!nextPurchasedUpgradeIds.includes(upgrade.id)) {
-          nextPurchasedUpgradeIds = [...nextPurchasedUpgradeIds, upgrade.id];
-        }
-      });
-
-      const passiveIncomeMessage =
-        (offlineCredits > 0 || offlineFollowers > 0)
-          ? `Sen yokken içeriklerin izlenmeye devam etti: +${offlineCredits.toLocaleString("tr-TR")} TL, +${offlineFollowers.toLocaleString("tr-TR")} takipçi.`
-          : "";
-      const installationCompleteMessage = completedUpgradeObjects.length > 0
-        ? completedUpgradeObjects.length === 1
-          ? `Kurulum tamamlandı: ${completedUpgradeObjects[0].name} aktif edildi.`
-          : `${completedUpgradeObjects.length} upgrade tamamlandı: ${completedUpgradeObjects.map((upgrade) => upgrade.name).join(", ")}.`
-        : "";
-      const marinaRestMessage = marinaRestCompletedOffline
-        ? "Marina dinlenme hizmeti siz yokken tamamlandi. Kaynaklar toparlandi."
-        : "";
-      const nextLogs = [installationCompleteMessage, marinaRestMessage, passiveIncomeMessage, ...savedLogs]
-        .filter(Boolean)
-        .slice(0, 5) as string[];
-      const nextSeaEvent =
-        installationCompleteMessage || marinaRestMessage || passiveIncomeMessage || (parsed.currentSeaEvent ?? "");
-
-      setProfileIndex(parsed.profileIndex ?? 0);
-      setMarinaIndex(parsed.marinaIndex ?? 0);
-      setBoatIndex(parsed.boatIndex ?? 0);
+      setProfileIndex(nextProfileIndex);
+      setMemberFullName(parsed.memberFullName ?? "");
+      setMemberUsername(parsed.memberUsername ?? "");
+      setMemberEmail(parsed.memberEmail ?? "");
+      setMemberPassword(parsed.memberPassword ?? "");
+      setMarinaIndex(nextMarinaIndex);
+      setBoatIndex(nextBoatIndex);
       setBoatName(parsed.boatName ?? "");
-      setCredits(savedCredits + offlineCredits);
-      setFollowers((parsed.followers ?? 0) + offlineFollowers);
+      setCredits(safeBaseCredits + offline.credits);
+      setFollowers(nextFollowers);
       setFirstContentDone(parsed.firstContentDone ?? false);
       setLogs(nextLogs);
-      setPurchasedUpgradeIds(nextPurchasedUpgradeIds);
-      setUpgradesInProgress(nextUpgradesInProgress);
+      setPurchasedUpgradeIds(upgrades.purchasedUpgradeIds);
+      setUpgradesInProgress(upgrades.upgradesInProgress);
       setCurrentLocationName(parsed.currentLocationName ?? "");
       setWorldProgress(parsed.worldProgress ?? 0);
       setEnergy(parsed.energy ?? 100);
       setWater(parsed.water ?? 100);
       setFuel(parsed.fuel ?? 100);
       setBoatCondition(parsed.boatCondition ?? 100);
-      setCurrentRouteId(parsed.currentRouteId ?? "greek_islands");
-      setCompletedRouteIds(parsed.completedRouteIds ?? []);
+      setCurrentRouteId(nextRouteId);
+      setCompletedRouteIds(nextCompletedRouteIds);
       setVoyageTotalDays(parsed.voyageTotalDays ?? 0);
       setVoyageDaysRemaining(parsed.voyageDaysRemaining ?? 0);
-      setCurrentSeaEvent(nextSeaEvent);
+      setCurrentSeaEvent(nextSeaEvent || (parsed.currentSeaEvent ?? ""));
       setPendingDecisionId(parsed.pendingDecisionId ?? null);
       setSelectedPlatformId(parsed.selectedPlatformId ?? null);
       setSelectedContentType(parsed.selectedContentType ?? null);
       setContentResult(parsed.contentResult ?? null);
       setSelectedUpgradeCategory(parsed.selectedUpgradeCategory ?? "energy");
-      setBrandTrust(parsed.brandTrust ?? 10);
+      setBrandTrust(Math.max(0, Math.min(100, Number(parsed.brandTrust ?? 10) || 10)));
       setSponsorOffers(parsed.sponsorOffers ?? []);
-      setAcceptedSponsors(parsed.acceptedSponsors ?? []);
+      setAcceptedSponsors(nextAcceptedSponsors.slice(0, 12));
       setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
+      setContentHistory(Array.isArray(parsed.contentHistory) ? parsed.contentHistory : []);
       setFirstVoyageEventTriggered(parsed.firstVoyageEventTriggered ?? false);
       setRecentSeaEventIds(parsed.recentSeaEventIds ?? []);
       setTestMode(parsed.testMode ?? false);
@@ -1302,26 +931,32 @@ function App() {
       setActiveStoryHook(parsed.activeStoryHook ?? null);
       setIcerikSubTab(parsed.icerikSubTab ?? "produce");
       setLastContentAt(parsed.lastContentAt ?? null);
-      setMarinaRestInProgress(nextMarinaRestInProgress);
+      setMarinaRestInProgress(marina.marinaRest);
       setMarinaRestCooldownTick(Date.now());
-      setCaptainXp(parsed.captainXp ?? 0);
-      setCaptainLevel(parsed.captainLevel ?? 1);
+      setCaptainXp(Math.max(0, Number(parsed.captainXp ?? 0) || 0));
+      setCaptainLevel(nextCaptainLevel);
       setDailyGoals(Array.isArray(parsed.dailyGoals) ? parsed.dailyGoals : makeDailyGoals());
       setLastDailyReset(parsed.lastDailyReset ?? "");
       setDailyRewardClaimed(parsed.dailyRewardClaimed ?? false);
-      setTotalContentProduced(parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0));
-      setHasCompletedDailyGoalsOnce(parsed.hasCompletedDailyGoalsOnce ?? false);
+      setTotalContentProduced(nextTotalContentProduced);
+      setHasCompletedDailyGoalsOnce(nextHasCompletedDailyGoalsOnce);
+      setHasCompletedWorldTour(parsed.hasCompletedWorldTour ?? false);
+      setTutorialStep(parsed.tutorialStep ?? 3);
+      setGender(parsed.gender ?? "unspecified");
+      setCompletedFollowerMilestones(Array.isArray(parsed.completedFollowerMilestones) ? parsed.completedFollowerMilestones : []);
+      setSponsorObligations(parsed.sponsorObligations && typeof parsed.sponsorObligations === "object" ? parsed.sponsorObligations : {});
+      setLoginStreak(parsed.loginStreak ?? 0);
+      setLastLoginBonus(parsed.lastLoginBonus ?? "");
+      setMarinaTasks(Array.isArray(parsed.marinaTasks) ? parsed.marinaTasks.slice(0, 8) : []);
+      setLastMarinaTasksLocation(parsed.lastMarinaTasksLocation ?? "");
+      setStep(safeLoadStep(parsed));
+      setActiveTab(nextActiveTab);
 
-      const safeStep = parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB";
-      const routeValid = WORLD_ROUTES.some(r => r.id === parsed.currentRouteId);
-      setStep(safeStep === "SEA_MODE" && !routeValid ? "HUB" : safeStep);
-      setActiveTab(parsed.activeTab ?? "liman");
-
-      completedUpgradeObjects.forEach((upgrade) => {
+      upgrades.completedUpgradeObjects.forEach((upgrade) => {
         applyUpgradeEffects(upgrade);
         pushToast("upgrade", "Upgrade Tamamlandı!", `${upgrade.name} kurulumu tamamlandı!`);
       });
-      if (marinaRestCompletedOffline) {
+      if (marina.completedOffline) {
         setEnergy((prev) => Math.min(100, prev + 30));
         setWater((prev) => Math.min(100, prev + 30));
         setFuel((prev) => Math.min(100, prev + 20));
@@ -1389,6 +1024,7 @@ function App() {
     setWater(100);
     triggerFlash("credits");
     setLogs(prev => [`Su ikmali yapıldı: ${cost} TL.`, ...prev.slice(0, 4)]);
+    completeMarinaTask("refill_water", Math.max(0, MARINA_TASK_REWARD - cost));
   };
 
   const handleRefillFuel = () => {
@@ -1404,6 +1040,7 @@ function App() {
     setFuel(100);
     triggerFlash("credits");
     setLogs(prev => [`Yakıt ikmali yapıldı: ${cost} TL.`, ...prev.slice(0, 4)]);
+    completeMarinaTask("refill_fuel", Math.max(0, MARINA_TASK_REWARD - cost));
   };
 
   const getMarinaRestLabel = () => {
@@ -1432,6 +1069,7 @@ function App() {
     setBoatCondition(prev => Math.min(100, prev + 35));
     triggerFlash("credits");
     setLogs(prev => ["Tekne onarıldı. Durum 35 puan toparlandı.", ...prev.slice(0, 4)]);
+    completeMarinaTask("repair_boat", Math.max(0, MARINA_TASK_REWARD - 250));
   };
 
   const advanceDay = () => {
@@ -1495,7 +1133,7 @@ function App() {
       if (upgradeWaterBonus > 20) waterDrop = 2 + (readinessPenalty > 1 ? 1 : 0);
       else if (upgradeWaterBonus > 10) waterDrop = 3 + (readinessPenalty > 1 ? 1 : 0);
 
-      let fuelDrop = 3 + (readinessPenalty > 2 ? 1 : 0);
+      const fuelDrop = 3 + (readinessPenalty > 2 ? 1 : 0);
 
       setEnergy(e => Math.max(0, e - energyDrop));
       setWater(w => Math.max(0, w - waterDrop));
@@ -1571,68 +1209,32 @@ function App() {
       return;
     }
 
-    let quality = 40;
-    quality += (selectedProfile.skills.content || 0) * 5;
-
-    const platform = SOCIAL_PLATFORMS.find(p => p.id === platformId);
-    if (platform && platform.bestContentTypes.includes(contentType as any)) {
-      quality += 10;
-    }
-
-    const isViewTubeMatch = platformId === "viewTube" && ["boat_tour", "maintenance_upgrade", "sailing_vlog"].includes(contentType);
-    const isClipTokMatch = platformId === "clipTok" && ["nature_bay", "sailing_vlog", "storm_vlog"].includes(contentType);
-    const isInstaSeaMatch = platformId === "instaSea" && ["marina_life", "city_trip", "nature_bay"].includes(contentType);
-    const isFacePortMatch = platformId === "facePort" && ["marina_life", "boat_tour", "ocean_diary"].includes(contentType);
-
-    if (isViewTubeMatch || isClipTokMatch || isInstaSeaMatch || isFacePortMatch) {
-      quality += 10;
-    }
-
-    quality += upgradeContentBonus;
-
-    if (step === "SEA_MODE" && currentRoute) {
-      if (currentRoute.contentPotential === "very_high") quality += 15;
-      else if (currentRoute.contentPotential === "high") quality += 10;
-      else if (currentRoute.contentPotential === "medium_high") quality += 5;
-    } else {
-      quality += 5;
-    }
-
-    quality += Math.floor(Math.random() * 26) - 10;
-    quality = Math.max(0, Math.min(100, quality));
-
-    let viralChance = 0;
-    if (quality >= 85) viralChance = 0.25;
-    else if (quality >= 70) viralChance = 0.10;
-    else if (quality >= 40) viralChance = 0.03;
-
-    const isViral = Math.random() < viralChance;
-
-    let gainFollowers = quality * 5;
-    let gainCredits = quality * 8;
-
-    if (platformId === "viewTube") { gainCredits *= 1.5; gainFollowers *= 1.0; }
-    if (platformId === "clipTok") { gainCredits *= 0.8; gainFollowers *= 1.8; }
-    if (platformId === "instaSea") { gainCredits *= 1.1; gainFollowers *= 1.3; }
-    if (platformId === "facePort") { gainCredits *= 1.0; gainFollowers *= 1.1; }
-
-    if (isViral) {
-      gainFollowers *= 3;
-      gainCredits *= 2;
-    }
-
     const storyFollowerBonus = storyHook?.bonusFollowersPct ?? 0;
     const storyCreditBonus = storyHook?.bonusCreditsPct ?? 0;
 
-    if (storyFollowerBonus > 0) gainFollowers *= 1 + storyFollowerBonus / 100;
-    if (storyCreditBonus > 0) gainCredits *= 1 + storyCreditBonus / 100;
+    const quality = calculateContentQuality({
+      profileContentSkill: selectedProfile.skills.content || 0,
+      platformId,
+      contentType,
+      upgradeContentBonus,
+      marinaRegion: selectedMarina?.region ?? "",
+      isSeaMode: step === "SEA_MODE",
+      routeContentPotential: currentRoute?.contentPotential,
+    });
 
-    gainFollowers = Math.floor(gainFollowers);
-    gainCredits = Math.floor(gainCredits);
+    const platform = SOCIAL_PLATFORMS.find(p => p.id === platformId);
+    const { followers: gainFollowers, credits: gainCredits, viral: isViral } = calculateContentRewards({
+      quality,
+      platformId,
+      storyFollowerBonusPct: storyFollowerBonus,
+      storyCreditBonusPct: storyCreditBonus,
+    });
 
     const comment = getContentComment(contentType, quality, isViral);
     const sponsorInterestGained = storyHook?.sponsorInterest ?? 0;
 
+    setLastUsedPlatformId(platformId);
+    setLastUsedContentType(contentType);
     setSelectedPlatformId(platformId);
     setSelectedContentType(contentType);
     setContentResult({
@@ -1645,40 +1247,69 @@ function App() {
       comment,
       storyHookTitle: storyHook?.title,
       storyHookSummary: storyHook
-        ? `Hikaye bonusu: +%${storyFollowerBonus} takipci · +%${storyCreditBonus} TL`
+        ? `Hikaye bonusu: +%${storyFollowerBonus} takipçi · +%${storyCreditBonus} TL`
         : undefined,
       sponsorInterestGained: sponsorInterestGained > 0 ? sponsorInterestGained : undefined,
     });
+
+    setContentHistory(prev => [{
+      platform: platform?.name || "Bilinmeyen",
+      contentType,
+      quality,
+      followers: gainFollowers,
+      credits: gainCredits,
+      viral: isViral,
+      timestamp: Date.now(),
+    }, ...prev.slice(0, 9)]);
 
     setCredits(prev => prev + gainCredits);
     setFollowers(prev => prev + gainFollowers);
     setFirstContentDone(true);
     setTotalContentProduced(prev => prev + 1);
     addFloater(`+${gainCredits.toLocaleString("tr-TR")} TL`, "credits");
-    setTimeout(() => addFloater(`+${gainFollowers.toLocaleString("tr-TR")} Takipci`, "followers"), 200);
+    setTimeout(() => addFloater(`+${gainFollowers.toLocaleString("tr-TR")} Takipçi`, "followers"), 200);
     if (sponsorInterestGained > 0) {
       setBrandTrust(prev => Math.min(100, prev + sponsorInterestGained));
-      setTimeout(() => addFloater(`+${sponsorInterestGained} Marka Guveni`, "followers"), 400);
+      setTimeout(() => addFloater(`+${sponsorInterestGained} Marka Güveni`, "followers"), 400);
     }
     triggerFlash("credits");
     triggerFlash("followers");
 
     const logMsg = storyHook
-      ? `${platform?.name} platformunda hikaye icerigi yayinlandi: +${gainFollowers} Takipci, +${gainCredits} TL.`
-      : `${platform?.name} platformunda icerik yayinlandi: +${gainFollowers} Takipci, +${gainCredits} TL.`;
+      ? `${platform?.name} platformunda hikaye içeriği yayınlandı: +${gainFollowers} takipçi, +${gainCredits} TL.`
+      : `${platform?.name} platformunda içerik yayınlandı: +${gainFollowers} takipçi, +${gainCredits} TL.`;
     setLogs(prev => [logMsg, ...prev.slice(0, 4)]);
     pushToast(
       "content",
-      storyHook ? "Hikaye Yayinlandi!" : "Icerik Yayinlandi!",
+      storyHook ? "Hikaye Yayınlandı!" : "İçerik Yayınlandı!",
       storyHook
-        ? `${storyHook.title}: +${gainFollowers.toLocaleString("tr-TR")} takipci, +${gainCredits.toLocaleString("tr-TR")} TL`
+        ? `${storyHook.title}: +${gainFollowers.toLocaleString("tr-TR")} takipçi, +${gainCredits.toLocaleString("tr-TR")} TL`
         : platform?.name
-          ? `+${gainFollowers.toLocaleString("tr-TR")} takipci kazandin. Platform: ${platform.name}`
-          : `+${gainFollowers.toLocaleString("tr-TR")} takipci kazandin.`,
+          ? `+${gainFollowers.toLocaleString("tr-TR")} takipçi kazandın. Platform: ${platform.name}`
+          : `+${gainFollowers.toLocaleString("tr-TR")} takipçi kazandın.`,
     );
+    audioManager.play(isViral ? "viral" : "publish");
     setLastContentAt(Date.now());
     setCaptainXp(prev => prev + 20);
     completeGoal("produce_content");
+    completeMarinaTask("produce_content");
+
+    if (acceptedSponsors.length > 0) {
+      setSponsorObligations(prev => {
+        const updated = { ...prev };
+        for (const name of acceptedSponsors) {
+          const prevCount = prev[name] ?? 0;
+          const newCount = prevCount + 1;
+          updated[name] = newCount;
+          if (prevCount < 5 && newCount >= 5) {
+            setCredits(c => c + 500);
+            setBrandTrust(bt => Math.min(100, bt + 5));
+            pushToast("sponsor", `${name} Yükümlülüğü Tamamlandı!`, "+500 TL · +5 Marka Güveni kazandın.");
+          }
+        }
+        return updated;
+      });
+    }
 
     if (storyHook) {
       const remainingUses = Math.max(0, (storyHook.expiresAfterUses ?? 1) - 1);
@@ -1727,21 +1358,12 @@ function App() {
     if (typeof boatConditionDelta === "number") {
       setBoatCondition(prev => Math.max(0, Math.min(100, prev + boatConditionDelta)));
     }
+    const forceArrivalFromDecision = typeof remainingDaysDelta === "number" && voyageDaysRemaining + remainingDaysDelta <= 0;
     if (typeof remainingDaysDelta === "number") {
       setVoyageDaysRemaining(prev => Math.max(0, prev + remainingDaysDelta));
     }
 
-    const effectSummary = [
-      typeof followersDelta === "number" ? `${followersDelta > 0 ? "+" : ""}${followersDelta} takipci` : null,
-      typeof creditsDelta === "number" ? `${creditsDelta > 0 ? "+" : ""}${creditsDelta} TL` : null,
-      typeof energyDelta === "number" ? `${energyDelta > 0 ? "+" : ""}${energyDelta} enerji` : null,
-      typeof waterDelta === "number" ? `${waterDelta > 0 ? "+" : ""}${waterDelta} su` : null,
-      typeof fuelDelta === "number" ? `${fuelDelta > 0 ? "+" : ""}${fuelDelta} yakit` : null,
-      typeof boatConditionDelta === "number" ? `${boatConditionDelta > 0 ? "+" : ""}${boatConditionDelta} tekne durumu` : null,
-      typeof remainingDaysDelta === "number" ? `${remainingDaysDelta > 0 ? "+" : ""}${remainingDaysDelta} gun` : null,
-    ]
-      .filter(Boolean)
-      .join(" · ");
+    const effectSummary = formatSeaDecisionEffectSummary(effect);
 
     setCurrentSeaEvent(choice.resultText);
     setLogs(prev => [`${decision.title}: ${choice.resultText}`, ...prev.slice(0, 4)]);
@@ -1762,40 +1384,86 @@ function App() {
     }
     setCaptainXp(prev => prev + 30);
     setPendingDecisionId(null);
+    if (forceArrivalFromDecision) {
+      setStep("ARRIVAL_SCREEN");
+    }
   };
 
   const handleArrival = (targetTab: Tab = "liman") => {
+    if (arrivalCommitInProgressRef.current) return;
     if (!currentRoute) return;
+    arrivalCommitInProgressRef.current = true;
 
+    const isPrestige = isPrestigeVoyage;
     const reward = getRouteCompletionRewards(currentRoute);
     const nextStoryHook = createArrivalStoryHook(currentRoute);
 
-    setWorldProgress(currentRoute.worldProgressPercent);
-    setCompletedRouteIds(prev => [...prev, currentRoute.id]);
+    const prestigeMultiplier = isPrestige ? 1.5 : 1;
+    const arrivalCredits = Math.round(reward.credits * prestigeMultiplier);
+    const arrivalFollowers = Math.round(reward.followers * prestigeMultiplier);
+
+    const nextCompleted = completedRouteIds.includes(currentRoute.id)
+      ? completedRouteIds
+      : [...completedRouteIds, currentRoute.id];
+    const isFirstWorldTourCompletion =
+      !isPrestige &&
+      !completedRouteIds.includes(currentRoute.id) &&
+      nextCompleted.length >= WORLD_ROUTES.length &&
+      !hasCompletedWorldTour;
+
+    if (!isPrestige) {
+      setWorldProgress(currentRoute.worldProgressPercent);
+      setCompletedRouteIds(nextCompleted);
+      if (isFirstWorldTourCompletion) {
+        setHasCompletedWorldTour(true);
+        setCelebrationQueue(q => [...q, { type: "world_tour" }]);
+      }
+    }
+    audioManager.play("arrival");
     setCurrentLocationName(currentRoute.to);
-    setCredits(prev => prev + reward.credits);
-    setFollowers(prev => prev + reward.followers);
-    addFloater(`+${reward.credits.toLocaleString("tr-TR")} TL`, "credits");
-    setTimeout(() => addFloater(`+${reward.followers.toLocaleString("tr-TR")} Takipci`, "followers"), 200);
+    setCredits(prev => prev + arrivalCredits);
+    setFollowers(prev => prev + arrivalFollowers);
+    addFloater(`+${arrivalCredits.toLocaleString("tr-TR")} TL`, "credits");
+    setTimeout(() => addFloater(`+${arrivalFollowers.toLocaleString("tr-TR")} Takipci`, "followers"), 200);
     setTimeout(() => addFloater(`+80 XP`, "xp"), 400);
     triggerFlash("credits");
     triggerFlash("followers");
 
-    const nextR = getNextRoute(currentRoute.id as RouteId);
-    if (nextR) {
-      setCurrentRouteId(nextR.id);
+    if (!isPrestige) {
+      const nextR = getNextRoute(currentRoute.id as RouteId);
+      if (nextR) {
+        setCurrentRouteId(nextR.id);
+      }
     }
 
-    setLogs(prev => [`${currentRoute.name} rotasi tamamlandi. ${currentRoute.to} limanina varildi. +${reward.credits} TL, +${reward.followers} takipci odul alindi.`, ...prev.slice(0, 4)]);
+    const arrivalLogMsg = isPrestige
+      ? `⭐ Prestij Seyri: ${currentRoute.name} tamamlandı. +${arrivalCredits} TL, +${arrivalFollowers} takipçi (1.5×).`
+      : `${currentRoute.name} rotası tamamlandı. ${currentRoute.to} limanına varıldı. +${arrivalCredits} TL, +${arrivalFollowers} takipçi ödül alındı.`;
+    const worldTourLogMsg = isFirstWorldTourCompletion ? "Dünya Turu tamamlandı! Tüm rotalar keşfedildi." : null;
+    setLogs(prev => [arrivalLogMsg, ...(worldTourLogMsg ? [worldTourLogMsg] : []), ...prev.slice(0, worldTourLogMsg ? 3 : 4)]);
     setCaptainXp(prev => prev + 80);
     setContentResult(null);
     setActiveStoryHook(nextStoryHook);
-    completeGoal("complete_route");
+    if (isPrestige) {
+      completeGoal("prestige_route");
+    } else {
+      completeGoal("complete_route");
+    }
     setPendingDecisionId(null);
+    setIsPrestigeVoyage(false);
     setStep("HUB");
     setActiveTab(targetTab);
     setIcerikSubTab("produce");
-    pushToast("voyage", "Yeni Yolculuk Hikayesi", nextStoryHook.description);
+    pushToast(
+      "voyage",
+      isPrestige ? "⭐ Prestij Seyri Tamamlandı!" : "Yeni Yolculuk Hikayesi",
+      isPrestige
+        ? `${currentRoute.name} prestij seyri tamamlandı. 1.5× ödül kazandın!`
+        : nextStoryHook.description,
+    );
+    setTimeout(() => {
+      arrivalCommitInProgressRef.current = false;
+    }, 150);
   };
 
   const handleProduceContentV2 = () => {
@@ -1878,6 +1546,7 @@ function App() {
       setHasReceivedFirstSponsor(true);
       setActiveCelebration({ type: "sponsor", brandName: newOffer.brandName });
     }
+    completeMarinaTask("check_sponsors");
   };
 
   const handleAcceptSponsor = (offerId: string) => {
@@ -2011,6 +1680,7 @@ function App() {
     setPurchasedUpgradeIds(prev => (prev.includes(upgradeId) ? prev : [...prev, upgradeId]));
     applyUpgradeEffects(upgrade);
     setUpgradesInProgress(prev => prev.filter((item) => item.upgradeId !== upgradeId));
+    audioManager.play("upgradeDone");
     setLogs(prev => [`Kurulum tamamlandı: ${upgrade.name} aktif edildi.`, ...prev.slice(0, 4)]);
     pushToast("upgrade", "Upgrade Tamamlandı!", `${upgrade.name} kurulumu tamamlandı!`);
   };
@@ -2023,6 +1693,21 @@ function App() {
     }
 
     if (!currentRoute) return;
+
+    if (currentOceanReadiness < 60) {
+      pushToast("warning", "Hazırlık Yetersiz", `Okyanus hazırlığın %${currentOceanReadiness} — rotaya çıkmak için en az %60 gerekli. Tekne upgrade'leri yap.`);
+      return;
+    }
+
+    if (hasRouteReadinessGap) {
+      pushToast("warning", "Hazırlık Eksik", "Rota için gereken tüm hazırlık kriterleri tamamlanmadan seyir başlatılamaz.");
+      return;
+    }
+
+    if (energy <= 0 || water <= 0 || fuel <= 0 || boatCondition <= 0) {
+      pushToast("warning", "Kritik Kaynak", "Enerji, su, yakıt ve tekne durumu pozitif olmadan seyir başlatılamaz.");
+      return;
+    }
 
     const minD = currentRoute.baseDurationDays.min;
     const maxD = currentRoute.baseDurationDays.max;
@@ -2042,32 +1727,74 @@ function App() {
         ? `Hedef: ${currentRoute.name}. ${currentRoute.feeling}`
         : `Hedef: ${currentRoute.name}. Dünya turunda yeni bir etap başlıyor.`,
     );
+    setIsPrestigeVoyage(false);
+    audioManager.play("sailStart");
+    setShowSailAnimation(true);
+    setTimeout(() => setShowSailAnimation(false), 2800);
     setStep("SEA_MODE");
     setActiveTab("liman");
   };
 
+  const handleStartPrestigeVoyage = (routeId: string) => {
+    if (step === "SEA_MODE") {
+      pushToast("warning", "Denizdesin", "Zaten bir seyir devam ediyor.");
+      return;
+    }
+    const route = WORLD_ROUTES.find(r => r.id === routeId);
+    if (!route) return;
+
+    const minD = route.baseDurationDays.min;
+    const maxD = route.baseDurationDays.max;
+    const days = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
+
+    setCurrentRouteId(route.id);
+    setVoyageTotalDays(days);
+    setVoyageDaysRemaining(days);
+    setPendingDecisionId(null);
+    setCurrentSeaEvent(`Prestij seyri başladı: ${route.name}.`);
+    setLogs(prev => [`⭐ Prestij seyri: ${route.name} rotasına çıkıldı.`, ...prev.slice(0, 4)]);
+    pushToast("voyage", "Prestij Seyri Başladı!", `⭐ ${route.name} — 1.5× ödülle yeniden keşfediyorsun.`);
+    setIsPrestigeVoyage(true);
+    audioManager.play("sailStart");
+    setShowSailAnimation(true);
+    setTimeout(() => setShowSailAnimation(false), 2800);
+    setStep("SEA_MODE");
+    setActiveTab("liman");
+  };
+
+  const UPGRADE_CONFIRM_THRESHOLD = 10000;
+
   const handleBuyUpgrade = (upgradeId: string) => {
+    if (upgradePurchasingRef.current) return;
     const upgrade = BOAT_UPGRADES.find(u => u.id === upgradeId);
     if (!upgrade) return;
-
+    const compatibility = upgrade.compatibility.find((item) => item.boatId === selectedBoat.id);
+    if (!compatibility?.compatible) {
+      setLogs(prev => ["Bu upgrade seçili tekneyle uyumlu değil.", ...prev.slice(0, 4)]);
+      return;
+    }
     if (upgradesInProgress.some((item) => item.upgradeId === upgradeId)) {
-      setLogs(prev => ["Bu upgrade zaten kurulumda. Ayni gelistirme iki kez baslatilamaz.", ...prev.slice(0, 4)]);
+      setLogs(prev => ["Bu upgrade zaten kurulumda. Aynı geliştirme iki kez başlatılamaz.", ...prev.slice(0, 4)]);
       return;
     }
-
     if (upgradesInProgress.length >= MAX_PARALLEL_UPGRADES) {
-      setLogs(prev => ["Tum kurulum slotlari dolu. Yeni upgrade icin aktif kurulumlardan birinin bitmesini bekle.", ...prev.slice(0, 4)]);
+      setLogs(prev => ["Tüm kurulum slotları dolu. Yeni upgrade için aktif kurulumlardan birinin bitmesini bekle.", ...prev.slice(0, 4)]);
       return;
     }
-
-    if (purchasedUpgradeIds.includes(upgradeId)) {
-      return;
-    }
-
+    if (purchasedUpgradeIds.includes(upgradeId)) return;
     if (credits < upgrade.cost) {
       setLogs(prev => ["Yetersiz bütçe. Bu upgrade için daha fazla kredi gerekiyor.", ...prev.slice(0, 4)]);
       return;
     }
+
+    // For expensive upgrades, require inline confirmation first
+    if (upgrade.cost >= UPGRADE_CONFIRM_THRESHOLD && pendingUpgradeConfirmId !== upgradeId) {
+      setPendingUpgradeConfirmId(upgradeId);
+      return;
+    }
+
+    setPendingUpgradeConfirmId(null);
+    upgradePurchasingRef.current = true;
 
     const installMs = getUpgradeInstallMs(upgrade);
     const startedAt = Date.now();
@@ -2075,16 +1802,21 @@ function App() {
     const installMinutes = Math.max(1, Math.ceil(installMs / 60000));
     const slot = ([0, 1, 2] as const).find((candidate) => !upgradesInProgress.some((item) => item.slot === candidate));
     if (slot === undefined) {
-      setLogs(prev => ["Tum kurulum slotlari dolu. Yeni upgrade icin aktif kurulumlardan birinin bitmesini bekle.", ...prev.slice(0, 4)]);
+      setLogs(prev => ["Tüm kurulum slotları dolu. Yeni upgrade için aktif kurulumlardan birinin bitmesini bekle.", ...prev.slice(0, 4)]);
+      upgradePurchasingRef.current = false;
       return;
     }
 
     setCredits(prev => prev - upgrade.cost);
     setUpgradesInProgress(prev => [...prev, { upgradeId, completesAt, startedAt, durationMs: installMs, slot }]);
     triggerFlash("credits");
+    audioManager.play("upgradeStart");
     setLogs(prev => [`Kurulum başladı: ${upgrade.name}. Tahmini tamamlanma: ${installMinutes} dakika.`, ...prev.slice(0, 4)]);
     completeGoal("buy_upgrade");
+    upgradePurchasingRef.current = false;
   };
+
+  const handleCancelUpgradeConfirm = () => setPendingUpgradeConfirmId(null);
 
   const renderLimanTab = () => (
     <LimanTab
@@ -2110,6 +1842,10 @@ function App() {
       onGoContent={() => setActiveTab("icerik")}
       onGoRoute={() => setActiveTab("rota")}
       renderDailyGoals={renderDailyGoalsCard}
+      dailyGoalsCompletedCount={dailyGoals.filter(g => g.completed).length}
+      dailyGoalsTotal={dailyGoals.length}
+      marinaTasks={marinaTasks}
+      hasCompletedWorldTour={hasCompletedWorldTour}
     />
   );
 
@@ -2178,6 +1914,7 @@ function App() {
     const selectedPlatform = selectedPlatformId
       ? SOCIAL_PLATFORMS.find((platform) => platform.id === selectedPlatformId) ?? null
       : null;
+    const isFirstContentTutorialActive = step === "HUB" && tutorialStep === 0 && !firstContentDone;
     const contentCooldownMs = getContentCooldownMs(captainLevel, testMode);
     const contentCooldownRemaining = lastContentAt
       ? Math.max(0, contentCooldownMs - (Date.now() - lastContentAt))
@@ -2225,6 +1962,14 @@ function App() {
       mainRole: platform.mainRole,
       bestContentTypes: platform.bestContentTypes.map((id) => String(id)),
     }));
+    const handleSelectPlatform = (platformId: string) => {
+      const nextPlatform = SOCIAL_PLATFORMS.find((platform) => platform.id === platformId) ?? null;
+      const nextBestContentTypeIds = nextPlatform?.bestContentTypes.map((id) => String(id)) ?? [];
+      setSelectedPlatformId(platformId);
+      if (selectedContentType && !nextBestContentTypeIds.includes(selectedContentType)) {
+        setSelectedContentType(null);
+      }
+    };
 
     return (
       <IcerikTab
@@ -2236,6 +1981,7 @@ function App() {
         credits={credits}
         nextSponsorTierName={nextSponsorTier?.name}
         followersToTier={followersToTier}
+        locationBonusText={getLocationBonusLabel(selectedMarina?.region ?? "")?.label}
         step={step}
         currentRoute={currentRoute ? { name: currentRoute.name, contentThemes: currentRoute.contentThemes } : undefined}
         activeStoryHook={activeStoryHook}
@@ -2251,7 +1997,7 @@ function App() {
         platforms={activePlatforms}
         platformVisuals={PLATFORM_VISUALS}
         selectedPlatformId={selectedPlatformId}
-        onSelectPlatform={setSelectedPlatformId}
+        onSelectPlatform={handleSelectPlatform}
         selectedPlatformName={selectedPlatform?.name}
         contentTypes={CONTENT_TYPES}
         selectedContentType={selectedContentType}
@@ -2263,6 +2009,13 @@ function App() {
         ctaDisabled={ctaDisabled}
         onProduceContent={handleProduceContentV2}
         contentResult={contentResult}
+        lastUsedPlatformId={lastUsedPlatformId}
+        lastUsedContentType={lastUsedContentType}
+        onRepeatLast={() => {
+          if (!lastUsedPlatformId || !lastUsedContentType) return;
+          setSelectedPlatformId(lastUsedPlatformId);
+          setSelectedContentType(lastUsedContentType);
+        }}
         onResetContentResult={() => {
           setContentResult(null);
           setSelectedPlatformId(null);
@@ -2287,7 +2040,16 @@ function App() {
           }>,
           onAcceptSponsor: handleAcceptSponsor,
           acceptedSponsors,
+          sponsorObligations,
         }}
+        contentHistory={contentHistory}
+        tutorialLocked={isFirstContentTutorialActive}
+        guidedPlatformId="viewTube"
+        guidedContentTypeIds={
+          isFirstContentTutorialActive && selectedPlatformId === "viewTube"
+            ? selectedPlatformBestContentTypeIds
+            : []
+        }
       />
     );
   };
@@ -2344,6 +2106,8 @@ function App() {
         }}
         openReadiness={shouldOpenRotaReadiness}
         onReadinessOpened={() => setShouldOpenRotaReadiness(false)}
+        hasCompletedWorldTour={hasCompletedWorldTour}
+        onStartPrestigeVoyage={handleStartPrestigeVoyage}
       />
     </>
   );
@@ -2360,11 +2124,14 @@ function App() {
       }))
       .filter((item) => item.upgrade !== null);
 
-    const tkStats: Array<{ key: "energy" | "water" | "safety" | "nav"; icon: string; label: string; value: number }> = [
-      { key: "energy", icon: "?", label: "Enerji", value: upgradeEnergyBonus },
-      { key: "water", icon: "??", label: "Su", value: upgradeWaterBonus },
-      { key: "safety", icon: "??", label: "G?venlik", value: upgradeSafetyBonus },
-      { key: "nav", icon: "??", label: "Navigasyon", value: upgradeNavigationBonus },
+    const tkStats: Array<{ key: string; icon: string; label: string; value: number; color?: string }> = [
+      { key: "energy",   icon: "⚡", label: "Enerji",       value: upgradeEnergyBonus,      color: "#facc15" },
+      { key: "water",    icon: "💧", label: "Su",           value: upgradeWaterBonus,        color: "#22d3ee" },
+      { key: "safety",   icon: "🛡", label: "Güvenlik",     value: upgradeSafetyBonus,       color: "#4ade80" },
+      { key: "nav",      icon: "🧭", label: "Navigasyon",   value: upgradeNavigationBonus,   color: "#818cf8" },
+      { key: "maint",    icon: "🔧", label: "Bakım",        value: upgradeMaintenanceBonus,  color: "#fb923c" },
+      { key: "content",  icon: "🎬", label: "İçerik +",     value: upgradeContentBonus,      color: "#f472b6" },
+      { key: "risk",     icon: "⚓", label: "Risk -",       value: upgradeRiskReduction,     color: "#94a3b8" },
     ];
 
     const upgradeCards = filteredUpgrades.map((upgrade) => {
@@ -2430,6 +2197,9 @@ function App() {
         }}
         upgradeCards={upgradeCards}
         onBuyUpgrade={handleBuyUpgrade}
+        pendingUpgradeConfirmId={pendingUpgradeConfirmId}
+        onCancelUpgradeConfirm={handleCancelUpgradeConfirm}
+        installedUpgradeLabels={purchasedUpgradeObjects.map(u => u.name)}
       />
     );
   };
@@ -2444,6 +2214,9 @@ function App() {
       followers={followers}
       achievementStatuses={achievementStatuses}
       logs={logs}
+      totalContentProduced={totalContentProduced}
+      totalCreditsEarned={credits}
+      loginStreak={loginStreak}
     />
   );
 
@@ -2451,10 +2224,24 @@ function App() {
     setDailyGoals(prev => prev.map(g => g.type === type && !g.completed ? { ...g, completed: true } : g));
   };
 
+  const completeMarinaTask = (type: MarinaTaskType, rewardOverride?: number) => {
+    setMarinaTasks(prev => prev.map(t => {
+      if (t.type === type && !t.completed) {
+        const rewardToGrant = Math.max(0, Math.floor(rewardOverride ?? t.reward));
+        if (rewardToGrant > 0) {
+          setCredits(c => c + rewardToGrant);
+          pushToast("content", "Marina Görevi Tamamlandı!", `${t.title} · +${rewardToGrant} TL`);
+        }
+        return { ...t, completed: true };
+      }
+      return t;
+    }));
+  };
+
   const renderDailyGoalsCard = () => {
     const completedCount = dailyGoals.filter(g => g.completed).length;
     const allDone = completedCount === dailyGoals.length;
-    const dailyGoalTheme = getDailyGoalTheme(lastDailyReset || new Date().toISOString().slice(0, 10));
+    const dailyGoalTheme = getDailyGoalTheme(lastDailyReset || new Date().toISOString().slice(0, 10), hasCompletedWorldTour);
     return (
       <div className={`daily-goals-card${allDone ? " daily-goals-done" : ""}`}>
         <div className="daily-goals-header">
@@ -2491,6 +2278,7 @@ function App() {
       return (compatibility?.compatible ?? false) && credits >= upgrade.cost;
     });
     const isSponsorProgressClose = Boolean(nextSponsorTier && followers >= nextSponsorTier.minFollowers * 0.75);
+    const showNextActionCard = !(step === "HUB" && tutorialStep < 3);
 
     let nextActionTitle = "Dünya turuna devam";
 
@@ -2517,7 +2305,7 @@ function App() {
 
         </div>
 
-        {!tavsiyeDismissed && (
+        {!tavsiyeDismissed && showNextActionCard && (
           <div className="next-action-card">
             <div className="next-action-content">
               <span className="next-action-eyebrow">Kaptan Tavsiyesi</span>
@@ -2550,7 +2338,12 @@ function App() {
     <HubScreen
       step={step}
       activeTab={activeTab}
-      setActiveTab={setActiveTab}
+      setActiveTab={(tab) => {
+        if (step === "HUB" && tutorialStep === 0 && !firstContentDone && tab !== "icerik") return;
+        if (tab === "icerik") setIcerikSubTab("produce");
+        setActiveTab(tab);
+      }}
+      lockedTab={step === "HUB" && tutorialStep === 0 && !firstContentDone ? "icerik" : null}
       boatName={boatName}
       selectedBoatName={selectedBoat.name}
       currentRoute={currentRoute}
@@ -2567,6 +2360,8 @@ function App() {
       renderRotaTab={renderRotaTab}
       renderTekneTab={renderTekneTab}
       renderKaptanTab={renderKaptanTab}
+      audioEnabled={audioEnabled}
+      onToggleAudio={() => setAudioEnabled(prev => !prev)}
     />
   );
 
@@ -2605,6 +2400,7 @@ function App() {
         currentRouteId={currentRoute?.id ?? ""}
         milestoneText={arrivalMilestoneText}
         nextRouteName={nextRoute?.name}
+        isPrestige={isPrestigeVoyage}
         onDone={handleArrival}
       />
     );
@@ -2624,10 +2420,18 @@ function App() {
           <div className="game-toast-text">{activeToast.text}</div>
         </div>
       )}
-      {["MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT"].includes(step) && (
+      {["WELCOME", "ACCOUNT_SETUP", "MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT", "PICK_GENDER"].includes(step) && (
         <Onboarding
           step={step}
           setStep={setStep}
+          memberFullName={memberFullName}
+          setMemberFullName={setMemberFullName}
+          memberUsername={memberUsername}
+          setMemberUsername={setMemberUsername}
+          memberEmail={memberEmail}
+          setMemberEmail={setMemberEmail}
+          memberPassword={memberPassword}
+          setMemberPassword={setMemberPassword}
           profileIndex={profileIndex}
           setProfileIndex={setProfileIndex}
           marinaIndex={marinaIndex}
@@ -2646,9 +2450,52 @@ function App() {
           saveBoatName={saveBoatName}
           onLoadGame={loadGame}
           onFinalizeGame={finalizeGame}
+          gender={gender}
+          onSetGender={setGender}
         />
       )}
       {(step === "HUB" || step === "SEA_MODE") && renderMainGame()}
+      {step === "HUB" && tutorialStep < 3 && (
+        <div className="hub-tutorial-overlay">
+          <MicoGuide
+            message={[
+              "Kaptan, hoşgeldin! İlk adım içerik üretmek — İçerik sekmesine geç ve bir video çek. Takipçiler böyle kazanılır!",
+              "Harika iş! Şimdi teknenizi güçlendir. Tekne sekmesinden bir upgrade başlatmanı öneririm.",
+              "Mükemmel! Tekne hazır. Artık denize açılma zamanı — Rota sekmesinden ilk rotanı başlat!",
+            ][tutorialStep] ?? ""}
+            visible={step === "HUB" && tutorialStep < 3}
+            className={`hub-guide hub-guide--step-${tutorialStep}`}
+            actionLabel={["İçerik Üret →", "Tekneye Git →", "Rotaya Bak →"][tutorialStep]}
+            onAction={() => {
+              const tabs: Tab[] = ["icerik", "tekne", "rota"];
+              const nextTab = tabs[tutorialStep] ?? "liman";
+              if (nextTab === "icerik") setIcerikSubTab("produce");
+              setActiveTab(nextTab);
+            }}
+            onDismiss={() => setTutorialStep(3)}
+          />
+        </div>
+      )}
+      {showSailAnimation && (
+        <div className="sail-launch-overlay">
+          <div className="sail-launch-boat" aria-hidden="true">⛵</div>
+          <p className="sail-launch-text">Açık denize çıkıyorsun!</p>
+          <div className="sail-launch-waves" aria-hidden="true">
+            <span>〰</span><span>〰</span><span>〰</span>
+          </div>
+        </div>
+      )}
+      {showMicoFarewell && (
+        <div className="hub-tutorial-overlay">
+          <MicoGuide
+            message="Kaptan, denizdeyiz! Bu yolculuktan sonra artık sen kaptansın. Ben her zaman buradayım — iyi seyirler!"
+            visible={showMicoFarewell}
+            actionLabel="İyi yolculuklar Miço!"
+            onAction={() => setShowMicoFarewell(false)}
+            onDismiss={() => setShowMicoFarewell(false)}
+          />
+        </div>
+      )}
       {step === "ARRIVAL_SCREEN" && renderArrivalScreen()}
       {activeCelebration && (
         <CelebrationModal
@@ -2704,3 +2551,4 @@ function App() {
 }
 
 export default App;
+

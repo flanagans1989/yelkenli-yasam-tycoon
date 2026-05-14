@@ -1,0 +1,336 @@
+﻿{
+  "queue_id": "A10_NIGHT_SHIFT_SAFE_QUEUE_01",
+  "queue_title": "A10 Night Shift Safe Queue 01",
+  "version": "v1",
+  "created_for_branch": "agent/day-01",
+  "safety_level": "SAFE_DOCS_ONLY",
+  "purpose": "Ilk guvenli gece vardiyasi kuyrugu; sadece dokumantasyon uretimi, kaynak kod/paket/script degisikligi yok.",
+  "global_rules": [
+    "No source code edits",
+    "No package edits",
+    "No script edits",
+    "No automatic commit/push",
+    "One task equals one output file",
+    "Every task must have validation",
+    "Hard stop on forbidden changes"
+  ],
+  "tasks": [
+    {
+      "task_id": "Task 01",
+      "title": "Branch Safety Check Plan",
+      "batch_suggestion": "Batch 8",
+      "task_type": "audit/checklist",
+      "goal": "Branch dogrulama adimlarini standartlastirmak ve yanlis branch riskini sifira indirmek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-01/T01_BRANCH_SAFETY_CHECK_PLAN.md",
+      "allowed_input_context": [
+        "docs/agent/a10/A10_GUARDRAILS_CHECKLIST.md",
+        "docs/agent/a10/A10_STATUS_CODES.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json",
+        "src/App.css",
+        "src/App.tsx"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Branch kontrol adimlari, fail kosullari ve ornek komutlar basliklarla bulunmali.",
+      "minimum_output_rule": "En az 25 satir ve 3 kontrol adimi.",
+      "soft_fail_rule": "Icerik kisa/eksikse SOFT_FAIL, duzeltme notu ile tekrar uretim.",
+      "hard_stop_rule": "Hedef cikti yolu disinda dosya uretimi tespitinde HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "6 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Sadece dokuman uretir, kod tabanina yazmaz.",
+      "expected_commit_message": "docs(a10): add branch safety check plan"
+    },
+    {
+      "task_id": "Task 02",
+      "title": "Clean Working Tree Preflight Plan",
+      "batch_suggestion": "Batch 8",
+      "task_type": "audit/checklist",
+      "goal": "Calistirma oncesi temiz/beklenen working tree kontrol akislarini tanimlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-01/T02_CLEAN_WORKING_TREE_PREFLIGHT_PLAN.md",
+      "allowed_input_context": [
+        "docs/agent/a10/A10_GUARDRAILS_CHECKLIST.md",
+        "docs/agent/a10/A10_LOG_SCHEMA.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json",
+        "src/App.css",
+        "src/App.tsx"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Preflight checklist, beklenen kirli durum ornekleri ve hard stop sarti yer almali.",
+      "minimum_output_rule": "En az 30 satir ve 8 checklist maddesi.",
+      "soft_fail_rule": "Checklist eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Dokuman disi dosya yazimi veya mevcut dosya duzenlemesi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Salt prosedur metni uretir.",
+      "expected_commit_message": "docs(a10): add clean working tree preflight plan"
+    },
+    {
+      "task_id": "Task 03",
+      "title": "Unexpected File Guard Plan",
+      "batch_suggestion": "Batch 8",
+      "task_type": "audit/checklist",
+      "goal": "Beklenmeyen yeni dosya tespiti ve aksiyon karar agacini yazmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-01/T03_UNEXPECTED_FILE_GUARD_PLAN.md",
+      "allowed_input_context": [
+        "docs/agent/a10/A10_GUARDRAILS_CHECKLIST.md",
+        "docs/agent/a10/A10_RETRY_TIMEOUT_POLICY.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json",
+        "src/App.css",
+        "src/App.tsx"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Tespit yontemi, siniflandirma ve hard stop/soft fail ayrimi acik olmali.",
+      "minimum_output_rule": "En az 28 satir ve 2 ornek senaryo.",
+      "soft_fail_rule": "Senaryo sayisi yetersizse SOFT_FAIL.",
+      "hard_stop_rule": "Yasak alanlara degisiklik oneren metin HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "6 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Operasyonel guvenlik dokumantasyonu uretir.",
+      "expected_commit_message": "docs(a10): add unexpected file guard plan"
+    },
+    {
+      "task_id": "Task 05",
+      "title": "Dry-Run Final Report Improvement Plan",
+      "batch_suggestion": "Batch 8",
+      "task_type": "docs-only",
+      "goal": "Dry-run final raporun sabah incelemesine uygun iyilestirme onerilerini sunmak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-01/T05_DRY_RUN_FINAL_REPORT_IMPROVEMENT_PLAN.md",
+      "allowed_input_context": [
+        "docs/agent/a10/A10_NIGHT_SHIFT_FINAL_REPORT_TEMPLATE.md",
+        "docs/agent/a10/A10_LOG_SCHEMA.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json",
+        "src/App.css",
+        "src/App.tsx"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Oneriler alan-bazli olmali ve mevcut sablonla esleme icermeli.",
+      "minimum_output_rule": "En az 35 satir ve 5 net iyilestirme maddesi.",
+      "soft_fail_rule": "Oneriler olculebilir degilse SOFT_FAIL.",
+      "hard_stop_rule": "Sablon dosyasini degistirmeye kalkisma HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Sadece oneri dokumani uretir.",
+      "expected_commit_message": "docs(a10): add dry-run final report improvement plan"
+    },
+    {
+      "task_id": "Task 07",
+      "title": "Stop Reason Codes Plan",
+      "batch_suggestion": "Batch 8",
+      "task_type": "docs-only",
+      "goal": "Stop reason kodlarinin kullanim kurallarini ve orneklerini standardize etmek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-01/T07_STOP_REASON_CODES_PLAN.md",
+      "allowed_input_context": [
+        "docs/agent/a10/A10_STATUS_CODES.md",
+        "docs/agent/a10/A10_LOG_SCHEMA.md",
+        "docs/agent/a10/A10_GUARDRAILS_CHECKLIST.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json",
+        "src/App.css",
+        "src/App.tsx"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Canonical kodlar, kullanim baglami ve yanlis kullanim ornekleri listelenmeli.",
+      "minimum_output_rule": "En az 30 satir ve 10 reason-code satiri.",
+      "soft_fail_rule": "Kod/ad eslemesi eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Canonical set disi yeni resmi status onermek HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Terim netligi saglar, kodu etkilemez.",
+      "expected_commit_message": "docs(a10): add stop reason codes plan"
+    },
+    {
+      "task_id": "Task 09",
+      "title": "Task Queue Schema v1",
+      "batch_suggestion": "Batch 8",
+      "task_type": "docs-only",
+      "goal": "Gece kuyrugu gorev kartlari icin v1 alan semasini tanimlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-01/T09_TASK_QUEUE_SCHEMA_V1.md",
+      "allowed_input_context": [
+        "docs/agent/a10/A10_TASK_TEMPLATE.md",
+        "docs/agent/a10/A10_LOG_SCHEMA.md",
+        "docs/agent/a10/A10_STATUS_CODES.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json",
+        "src/App.css",
+        "src/App.tsx"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Zorunlu alanlar, alan tipi ve validasyon kurallari tabloyla verilmis olmali.",
+      "minimum_output_rule": "En az 40 satir ve 12 alan tanimi.",
+      "soft_fail_rule": "Alan tipi/ornek eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Cikti dosyasi disinda dosya uretilirse HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "9 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Veri sozlesmesi dokumani uretir.",
+      "expected_commit_message": "docs(a10): add task queue schema v1"
+    },
+    {
+      "task_id": "Task 10",
+      "title": "Task Card Validation Plan",
+      "batch_suggestion": "Batch 8",
+      "task_type": "audit/checklist",
+      "goal": "Task card dogrulama adimlarini otomasyona hazir kontrol listesine donusturmek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-01/T10_TASK_CARD_VALIDATION_PLAN.md",
+      "allowed_input_context": [
+        "docs/agent/a10/A10_TASK_TEMPLATE.md",
+        "docs/agent/a10/A10_GUARDRAILS_CHECKLIST.md",
+        "docs/agent/a10/A10_DOCS_CONSISTENCY_AUDIT.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json",
+        "src/App.css",
+        "src/App.tsx"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Her dogrulama kurali icin pass/fail kriteri yazilmali.",
+      "minimum_output_rule": "En az 32 satir ve 10 kontrol maddesi.",
+      "soft_fail_rule": "Pass/fail kriteri net degilse SOFT_FAIL.",
+      "hard_stop_rule": "Script uretimi veya script degisikligi onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Sadece dogrulama plani dokumante eder.",
+      "expected_commit_message": "docs(a10): add task card validation plan"
+    },
+    {
+      "task_id": "Task 14",
+      "title": "Single Output File Contract",
+      "batch_suggestion": "Batch 8",
+      "task_type": "docs-only",
+      "goal": "Bir gorev bir cikti dosyasi sozlesmesini orneklerle netlestirmek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-01/T14_SINGLE_OUTPUT_FILE_CONTRACT.md",
+      "allowed_input_context": [
+        "docs/agent/a10/A10_TASK_TEMPLATE.md",
+        "docs/agent/a10/A10_LOG_SCHEMA.md",
+        "docs/agent/a10/A10_STATUS_CODES.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json",
+        "src/App.css",
+        "src/App.tsx"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Sozlesme kurali, ihlal ornekleri ve hard stop baglantisi acik olmali.",
+      "minimum_output_rule": "En az 26 satir ve 3 ihlal ornegi.",
+      "soft_fail_rule": "Ihlal ornekleri yetersizse SOFT_FAIL.",
+      "hard_stop_rule": "Coklu output dosya oneren akis HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "6 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Sadece surec kurali metni uretir.",
+      "expected_commit_message": "docs(a10): add single output file contract"
+    },
+    {
+      "task_id": "Task 17",
+      "title": "Final Report Sample v1",
+      "batch_suggestion": "Batch 8",
+      "task_type": "docs-only",
+      "goal": "Guvenli docs-only gece vardiyasi icin kisa ama gercekci final rapor ornegi uretmek.",
+      "allowed_output_file": "docs/agent/a10/night-shift-01/T17_FINAL_REPORT_SAMPLE_V1.md",
+      "allowed_input_context": [
+        "docs/agent/a10/A10_NIGHT_SHIFT_FINAL_REPORT_TEMPLATE.md",
+        "docs/agent/a10/A10_LOG_SCHEMA.md",
+        "docs/agent/a10/A10_STATUS_CODES.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json",
+        "src/App.css",
+        "src/App.tsx"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Sablon alanlariyla uyumlu mini rapor bolumleri yer almali.",
+      "minimum_output_rule": "En az 30 satir, run ozeti ve durum dagilimi icermeli.",
+      "soft_fail_rule": "Zorunlu alanlardan biri eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Hard stop olayini gizleyen ornek uretimi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "7 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Ornek rapor metni uretir, sistemi degistirmez.",
+      "expected_commit_message": "docs(a10): add final report sample v1"
+    },
+    {
+      "task_id": "Task 21",
+      "title": "Evidence Checklist for Morning Review",
+      "batch_suggestion": "Batch 8",
+      "task_type": "audit/checklist",
+      "goal": "Sabah incelemesinde commit/rollback karari icin kanit checklistini tanimlamak.",
+      "allowed_output_file": "docs/agent/a10/night-shift-01/T21_EVIDENCE_CHECKLIST_FOR_MORNING_REVIEW.md",
+      "allowed_input_context": [
+        "docs/agent/a10/A10_LOG_SCHEMA.md",
+        "docs/agent/a10/A10_GUARDRAILS_CHECKLIST.md",
+        "docs/agent/a10/A10_NIGHT_SHIFT_FINAL_REPORT_TEMPLATE.md"
+      ],
+      "forbidden_scope": [
+        "src/**",
+        "scripts/**",
+        "package.json",
+        "package-lock.json",
+        "src/App.css",
+        "src/App.tsx"
+      ],
+      "agent_command_type": "read-only analysis + markdown output",
+      "validation_rule": "Kanit turleri ve karar etkisi eslemesi icermeli.",
+      "minimum_output_rule": "En az 34 satir ve 12 checklist maddesi.",
+      "soft_fail_rule": "Karar etkisi bolumu eksikse SOFT_FAIL.",
+      "hard_stop_rule": "Kanitsiz SUCCESS onerisi HARD_STOP.",
+      "manual_review_requirement": "Var",
+      "estimated_runtime": "8 dk",
+      "risk_level": "Dusuk",
+      "why_this_is_safe": "Insan incelemesini guclendiren dokuman uretir.",
+      "expected_commit_message": "docs(a10): add morning evidence checklist"
+    }
+  ],
+  "acceptance_criteria": [
+    "10 tasks listed",
+    "Each task has one output file",
+    "All outputs are under docs/agent/a10/night-shift-01/",
+    "No task touches source code",
+    "No task touches package files",
+    "No task requires build",
+    "No task commits or pushes",
+    "Every task has validation rule",
+    "Every task has soft fail and hard stop rule"
+  ]
+}

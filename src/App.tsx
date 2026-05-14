@@ -325,6 +325,7 @@ function App() {
   const suppressAchievementCelebrationRef = useRef(false);
   const suppressFollowerCelebrationRef = useRef(false);
   const arrivalCommitInProgressRef = useRef(false);
+  const farewellTimeoutRef = useRef<number | null>(null);
 
   const ONBOARDING_STEPS: Step[] = [
     "WELCOME",
@@ -665,9 +666,29 @@ function App() {
     if (tutorialStep === 2 && step === "SEA_MODE") {
       setTutorialStep(3);
       setShowMicoFarewell(true);
-      setTimeout(() => setShowMicoFarewell(false), 5000);
+      if (farewellTimeoutRef.current !== null) {
+        window.clearTimeout(farewellTimeoutRef.current);
+      }
+      farewellTimeoutRef.current = window.setTimeout(() => {
+        setShowMicoFarewell(false);
+        farewellTimeoutRef.current = null;
+      }, 5000);
     }
   }, [step, tutorialStep]);
+
+  useEffect(() => {
+    if (step === "SEA_MODE" && activeTab !== "liman") {
+      setActiveTabState("liman");
+    }
+  }, [step, activeTab]);
+
+  useEffect(() => {
+    return () => {
+      if (farewellTimeoutRef.current !== null) {
+        window.clearTimeout(farewellTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {

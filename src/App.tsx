@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { Capacitor } from "@capacitor/core";
 import "./App.css";
 import { audioManager } from "./lib/audioManager";
 import { useAudioSettings } from "./lib/useAudioSettings";
@@ -113,6 +114,7 @@ const MAX_PARALLEL_UPGRADES = 3;
 const VALID_TABS: Tab[] = ["liman", "icerik", "rota", "tekne", "kaptan"];
 
 const MARINA_TASK_REWARD = 500;
+const ANDROID_BACK_GUARD_STATE = { __yelkenliBackGuard: true };
 
 function clampIndex(value: unknown, length: number): number {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 && value < length ? value : 0;
@@ -129,6 +131,35 @@ function toFiniteNumber(value: unknown, fallback: number): number {
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
   return Math.max(min, Math.min(max, toFiniteNumber(value, fallback)));
+}
+
+function isNativeAndroidPlatform(): boolean {
+  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+}
+
+function requestNativeAppExit(): boolean {
+  const navigatorWithApp = navigator as Navigator & { app?: { exitApp?: () => void } };
+  if (typeof navigatorWithApp.app?.exitApp === "function") {
+    navigatorWithApp.app.exitApp();
+    return true;
+  }
+
+  const windowWithCapacitor = window as Window & {
+    Capacitor?: {
+      Plugins?: {
+        App?: {
+          exitApp?: () => void;
+        };
+      };
+    };
+  };
+  if (typeof windowWithCapacitor.Capacitor?.Plugins?.App?.exitApp === "function") {
+    windowWithCapacitor.Capacitor.Plugins.App.exitApp();
+    return true;
+  }
+
+  window.close();
+  return false;
 }
 
 function makeMarinaTasksForLocation(location: string): MarinaTask[] {
@@ -589,6 +620,59 @@ function App() {
     window.addEventListener("pointerdown", resume, { once: true });
     return () => window.removeEventListener("pointerdown", resume);
   }, []);
+
+  useEffect(() => {
+    if (!isNativeAndroidPlatform()) return;
+
+    const ensureBackGuard = () => {
+      if (!window.history.state?.__yelkenliBackGuard) {
+        window.history.pushState(ANDROID_BACK_GUARD_STATE, "", window.location.href);
+      }
+    };
+
+    const handleBackAttempt = () => {
+      const exitMessage =
+        step === "SEA_MODE"
+          ? `Denizde aktif bir seyirdesin${currentRoute?.name ? `: ${currentRoute.name}` : ""}. Oyundan çıkmak istediğine emin misin?`
+          : step === "HUB"
+            ? "Oyundan çıkmak istediğine emin misin?"
+            : null;
+
+      if (!exitMessage) {
+        ensureBackGuard();
+        return;
+      }
+
+      if (!window.confirm(exitMessage)) {
+        ensureBackGuard();
+        return;
+      }
+
+      const exited = requestNativeAppExit();
+      if (!exited) {
+        window.setTimeout(() => {
+          if (document.visibilityState === "visible") {
+            ensureBackGuard();
+          }
+        }, 150);
+      }
+    };
+
+    const onPopState = () => handleBackAttempt();
+    const onBackButton = (event: Event) => {
+      event.preventDefault();
+      handleBackAttempt();
+    };
+
+    ensureBackGuard();
+    window.addEventListener("popstate", onPopState);
+    document.addEventListener("backbutton", onBackButton as EventListener);
+
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      document.removeEventListener("backbutton", onBackButton as EventListener);
+    };
+  }, [currentRoute?.name, step]);
 
   useEffect(() => {
     if (upgradesInProgress.length === 0) return;

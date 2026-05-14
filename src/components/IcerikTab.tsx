@@ -2,7 +2,7 @@ import "./IcerikTab.css";
 import { useEffect, useRef, useState } from "react";
 import { ContentResultCard } from "./ContentResultCard";
 import { SponsorTab } from "./SponsorTab";
-import type { ContentHistoryItem, ContentResult, Step, StoryHook } from "../types/game";
+import type { ContentHistoryItem, ContentResult, Step, StoryHook, SponsorOffer } from "../types/game";
 
 type PlatformItem = {
   id: string;
@@ -67,13 +67,7 @@ type IcerikTabProps = {
     sponsorProgressPercent: number;
     followers: number;
     onCheckSponsorOffers: () => void;
-    sponsorOffers: Array<{
-      id: string;
-      brandName: string;
-      tierName: string;
-      minReward: number;
-      maxReward: number;
-    }>;
+    sponsorOffers: SponsorOffer[];
     onAcceptSponsor: (offerId: string) => void;
     acceptedSponsors: string[];
     sponsorObligations: Record<string, number>;

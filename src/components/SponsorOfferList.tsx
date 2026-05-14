@@ -1,10 +1,4 @@
-type SponsorOffer = {
-  id: string;
-  brandName: string;
-  tierName: string;
-  minReward: number;
-  maxReward: number;
-};
+import type { SponsorOffer } from "../types/game";
 
 type SponsorOfferListProps = {
   offers: SponsorOffer[];

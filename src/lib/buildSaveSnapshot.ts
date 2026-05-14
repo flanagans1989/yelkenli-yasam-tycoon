@@ -7,6 +7,7 @@ import type {
   DailyGoal,
   ContentHistoryItem,
   MarinaTask,
+  SponsorOffer,
 } from "../types/game";
 import type { UpgradeCategoryId } from "../../game-data/upgrades";
 import type { UpgradeInProgressItem, MarinaRestInProgress } from "./saveLoad";
@@ -46,7 +47,7 @@ export interface GameSaveSnapshotInput {
   contentResult: ContentResult | null;
   selectedUpgradeCategory: UpgradeCategoryId;
   brandTrust: number;
-  sponsorOffers: any[];
+  sponsorOffers: SponsorOffer[];
   acceptedSponsors: string[];
   sponsoredContentCount: number;
   contentHistory: ContentHistoryItem[];

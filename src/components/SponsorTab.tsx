@@ -1,16 +1,9 @@
 import { SponsorOfferList } from "./SponsorOfferList";
+import type { SponsorOffer } from "../types/game";
 
 type SponsorTierInfo = {
   name: string;
   minFollowers: number;
-};
-
-type SponsorOfferItem = {
-  id: string;
-  brandName: string;
-  tierName: string;
-  minReward: number;
-  maxReward: number;
 };
 
 type SponsorTabProps = {
@@ -21,7 +14,7 @@ type SponsorTabProps = {
   sponsorProgressPercent: number;
   followers: number;
   onCheckSponsorOffers: () => void;
-  sponsorOffers: SponsorOfferItem[];
+  sponsorOffers: SponsorOffer[];
   onAcceptSponsor: (offerId: string) => void;
   acceptedSponsors: string[];
   sponsorObligations: Record<string, number>;

@@ -7,7 +7,7 @@ import { useRewardFloaters } from "./hooks/useRewardFloaters";
 import { useToastQueue } from "./hooks/useToastQueue";
 import { useCelebrationQueue } from "./hooks/useCelebrationQueue";
 
-import type { Step, Tab, ContentResult, MarinaFilter, StoryHook, Gender, DailyGoal, ContentHistoryItem, MarinaTask, MarinaTaskType } from "./types/game";
+import type { Step, Tab, ContentResult, MarinaFilter, StoryHook, Gender, DailyGoal, ContentHistoryItem, MarinaTask, MarinaTaskType, SponsorOffer } from "./types/game";
 import { PLAYER_PROFILES } from "../game-data/playerProfiles";
 import type { PlayerProfile } from "../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../game-data/marinas";
@@ -291,7 +291,7 @@ function App() {
 
   // Sponsor MVP States
   const [brandTrust, setBrandTrust] = useState(10);
-  const [sponsorOffers, setSponsorOffers] = useState<any[]>([]);
+  const [sponsorOffers, setSponsorOffers] = useState<SponsorOffer[]>([]);
   const [acceptedSponsors, setAcceptedSponsors] = useState<string[]>([]);
   const [sponsoredContentCount, setSponsoredContentCount] = useState(0);
   const [sponsorObligations, setSponsorObligations] = useState<Record<string, number>>({});
@@ -2036,13 +2036,7 @@ function App() {
           sponsorProgressPercent,
           followers,
           onCheckSponsorOffers: handleCheckSponsorOffers,
-          sponsorOffers: sponsorOffers as Array<{
-            id: string;
-            brandName: string;
-            tierName: string;
-            minReward: number;
-            maxReward: number;
-          }>,
+          sponsorOffers,
           onAcceptSponsor: handleAcceptSponsor,
           acceptedSponsors,
           sponsorObligations,

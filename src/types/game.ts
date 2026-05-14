@@ -77,3 +77,12 @@ export type ContentHistoryItem = {
   viral: boolean;
   timestamp: number;
 };
+
+export type SponsorOffer = {
+  id: string;
+  brandName: string;
+  tierName: string;
+  tierId: string;
+  minReward: number;
+  maxReward: number;
+};

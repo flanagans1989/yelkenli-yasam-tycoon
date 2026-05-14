@@ -886,7 +886,7 @@ function App() {
       }
 
       const nextCaptainLevel = parsed.captainLevel ?? 1;
-      const offline = calculateOfflineIncome(parsed.lastSavedAt, nextCaptainLevel);
+      const offline = calculateOfflineIncome(parsed.lastSavedAt, parsed.step, nextCaptainLevel);
       const upgrades = processUpgradesFromSave(
         Array.isArray(parsed.upgradesInProgress) ? parsed.upgradesInProgress : null,
         parsed.upgradeInProgress ?? null,

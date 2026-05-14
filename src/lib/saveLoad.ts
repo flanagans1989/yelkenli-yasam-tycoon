@@ -139,9 +139,13 @@ export function migrateSave(parsed: any) {
 
 export function calculateOfflineIncome(
   lastSavedAt: unknown,
+  savedStep: unknown,
   captainLevel: number = 1,
   maxRewardMinutes: number = MAX_OFFLINE_REWARD_MINUTES,
 ): { credits: number; followers: number; minutes: number } {
+  if (savedStep === "SEA_MODE") {
+    return { credits: 0, followers: 0, minutes: 0 };
+  }
   if (typeof lastSavedAt !== "number" || !Number.isFinite(lastSavedAt)) {
     return { credits: 0, followers: 0, minutes: 0 };
   }

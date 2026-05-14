@@ -97,7 +97,35 @@ After changes, check:
 - Do not push unless explicitly asked.
 - If the user asks to push, run `git status` first and confirm the branch.
 
-## 8. AI Agent Behavior
+## 8. File Map (read this before reading any source file)
+
+Before reading App.tsx or App.css in full, check here first.
+
+### Key file locations
+| Task | File | Approx. line |
+|------|------|--------------|
+| Save/load logic | App.tsx | 610–1390 |
+| Content production | App.tsx | 1613 (`publishContent`) |
+| Route start | App.tsx | 2076 (`handleStartVoyage`) |
+| Upgrade purchase | App.tsx | 2109 (`handleBuyUpgrade`) |
+| Sea decisions | App.tsx | 1747 (`handleResolveSeaDecision`) |
+| Arrival handler | App.tsx | 1825 (`handleArrival`) |
+| Tutorial step logic | App.tsx | ~1038 (useEffects) |
+| All state declarations | App.tsx | 674–775 |
+| Render functions | App.tsx | 2149–2640 |
+| Static event data | src/data/seaEvents.ts | — |
+| Static achievements | src/data/achievements.ts | — |
+| Content comment pools | src/data/contentComments.ts | — |
+| Captain XP thresholds | src/data/captainData.ts | — |
+
+### App.css — never read the whole file
+Use Grep to find a class: search `.classname {` before reading.
+
+### game-data/ — static data only
+routes.ts, boats.ts, marinas.ts, upgrades.ts, playerProfiles.ts, economy.ts, socialPlatforms.ts
+Do not modify these without a specific reason.
+
+## 9. AI Agent Behavior
 
 - Act like a professional game studio assistant.
 - First understand the existing code before editing.

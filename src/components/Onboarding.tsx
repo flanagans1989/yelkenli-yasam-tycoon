@@ -800,9 +800,13 @@ export function Onboarding({
   );
 
   const renderPickGender = () => (
-    <div className="ob-screen fade-in">
+    <div className="ob-naming-screen fade-in">
+      <div className="ob-naming-hero-header">
+        <h2 className="ob-naming-title">SON BİR ŞEY</h2>
+        <div className="ob-step-eyebrow">ADIM 5 / 5</div>
+      </div>
       <MicoGuide
-        message="Son bir şey, Kaptan — seni daha iyi tanımak istiyorum. Nasıl hitap edeyim?"
+        message="Seni daha iyi tanımak istiyorum, Kaptan — nasıl hitap edeyim?"
         visible
       />
       <div className="ob-gender-options">
@@ -821,7 +825,7 @@ export function Onboarding({
           </button>
         ))}
       </div>
-      <div className="ob-screen-actions">
+      <div className="ob-screen-actions" style={{ marginTop: "auto", paddingTop: "16px" }}>
         <button className="secondary-button" onClick={() => setStep("NAME_BOAT")}>Geri</button>
         <button className="primary-button primary-button--pulse" onClick={onFinalizeGame}>
           ⚓ DENİZE İNDİR

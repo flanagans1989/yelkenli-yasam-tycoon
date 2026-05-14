@@ -11,8 +11,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $ProgressPreference    = 'SilentlyContinue'
 
-$AllowedOutputPrefix = 'docs/agent/a10/night-shift-01/'
-$CanonicalTaskTypes  = @('docs-only','css-patch-proposal','css-patch-apply','script-only','build-check','audit/checklist')
+$AllowedOutputPrefix = ''
+$CanonicalTaskTypes  = @('docs-only','css-patch-proposal','css-patch-apply','script-only','build-check','audit/checklist','audit/analysis','design/planning','content/design')
 
 $runId        = 'A10-EXEC-' + (Get-Date -Format 'yyyyMMdd-HHmmss')
 $startedAt    = Get-Date
@@ -225,6 +225,22 @@ try {
     }
     if ($null -eq $queueObj.tasks -or $queueObj.tasks.Count -eq 0) { throw 'Queue has no tasks' }
     Write-Log ('Queue header OK. ID=' + $queueObj.queue_id + ' Tasks=' + $queueObj.tasks.Count)
+
+    $derivedPrefix = $null
+    foreach ($t in $queueObj.tasks) {
+        if ($t.allowed_output_file) {
+            $norm = $t.allowed_output_file.Replace('\','/')
+            $dir  = ($norm -replace '/[^/]+$', '') + '/'
+            if ($null -eq $derivedPrefix) {
+                $derivedPrefix = $dir
+            } elseif ($dir -ne $derivedPrefix) {
+                throw ('Tasks have inconsistent output directories: ' + $derivedPrefix + ' vs ' + $dir)
+            }
+        }
+    }
+    if ($null -eq $derivedPrefix) { throw 'Cannot derive output prefix from tasks' }
+    $AllowedOutputPrefix = $derivedPrefix
+    Write-Log ('Output prefix derived from queue: ' + $AllowedOutputPrefix)
 
     $cardErrors = @()
     foreach ($t in $queueObj.tasks) {

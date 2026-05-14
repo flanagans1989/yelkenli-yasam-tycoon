@@ -2,8 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { audioManager } from "./lib/audioManager";
 import { useAudioSettings } from "./lib/useAudioSettings";
+import { useFlashState } from "./hooks/useFlashState";
+import { useRewardFloaters } from "./hooks/useRewardFloaters";
+import { useToastQueue } from "./hooks/useToastQueue";
+import { useCelebrationQueue } from "./hooks/useCelebrationQueue";
 
-import type { Step, Tab, ContentResult, MarinaFilter, StoryHook, Gender, DailyGoal, ToastType, ToastItem, ContentHistoryItem, MarinaTask, MarinaTaskType } from "./types/game";
+import type { Step, Tab, ContentResult, MarinaFilter, StoryHook, Gender, DailyGoal, ContentHistoryItem, MarinaTask, MarinaTaskType } from "./types/game";
 import { PLAYER_PROFILES } from "../game-data/playerProfiles";
 import type { PlayerProfile } from "../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../game-data/marinas";
@@ -28,7 +32,6 @@ import { TekneTab } from "./components/TekneTab";
 import { ArrivalScreen } from "./components/ArrivalScreen";
 import { CelebrationModal } from "./components/CelebrationModal";
 import { IcerikTab } from "./components/IcerikTab";
-import type { CelebrationItem } from "./components/CelebrationModal";
 import { SEA_DECISION_EVENTS } from "./data/seaEvents";
 import { ACHIEVEMENTS, ACHIEVEMENT_ICONS } from "./data/achievements";
 import { getContentComment } from "./data/contentComments";
@@ -293,20 +296,8 @@ function App() {
   const [testMode, setTestMode] = useState(false);
   const [hasReceivedFirstSponsor, setHasReceivedFirstSponsor] = useState(false);
 
-  type FloaterType = 'credits' | 'followers' | 'xp';
-  interface RewardFloater { id: number; text: string; type: FloaterType; }
-  const [rewardFloaters, setRewardFloaters] = useState<RewardFloater[]>([]);
-  const addFloater = (text: string, type: FloaterType) => {
-    const id = Date.now() + Math.random();
-    setRewardFloaters(prev => [...prev, { id, text, type }]);
-    setTimeout(() => {
-      setRewardFloaters(prev => prev.filter(f => f.id !== id));
-    }, 1600);
-  };
-
-  // Flash animation states
-  const [flashCredits, setFlashCredits] = useState(false);
-  const [flashFollowers, setFlashFollowers] = useState(false);
+  const { rewardFloaters, addFloater } = useRewardFloaters();
+  const { flashCredits, flashFollowers, triggerFlash } = useFlashState();
 
   const [captainXp, setCaptainXp] = useState(0);
   const [captainLevel, setCaptainLevel] = useState(1);
@@ -322,13 +313,8 @@ function App() {
   const [hasCompletedDailyGoalsOnce, setHasCompletedDailyGoalsOnce] = useState(false);
   const [hasCompletedWorldTour, setHasCompletedWorldTour] = useState(false);
   const [activeStoryHook, setActiveStoryHook] = useState<StoryHook | null>(null);
-  const toastIdRef = useRef(0);
-  const [toastQueue, setToastQueue] = useState<ToastItem[]>([]);
-  const [activeToast, setActiveToast] = useState<ToastItem | null>(null);
-  const [isToastLeaving, setIsToastLeaving] = useState(false);
-
-  const [celebrationQueue, setCelebrationQueue] = useState<CelebrationItem[]>([]);
-  const [activeCelebration, setActiveCelebration] = useState<CelebrationItem | null>(null);
+  const { activeToast, isToastLeaving, pushToast, dismissToast } = useToastQueue();
+  const { activeCelebration, setActiveCelebration, setCelebrationQueue } = useCelebrationQueue();
   const [completedFollowerMilestones, setCompletedFollowerMilestones] = useState<string[]>([]);
   const prevCaptainLevelRef = useRef<number | null>(null);
 
@@ -339,21 +325,6 @@ function App() {
   const suppressAchievementCelebrationRef = useRef(false);
   const suppressFollowerCelebrationRef = useRef(false);
   const arrivalCommitInProgressRef = useRef(false);
-
-  const triggerFlash = (type: "credits" | "followers") => {
-    if (type === "credits") {
-      setFlashCredits(true);
-      setTimeout(() => setFlashCredits(false), 600);
-    } else {
-      setFlashFollowers(true);
-      setTimeout(() => setFlashFollowers(false), 600);
-    }
-  };
-
-  const pushToast = (type: ToastType, title: string, text: string) => {
-    const id = ++toastIdRef.current;
-    setToastQueue(prev => [...prev, { id, type, title, text }]);
-  };
 
   const selectedProfile: PlayerProfile = PLAYER_PROFILES[clampIndex(profileIndex, PLAYER_PROFILES.length)] ?? PLAYER_PROFILES[0];
   const selectedMarina: StartingMarina = STARTING_MARINAS[clampIndex(marinaIndex, STARTING_MARINAS.length)] ?? STARTING_MARINAS[0];
@@ -606,12 +577,6 @@ function App() {
   }, [captainLevel]);
 
   useEffect(() => {
-    if (activeCelebration || celebrationQueue.length === 0) return;
-    setActiveCelebration(celebrationQueue[0]);
-    setCelebrationQueue(prev => prev.slice(1));
-  }, [activeCelebration, celebrationQueue]);
-
-  useEffect(() => {
     if (step === "HUB") {
       const today = new Date().toISOString().slice(0, 10);
       if (lastDailyReset !== today) {
@@ -674,24 +639,6 @@ function App() {
       setTimeout(() => setShowMicoFarewell(false), 5000);
     }
   }, [step, tutorialStep]);
-
-  useEffect(() => {
-    if (activeToast || toastQueue.length === 0) return;
-    const next = toastQueue[0];
-    setToastQueue(prev => prev.slice(1));
-    setIsToastLeaving(false);
-    setActiveToast(next);
-  }, [activeToast, toastQueue]);
-
-  useEffect(() => {
-    if (!activeToast) return;
-    const leaveId = window.setTimeout(() => setIsToastLeaving(true), 3200);
-    const clearId = window.setTimeout(() => setActiveToast(null), 3500);
-    return () => {
-      window.clearTimeout(leaveId);
-      window.clearTimeout(clearId);
-    };
-  }, [activeToast]);
 
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
@@ -2414,7 +2361,7 @@ function App() {
           className={`game-toast game-toast--${activeToast.type}${isToastLeaving ? " leaving" : ""}`}
           role="status"
           aria-live="polite"
-          onClick={() => setActiveToast(null)}
+          onClick={dismissToast}
         >
           <div className="game-toast-title">{activeToast.title}</div>
           <div className="game-toast-text">{activeToast.text}</div>

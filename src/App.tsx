@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
-import type { Step, Tab, ContentResult, MarinaFilter, StoryHook, Gender } from "./types/game";
+import type { Step, Tab, ContentResult, MarinaFilter, StoryHook, Gender, DailyGoal, ToastType, ToastItem } from "./types/game";
 import { PLAYER_PROFILES } from "../game-data/playerProfiles";
 import type { PlayerProfile } from "../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../game-data/marinas";
@@ -53,23 +53,6 @@ const makeDailyGoals = (dateKey: string = new Date().toISOString().slice(0, 10))
     { id: "dg_upgrade", title: theme.goals.buy_upgrade, type: "buy_upgrade", completed: false },
   ];
 };
-
-type DailyGoal = {
-  id: string;
-  title: string;
-  type: "produce_content" | "complete_route" | "buy_upgrade";
-  completed: boolean;
-};
-
-type ToastType = "upgrade" | "achievement" | "sponsor" | "content" | "voyage" | "sea_decision" | "warning";
-
-type ToastItem = {
-  id: number;
-  type: ToastType;
-  title: string;
-  text: string;
-};
-
 
 const getBaseOceanReadiness = (boatId: string) => {
   if (boatId === "kirlangic_28") return 15;

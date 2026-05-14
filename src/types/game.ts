@@ -40,3 +40,19 @@ export interface StoryHook {
 }
 
 export type MarinaFilter = "all" | "ege" | "akdeniz" | "marmara";
+
+export type DailyGoal = {
+  id: string;
+  title: string;
+  type: "produce_content" | "complete_route" | "buy_upgrade";
+  completed: boolean;
+};
+
+export type ToastType = "upgrade" | "achievement" | "sponsor" | "content" | "voyage" | "sea_decision" | "warning";
+
+export type ToastItem = {
+  id: number;
+  type: ToastType;
+  title: string;
+  text: string;
+};

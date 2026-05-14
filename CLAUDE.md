@@ -104,19 +104,22 @@ Before reading App.tsx or App.css in full, check here first.
 ### Key file locations
 | Task | File | Approx. line |
 |------|------|--------------|
-| Save/load logic | App.tsx | 610–1390 |
-| Content production | App.tsx | 1613 (`publishContent`) |
-| Route start | App.tsx | 2076 (`handleStartVoyage`) |
-| Upgrade purchase | App.tsx | 2109 (`handleBuyUpgrade`) |
-| Sea decisions | App.tsx | 1747 (`handleResolveSeaDecision`) |
-| Arrival handler | App.tsx | 1825 (`handleArrival`) |
-| Tutorial step logic | App.tsx | ~1038 (useEffects) |
-| All state declarations | App.tsx | 674–775 |
-| Render functions | App.tsx | 2149–2640 |
+| All state declarations | App.tsx | ~190–350 |
+| useEffects (achievements, sponsors, save, timers) | App.tsx | ~359–660 |
+| finalizeGame (new game reset) | App.tsx | 663 |
+| loadGame (load from localStorage) | App.tsx | 708 |
+| publishContent | App.tsx | 1015 |
+| handleResolveSeaDecision | App.tsx | 1110 |
+| handleArrival | App.tsx | 1178 |
+| handleStartVoyage | App.tsx | 1429 |
+| handleBuyUpgrade | App.tsx | 1462 |
+| Render functions | App.tsx | ~1529–2161 |
+| Save/load pure logic | src/lib/saveLoad.ts | — |
+| Content quality/reward calc | src/lib/gameLogic.ts | — |
 | Static event data | src/data/seaEvents.ts | — |
 | Static achievements | src/data/achievements.ts | — |
 | Content comment pools | src/data/contentComments.ts | — |
-| Captain XP thresholds | src/data/captainData.ts | — |
+| Captain XP / cooldowns | src/data/captainData.ts | — |
 
 ### App.css — never read the whole file
 Use Grep to find a class: search `.classname {` before reading.

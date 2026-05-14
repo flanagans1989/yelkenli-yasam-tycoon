@@ -13,7 +13,8 @@
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
   -webkit-tap-highlight-color: transparent;
   background:
     radial-gradient(circle at top, rgba(30, 159, 212, 0.14) 0%, transparent 35%),
@@ -21,7 +22,9 @@ body {
 }
 
 #root {
-  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 button {
@@ -3386,7 +3389,7 @@ button {
 
 @media (min-width: 391px) {
   body {
-    padding: 20px 0;
+    padding: 0;
   }
 
   .game-wrapper {

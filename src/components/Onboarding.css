@@ -690,25 +690,115 @@
 }
 
 .ob-profile-screen-v2 {
-  overflow-y: hidden;
-  justify-content: space-between;
+  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  align-content: stretch;
+  gap: 8px;
+  padding-top: 14px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
 }
 
 .ob-profile-screen-v2 .ob-step-header {
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .ob-profile-screen-v2 .ob-captain-carousel {
-  margin-bottom: 6px;
+  min-height: 0;
+  justify-content: center;
+  margin-bottom: 0;
 }
 
 .ob-profile-screen-v2 .ob-pagination-dots {
-  margin: 8px 0 10px;
+  margin: 0;
 }
 
 .ob-profile-screen-v2 .ob-screen-actions {
   margin-top: 0;
-  padding-top: 10px;
+  padding-top: 4px;
+  padding-bottom: 0;
+}
+
+.ob-profile-screen-v2 .ob-captain-card {
+  padding: 0 6px;
+}
+
+.ob-profile-screen-v2 .ob-portrait-stage {
+  width: 112px;
+  height: 112px;
+  margin-bottom: 10px;
+}
+
+.ob-profile-screen-v2 .ob-captain-name {
+  margin-bottom: 2px;
+}
+
+.ob-profile-screen-v2 .ob-captain-tagline {
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.ob-profile-screen-v2 .ob-skills {
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.ob-profile-screen-v2 .ob-skill-row {
+  gap: 6px;
+}
+
+.ob-profile-screen-v2 .ob-chips {
+  gap: 6px;
+}
+
+.ob-profile-screen-v2 .ob-chip {
+  padding: 7px 10px;
+  font-size: 12px;
+}
+
+/* Miço rehberi bu ekranda tek birleşik konuşma balonu gibi görünsün */
+.ob-profile-screen-v2 .mico-bubble-wrap.ob-mico-guide {
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(94, 234, 248, 0.22);
+  background:
+    radial-gradient(circle at 0% 50%, rgba(94, 234, 248, 0.12) 0%, transparent 52%),
+    linear-gradient(160deg, rgba(12, 42, 71, 0.72) 0%, rgba(8, 25, 42, 0.86) 100%);
+}
+
+.ob-profile-screen-v2 .ob-mico-guide .mico-avatar-col {
+  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+}
+
+.ob-profile-screen-v2 .ob-mico-guide .mico-avatar-ring {
+  display: none;
+}
+
+.ob-profile-screen-v2 .ob-mico-guide .mico-name-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+.ob-profile-screen-v2 .ob-mico-guide .mico-speech-bubble {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.ob-profile-screen-v2 .ob-mico-guide .mico-speech-bubble::before {
+  display: none;
+}
+
+.ob-profile-screen-v2 .ob-mico-guide .mico-speech-text {
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .ob-marina-screen-v2,

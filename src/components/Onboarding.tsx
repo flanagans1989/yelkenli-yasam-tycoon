@@ -414,7 +414,7 @@ export function Onboarding({
           <div className="ob-step-eyebrow">ADIM 1 / 4</div>
           <h2 className="ob-step-title">KAPTANINI SEÇ</h2>
         </div>
-        <MicoGuide message={MICO_MESSAGES.PICK_PROFILE!} visible />
+        <MicoGuide message={MICO_MESSAGES.PICK_PROFILE!} visible className="ob-mico-guide" />
 
         <div
           className="ob-captain-carousel"

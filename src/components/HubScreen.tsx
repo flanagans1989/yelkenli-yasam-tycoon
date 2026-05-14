@@ -70,8 +70,8 @@ export function HubScreen({
             <small>{selectedBoatName}</small>
           </div>
           <div className="hub-stats">
-            <div className={`stat${flashCredits ? " flash-green" : ""}`}><span>ğŸ’°</span> {credits.toLocaleString("tr-TR")}</div>
-            <div className={`stat${flashFollowers ? " flash-green" : ""}`}><span>ğŸ’¥</span> {followers.toLocaleString("tr-TR")}</div>
+            <div className={`stat${flashCredits ? " flash-green" : ""}`}><span>💰</span> {credits.toLocaleString("tr-TR")}</div>
+            <div className={`stat${flashFollowers ? " flash-green" : ""}`}><span>👥</span> {followers.toLocaleString("tr-TR")}</div>
             {onToggleAudio && (
               <button className="hub-mute-btn" onClick={onToggleAudio} aria-label={audioEnabled ? "Sesi kapat" : "Sesi aç"}>
                 {audioEnabled ? "🔊" : "🔇"}
@@ -98,7 +98,7 @@ export function HubScreen({
           onClick={() => setActiveTab("liman")}
           disabled={isTabLocked("liman")}
         >
-          <span className="tab-icon">{step === "SEA_MODE" ? "🌊" : "ğŸ "}</span>
+          <span className="tab-icon">{step === "SEA_MODE" ? "🌊" : "🏠"}</span>
           <span className="tab-label">{step === "SEA_MODE" ? "Deniz" : "Liman"}</span>
         </button>
         <button
@@ -106,7 +106,7 @@ export function HubScreen({
           onClick={() => setActiveTab("icerik")}
           disabled={isTabLocked("icerik")}
         >
-          <span className="tab-icon">ğŸ“¹</span>
+          <span className="tab-icon">📹</span>
           <span className="tab-label">İçerik</span>
         </button>
         <button
@@ -122,7 +122,7 @@ export function HubScreen({
           onClick={() => setActiveTab("tekne")}
           disabled={isTabLocked("tekne")}
         >
-          <span className="tab-icon">ğŸ”§</span>
+          <span className="tab-icon">🔧</span>
           <span className="tab-label">Tekne</span>
         </button>
         <button
@@ -130,7 +130,7 @@ export function HubScreen({
           onClick={() => setActiveTab("kaptan")}
           disabled={isTabLocked("kaptan")}
         >
-          <span className="tab-icon">ğŸ‘¤</span>
+          <span className="tab-icon">👤</span>
           <span className="tab-label">Kaptan</span>
         </button>
       </nav>

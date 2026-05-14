@@ -43,6 +43,7 @@ interface MicoGuideProps {
   actionLabel?: string;
   onAction?: () => void;
   variant?: "bubble" | "fullscreen";
+  className?: string;
 }
 
 export function MicoGuide({
@@ -52,6 +53,7 @@ export function MicoGuide({
   actionLabel,
   onAction,
   variant = "bubble",
+  className = "",
 }: MicoGuideProps) {
   const [displayed, setDisplayed] = useState(false);
 
@@ -90,7 +92,7 @@ export function MicoGuide({
   }
 
   return (
-    <div className={`mico-bubble-wrap ${displayed ? "mico-bubble-wrap--in" : ""}`}>
+    <div className={`mico-bubble-wrap ${displayed ? "mico-bubble-wrap--in" : ""} ${className}`.trim()}>
       <div className="mico-avatar-col">
         <div className="mico-avatar-ring" aria-hidden="true" />
         <MicoSvg size={52} />

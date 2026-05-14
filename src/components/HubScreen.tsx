@@ -81,19 +81,24 @@ export function HubScreen({
 
       <nav className="bottom-tab-bar">
         <button className={`tab ${activeTab === "liman" ? "active" : ""}`} onClick={() => setActiveTab("liman")}>
-          <span>{step === "SEA_MODE" ? "🌊" : "🏠"}</span> {step === "SEA_MODE" ? "Deniz" : "Liman"}
+          <span className="tab-icon">{step === "SEA_MODE" ? "🌊" : "🏠"}</span>
+          <span className="tab-label">{step === "SEA_MODE" ? "Deniz" : "Liman"}</span>
         </button>
         <button className={`tab ${activeTab === "icerik" ? "active" : ""}${!firstContentDone ? " tab-notif" : ""}`} onClick={() => setActiveTab("icerik")}>
-          <span>📹</span> İçerik
+          <span className="tab-icon">📹</span>
+          <span className="tab-label">İçerik</span>
         </button>
         <button className={`tab ${activeTab === "rota" ? "active" : ""}${firstContentDone && step === "HUB" && completedRouteIds.length === 0 ? " tab-notif" : ""}`} onClick={() => setActiveTab("rota")}>
-          <span>🗺️</span> Rota
+          <span className="tab-icon">🗺️</span>
+          <span className="tab-label">Rota</span>
         </button>
         <button className={`tab ${activeTab === "tekne" ? "active" : ""}`} onClick={() => setActiveTab("tekne")}>
-          <span>🔧</span> Tekne
+          <span className="tab-icon">🔧</span>
+          <span className="tab-label">Tekne</span>
         </button>
         <button className={`tab ${activeTab === "kaptan" ? "active" : ""}`} onClick={() => setActiveTab("kaptan")}>
-          <span>👤</span> Kaptan
+          <span className="tab-icon">👤</span>
+          <span className="tab-label">Kaptan</span>
         </button>
       </nav>
     </div>

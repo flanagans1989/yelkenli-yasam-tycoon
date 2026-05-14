@@ -464,7 +464,7 @@ button {
 
 .hub-tutorial-overlay {
   position: fixed;
-  bottom: 64px;
+  bottom: calc(78px + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   z-index: 200;
@@ -473,6 +473,8 @@ button {
 }
 .hub-tutorial-overlay .mico-bubble-wrap {
   pointer-events: auto;
+  max-width: min(100%, 380px);
+  margin-left: auto;
 }
 
 /* TEKNE SİLÜETİ */
@@ -2332,35 +2334,48 @@ button {
   flex-shrink: 0;
   background: rgba(4, 13, 22, 0.96);
   backdrop-filter: blur(20px);
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px;
   padding: 10px 16px 24px 16px;
   border-top: 2px solid rgba(30, 159, 212, 0.15);
   z-index: 20;
 }
 
 .tab {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  justify-content: center;
   color: #4a6a85;
   font-size: 11px;
   font-weight: 700;
   transition: 0.2s;
   position: relative;
+  min-width: 0;
+  padding: 0 2px;
 }
 
-.tab span {
+.tab-icon {
   font-size: 22px;
   transition: 0.2s;
+}
+
+.tab-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.1;
 }
 
 .tab.active {
   color: #1e9fd4;
 }
 
-.tab.active span {
+.tab.active .tab-icon {
   transform: translateY(-6px);
   filter: drop-shadow(0 4px 12px rgba(30,159,212,0.5));
 }
@@ -4479,15 +4494,14 @@ button {
 
   .tab {
     min-height: 44px;
-    justify-content: center;
     font-size: 11px;
   }
 
-  .tab span {
+  .tab-icon {
     font-size: 20px;
   }
 
-  .tab.active span {
+  .tab.active .tab-icon {
     transform: translateY(-3px);
   }
 
@@ -4503,6 +4517,34 @@ button {
   .next-action-card {
     padding: 9px 12px;
     gap: 10px;
+  }
+
+  .hub-tutorial-overlay {
+    padding: 0 10px 4px;
+  }
+
+  .hub-tutorial-overlay .mico-bubble-wrap {
+    gap: 8px;
+    max-width: min(100%, 300px);
+  }
+
+  .hub-tutorial-overlay .mico-avatar-col {
+    transform: scale(0.88);
+    transform-origin: bottom left;
+  }
+
+  .hub-tutorial-overlay .mico-speech-bubble {
+    padding: 8px 10px;
+  }
+
+  .hub-tutorial-overlay .mico-speech-text {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .hub-tutorial-overlay .mico-action-btn {
+    margin-top: 4px;
+    font-size: 11px;
   }
 
   .next-action-eyebrow {
@@ -5120,7 +5162,7 @@ button {
     padding-right: 10px;
   }
 
-  .tab span {
+  .tab-icon {
     font-size: 19px;
   }
 

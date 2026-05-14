@@ -117,7 +117,7 @@ export function RotaTab({
       setReadinessOpen(true);
       onReadinessOpened?.();
     }
-  }, [openReadiness]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [openReadiness]);
 
   const readinessItems = [
     { label: "Okyanus Hazırlığı", value: routeReadiness.oceanReadiness },

@@ -43,8 +43,17 @@ const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
 const MARINA_REST_DURATION_MS = 2 * 60 * 1000;
 
 const MAX_PARALLEL_UPGRADES = 3;
+const VALID_TABS: Tab[] = ["liman", "icerik", "rota", "tekne", "kaptan"];
 
 const MARINA_TASK_REWARD = 500;
+
+function clampIndex(value: unknown, length: number): number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value < length ? value : 0;
+}
+
+function safeTab(value: unknown): Tab {
+  return typeof value === "string" && VALID_TABS.includes(value as Tab) ? (value as Tab) : "liman";
+}
 
 function makeMarinaTasksForLocation(location: string): MarinaTask[] {
   const hash = location.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
@@ -301,6 +310,8 @@ function App() {
   const hasInitializedAchievementBannerRef = useRef(false);
   const previousSponsorOfferIdsRef = useRef<string[]>([]);
   const hasInitializedSponsorOfferBannerRef = useRef(false);
+  const suppressAchievementCelebrationRef = useRef(false);
+  const suppressFollowerCelebrationRef = useRef(false);
 
   const triggerFlash = (type: "credits" | "followers") => {
     if (type === "credits") {
@@ -317,9 +328,9 @@ function App() {
     setToastQueue(prev => [...prev, { id, type, title, text }]);
   };
 
-  const selectedProfile: PlayerProfile = PLAYER_PROFILES[profileIndex];
-  const selectedMarina: StartingMarina = STARTING_MARINAS[marinaIndex];
-  const selectedBoat: StartingBoat = STARTING_BOATS[boatIndex];
+  const selectedProfile: PlayerProfile = PLAYER_PROFILES[clampIndex(profileIndex, PLAYER_PROFILES.length)] ?? PLAYER_PROFILES[0];
+  const selectedMarina: StartingMarina = STARTING_MARINAS[clampIndex(marinaIndex, STARTING_MARINAS.length)] ?? STARTING_MARINAS[0];
+  const selectedBoat: StartingBoat = STARTING_BOATS[clampIndex(boatIndex, STARTING_BOATS.length)] ?? STARTING_BOATS[0];
 
   const currentRoute = WORLD_ROUTES.find((route) => route.id === currentRouteId);
 
@@ -370,6 +381,13 @@ function App() {
       .filter((achievement) => achievement.unlocked)
       .map((achievement) => achievement.id);
 
+    if (suppressAchievementCelebrationRef.current) {
+      previousUnlockedAchievementIdsRef.current = unlockedAchievementIds;
+      hasInitializedAchievementBannerRef.current = true;
+      suppressAchievementCelebrationRef.current = false;
+      return;
+    }
+
     if (!hasInitializedAchievementBannerRef.current) {
       previousUnlockedAchievementIdsRef.current = unlockedAchievementIds;
       hasInitializedAchievementBannerRef.current = true;
@@ -394,6 +412,11 @@ function App() {
   }, [achievementStatuses]);
 
   useEffect(() => {
+    if (suppressFollowerCelebrationRef.current) {
+      suppressFollowerCelebrationRef.current = false;
+      return;
+    }
+
     const milestones: { key: string; threshold: number; label: string; desc: string }[] = [
       { key: "1k", threshold: 1_000, label: "1.000 Takipçi!", desc: "İlk binini aştın! Sosyal medyada görünürlüğün artıyor." },
       { key: "10k", threshold: 10_000, label: "10.000 Takipçi!", desc: "10K kulübe hoş geldin! Micro-influencer seviyesindesin." },
@@ -443,7 +466,6 @@ function App() {
       setHasReceivedFirstSponsor(true);
       setActiveCelebration({ type: "sponsor", brandName: tier?.name ?? "İlk Marka" });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [followers]);
 
   useEffect(() => {
@@ -784,13 +806,43 @@ function App() {
         offline.credits, offline.followers, upgrades.completedUpgradeObjects, marina.completedOffline,
       );
       const nextLogs = [...messages, ...(parsed.logs ?? [])].filter(Boolean).slice(0, 5) as string[];
+      const nextProfileIndex = clampIndex(parsed.profileIndex, PLAYER_PROFILES.length);
+      const nextMarinaIndex = clampIndex(parsed.marinaIndex, STARTING_MARINAS.length);
+      const nextBoatIndex = clampIndex(parsed.boatIndex, STARTING_BOATS.length);
+      const nextRouteId = WORLD_ROUTES.some((route) => route.id === parsed.currentRouteId)
+        ? parsed.currentRouteId
+        : "greek_islands";
+      const nextActiveTab = safeTab(parsed.activeTab);
+      const nextFollowers = (parsed.followers ?? 0) + offline.followers;
+      const nextCompletedRouteIds = Array.isArray(parsed.completedRouteIds) ? parsed.completedRouteIds : [];
+      const nextAcceptedSponsors = Array.isArray(parsed.acceptedSponsors) ? parsed.acceptedSponsors : [];
+      const nextTotalContentProduced = parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0);
+      const nextCaptainLevel = parsed.captainLevel ?? 1;
+      const nextHasCompletedDailyGoalsOnce = parsed.hasCompletedDailyGoalsOnce ?? false;
+      const loadedAchievementIds = ACHIEVEMENTS
+        .filter((achievement) => achievement.isUnlocked({
+          totalContentProduced: nextTotalContentProduced,
+          totalRoutesCompleted: nextCompletedRouteIds.length,
+          totalUpgradesStarted: upgrades.purchasedUpgradeIds.length + upgrades.upgradesInProgress.length,
+          captainLevel: nextCaptainLevel,
+          hasCompletedDailyGoalsOnce: nextHasCompletedDailyGoalsOnce,
+          followers: nextFollowers,
+          acceptedSponsorsCount: nextAcceptedSponsors.length,
+          completedRouteIds: nextCompletedRouteIds,
+        }))
+        .map((achievement) => achievement.id);
 
-      setProfileIndex(parsed.profileIndex ?? 0);
-      setMarinaIndex(parsed.marinaIndex ?? 0);
-      setBoatIndex(parsed.boatIndex ?? 0);
+      previousUnlockedAchievementIdsRef.current = loadedAchievementIds;
+      hasInitializedAchievementBannerRef.current = true;
+      suppressAchievementCelebrationRef.current = true;
+      suppressFollowerCelebrationRef.current = true;
+
+      setProfileIndex(nextProfileIndex);
+      setMarinaIndex(nextMarinaIndex);
+      setBoatIndex(nextBoatIndex);
       setBoatName(parsed.boatName ?? "");
       setCredits((parsed.credits ?? 0) + offline.credits);
-      setFollowers((parsed.followers ?? 0) + offline.followers);
+      setFollowers(nextFollowers);
       setFirstContentDone(parsed.firstContentDone ?? false);
       setLogs(nextLogs);
       setPurchasedUpgradeIds(upgrades.purchasedUpgradeIds);
@@ -801,8 +853,8 @@ function App() {
       setWater(parsed.water ?? 100);
       setFuel(parsed.fuel ?? 100);
       setBoatCondition(parsed.boatCondition ?? 100);
-      setCurrentRouteId(parsed.currentRouteId ?? "greek_islands");
-      setCompletedRouteIds(parsed.completedRouteIds ?? []);
+      setCurrentRouteId(nextRouteId);
+      setCompletedRouteIds(nextCompletedRouteIds);
       setVoyageTotalDays(parsed.voyageTotalDays ?? 0);
       setVoyageDaysRemaining(parsed.voyageDaysRemaining ?? 0);
       setCurrentSeaEvent(nextSeaEvent || (parsed.currentSeaEvent ?? ""));
@@ -813,7 +865,7 @@ function App() {
       setSelectedUpgradeCategory(parsed.selectedUpgradeCategory ?? "energy");
       setBrandTrust(parsed.brandTrust ?? 10);
       setSponsorOffers(parsed.sponsorOffers ?? []);
-      setAcceptedSponsors(parsed.acceptedSponsors ?? []);
+      setAcceptedSponsors(nextAcceptedSponsors);
       setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
       setContentHistory(Array.isArray(parsed.contentHistory) ? parsed.contentHistory : []);
       setFirstVoyageEventTriggered(parsed.firstVoyageEventTriggered ?? false);
@@ -826,12 +878,12 @@ function App() {
       setMarinaRestInProgress(marina.marinaRest);
       setMarinaRestCooldownTick(Date.now());
       setCaptainXp(parsed.captainXp ?? 0);
-      setCaptainLevel(parsed.captainLevel ?? 1);
+      setCaptainLevel(nextCaptainLevel);
       setDailyGoals(Array.isArray(parsed.dailyGoals) ? parsed.dailyGoals : makeDailyGoals());
       setLastDailyReset(parsed.lastDailyReset ?? "");
       setDailyRewardClaimed(parsed.dailyRewardClaimed ?? false);
-      setTotalContentProduced(parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0));
-      setHasCompletedDailyGoalsOnce(parsed.hasCompletedDailyGoalsOnce ?? false);
+      setTotalContentProduced(nextTotalContentProduced);
+      setHasCompletedDailyGoalsOnce(nextHasCompletedDailyGoalsOnce);
       setTutorialStep(parsed.tutorialStep ?? 3);
       setGender(parsed.gender ?? "unspecified");
       setCompletedFollowerMilestones(Array.isArray(parsed.completedFollowerMilestones) ? parsed.completedFollowerMilestones : []);
@@ -841,7 +893,7 @@ function App() {
       setMarinaTasks(Array.isArray(parsed.marinaTasks) ? parsed.marinaTasks : []);
       setLastMarinaTasksLocation(parsed.lastMarinaTasksLocation ?? "");
       setStep(safeLoadStep(parsed));
-      setActiveTab(parsed.activeTab ?? "liman");
+      setActiveTab(nextActiveTab);
 
       upgrades.completedUpgradeObjects.forEach((upgrade) => {
         applyUpgradeEffects(upgrade);
@@ -1024,7 +1076,7 @@ function App() {
       if (upgradeWaterBonus > 20) waterDrop = 2 + (readinessPenalty > 1 ? 1 : 0);
       else if (upgradeWaterBonus > 10) waterDrop = 3 + (readinessPenalty > 1 ? 1 : 0);
 
-      let fuelDrop = 3 + (readinessPenalty > 2 ? 1 : 0);
+      const fuelDrop = 3 + (readinessPenalty > 2 ? 1 : 0);
 
       setEnergy(e => Math.max(0, e - energyDrop));
       setWater(w => Math.max(0, w - waterDrop));
@@ -2030,6 +2082,7 @@ function App() {
       return (compatibility?.compatible ?? false) && credits >= upgrade.cost;
     });
     const isSponsorProgressClose = Boolean(nextSponsorTier && followers >= nextSponsorTier.minFollowers * 0.75);
+    const showNextActionCard = !(step === "HUB" && tutorialStep < 3);
 
     let nextActionTitle = "Dünya turuna devam";
 
@@ -2056,7 +2109,7 @@ function App() {
 
         </div>
 
-        {!tavsiyeDismissed && (
+        {!tavsiyeDismissed && showNextActionCard && (
           <div className="next-action-card">
             <div className="next-action-content">
               <span className="next-action-eyebrow">Kaptan Tavsiyesi</span>
@@ -2199,6 +2252,7 @@ function App() {
               "Mükemmel! Tekne hazır. Artık denize açılma zamanı — Rota sekmesinden ilk rotanı başlat!",
             ][tutorialStep] ?? ""}
             visible={step === "HUB" && tutorialStep < 3}
+            className={`hub-guide hub-guide--step-${tutorialStep}`}
             actionLabel={["İçerik Üret →", "Tekneye Git →", "Rotaya Bak →"][tutorialStep]}
             onAction={() => {
               const tabs: Tab[] = ["icerik", "tekne", "rota"];
@@ -2283,3 +2337,4 @@ function App() {
 }
 
 export default App;
+

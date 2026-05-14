@@ -311,7 +311,7 @@ function App() {
   const [fuel, setFuel] = useState(100);
   const [boatCondition, setBoatCondition] = useState(100);
   
-  const [currentRouteId, setCurrentRouteId] = useState<string>("greek_islands");
+  const [currentRouteId, setCurrentRouteId] = useState<string>("turkiye_start");
   const [completedRouteIds, setCompletedRouteIds] = useState<string[]>([]);
   
   const [voyageTotalDays, setVoyageTotalDays] = useState(0);
@@ -829,7 +829,7 @@ function App() {
     setFuel(100);
     setBoatCondition(100);
     setCompletedRouteIds([]);
-    setCurrentRouteId("greek_islands");
+    setCurrentRouteId("turkiye_start");
     setPendingDecisionId(null);
     setContentResult(null);
     setSelectedPlatformId(null);
@@ -901,7 +901,7 @@ function App() {
       const nextBoatIndex = clampIndex(parsed.boatIndex, STARTING_BOATS.length);
       const nextRouteId = WORLD_ROUTES.some((route) => route.id === parsed.currentRouteId)
         ? parsed.currentRouteId
-        : "greek_islands";
+        : "turkiye_start";
       const nextActiveTab = safeTab(parsed.activeTab);
       const safeBaseCredits = Math.max(0, Math.min(Number(parsed.credits ?? 0) || 0, 5_000_000));
       const safeBaseFollowers = Math.max(0, Math.min(Number(parsed.followers ?? 0) || 0, 50_000_000));

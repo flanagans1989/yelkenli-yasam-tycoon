@@ -67,7 +67,7 @@ export function calculateContentRewards(p: ContentRewardsParams): { followers: n
   const viral = Math.random() < viralChance;
 
   let followers = p.quality * 5;
-  let credits = p.quality * 8;
+  let credits = Math.round(p.quality * (5 + 0.06 * p.quality));
 
   const multipliers: Record<string, [number, number]> = {
     viewTube: [1.0, 1.5],

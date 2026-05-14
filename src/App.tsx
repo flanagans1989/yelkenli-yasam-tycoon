@@ -241,11 +241,17 @@ const getRouteCompletionRewards = (route: (typeof WORLD_ROUTES)[number]) => {
     medium: 1,
     medium_high: 1.25,
     high: 1.5,
-    very_high: 2,
-    final: 2.5,
+    // Ocean crossings should feel meaningful without single-handedly funding a major upgrade.
+    very_high: 1.33,
+    final: 1.6,
   };
 
-  const credits = Math.floor(5000 * (riskLevelMultipliers[route.riskLevel] ?? 1));
+  const riskMultiplier =
+    route.difficulty === "final"
+      ? riskLevelMultipliers.final
+      : (riskLevelMultipliers[route.riskLevel] ?? 1);
+  const progressMultiplier = 1 + (Math.max(0, route.worldProgressPercent) / 100);
+  const credits = Math.floor(8000 * riskMultiplier * progressMultiplier);
   const followers = Math.floor(2500 * (contentPotentialMultipliers[route.contentPotential] ?? 1));
 
   return { credits, followers };
@@ -2565,8 +2571,9 @@ function App() {
     const arrivalReward = currentRoute ? getRouteCompletionRewards(currentRoute) : null;
     const completedRouteCount = Math.min(completedRouteIds.length + 1, WORLD_ROUTES.length);
     const nextRoute = currentRoute ? getNextRoute(currentRoute.id as RouteId) : undefined;
-    const rewardCredits = arrivalReward?.credits ?? 0;
-    const rewardFollowers = arrivalReward?.followers ?? 0;
+    const arrivalPrestigeMultiplier = isPrestigeVoyage ? 1.5 : 1;
+    const rewardCredits = Math.round((arrivalReward?.credits ?? 0) * arrivalPrestigeMultiplier);
+    const rewardFollowers = Math.round((arrivalReward?.followers ?? 0) * arrivalPrestigeMultiplier);
     const arrivalSummaryProgressPercent = Math.max(
       0,
       Math.min(100, (completedRouteCount / WORLD_ROUTES.length) * 100)

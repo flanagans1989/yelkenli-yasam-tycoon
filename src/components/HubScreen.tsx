@@ -119,7 +119,7 @@ export function HubScreen({
           onClick={() => setActiveTab("rota")}
           disabled={isTabLocked("rota")}
         >
-          <span className="tab-icon">🗺️</span>
+          <span className="tab-icon">🗺️</span>
           <span className="tab-label">Rota</span>
         </button>
         <button

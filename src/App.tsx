@@ -1760,11 +1760,6 @@ function App() {
 
     if (!currentRoute) return;
 
-    if (currentOceanReadiness < 60) {
-      pushToast("warning", "Hazırlık Yetersiz", `Okyanus hazırlığın %${currentOceanReadiness} — rotaya çıkmak için en az %60 gerekli. Tekne upgrade'leri yap.`);
-      return;
-    }
-
     if (hasRouteReadinessGap) {
       pushToast("warning", "Hazırlık Eksik", "Rota için gereken tüm hazırlık kriterleri tamamlanmadan seyir başlatılamaz.");
       return;

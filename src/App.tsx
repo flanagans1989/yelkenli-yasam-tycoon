@@ -61,6 +61,15 @@ function safeTab(value: unknown): Tab {
   return typeof value === "string" && VALID_TABS.includes(value as Tab) ? (value as Tab) : "liman";
 }
 
+function toFiniteNumber(value: unknown, fallback: number): number {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
+function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
+  return Math.max(min, Math.min(max, toFiniteNumber(value, fallback)));
+}
+
 function makeMarinaTasksForLocation(location: string): MarinaTask[] {
   const hash = location.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   const secondTypes: MarinaTaskType[] = ["refill_water", "refill_fuel", "check_sponsors", "repair_boat"];
@@ -911,33 +920,39 @@ function App() {
       setPurchasedUpgradeIds(upgrades.purchasedUpgradeIds);
       setUpgradesInProgress(upgrades.upgradesInProgress);
       setCurrentLocationName(parsed.currentLocationName ?? "");
-      setWorldProgress(parsed.worldProgress ?? 0);
-      setEnergy(parsed.energy ?? 100);
-      setWater(parsed.water ?? 100);
-      setFuel(parsed.fuel ?? 100);
-      setBoatCondition(parsed.boatCondition ?? 100);
+      setWorldProgress(clampNumber(parsed.worldProgress, 0, 100, 0));
+      setEnergy(clampNumber(parsed.energy, 0, 100, 100));
+      setWater(clampNumber(parsed.water, 0, 100, 100));
+      setFuel(clampNumber(parsed.fuel, 0, 100, 100));
+      setBoatCondition(clampNumber(parsed.boatCondition, 0, 100, 100));
       setCurrentRouteId(nextRouteId);
       setCompletedRouteIds(nextCompletedRouteIds);
-      setVoyageTotalDays(parsed.voyageTotalDays ?? 0);
-      setVoyageDaysRemaining(parsed.voyageDaysRemaining ?? 0);
+      setVoyageTotalDays(Math.max(0, Math.floor(toFiniteNumber(parsed.voyageTotalDays, 0))));
+      setVoyageDaysRemaining(Math.max(0, Math.floor(toFiniteNumber(parsed.voyageDaysRemaining, 0))));
       setCurrentSeaEvent(nextSeaEvent || (parsed.currentSeaEvent ?? ""));
-      setPendingDecisionId(parsed.pendingDecisionId ?? null);
+      setPendingDecisionId(typeof parsed.pendingDecisionId === "string" ? parsed.pendingDecisionId : null);
       setSelectedPlatformId(parsed.selectedPlatformId ?? null);
       setSelectedContentType(parsed.selectedContentType ?? null);
       setContentResult(parsed.contentResult ?? null);
       setSelectedUpgradeCategory(parsed.selectedUpgradeCategory ?? "energy");
       setBrandTrust(Math.max(0, Math.min(100, Number(parsed.brandTrust ?? 10) || 10)));
-      setSponsorOffers(parsed.sponsorOffers ?? []);
+      setSponsorOffers(Array.isArray(parsed.sponsorOffers) ? parsed.sponsorOffers : []);
       setAcceptedSponsors(nextAcceptedSponsors.slice(0, 12));
-      setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
+      setSponsoredContentCount(Math.max(0, Math.floor(toFiniteNumber(parsed.sponsoredContentCount, 0))));
       setContentHistory(Array.isArray(parsed.contentHistory) ? parsed.contentHistory : []);
       setFirstVoyageEventTriggered(parsed.firstVoyageEventTriggered ?? false);
-      setRecentSeaEventIds(parsed.recentSeaEventIds ?? []);
+      setRecentSeaEventIds(
+        Array.isArray(parsed.recentSeaEventIds)
+          ? parsed.recentSeaEventIds.filter((id: unknown): id is string => typeof id === "string").slice(0, 20)
+          : [],
+      );
       setTestMode(parsed.testMode ?? false);
       setHasReceivedFirstSponsor(parsed.hasReceivedFirstSponsor ?? false);
       setActiveStoryHook(parsed.activeStoryHook ?? null);
       setIcerikSubTab(parsed.icerikSubTab ?? "produce");
-      setLastContentAt(parsed.lastContentAt ?? null);
+      setLastContentAt(
+        parsed.lastContentAt == null ? null : Math.max(0, Math.floor(toFiniteNumber(parsed.lastContentAt, Date.now()))),
+      );
       setMarinaRestInProgress(marina.marinaRest);
       setMarinaRestCooldownTick(Date.now());
       setCaptainXp(Math.max(0, Number(parsed.captainXp ?? 0) || 0));
@@ -948,16 +963,17 @@ function App() {
       setTotalContentProduced(nextTotalContentProduced);
       setHasCompletedDailyGoalsOnce(nextHasCompletedDailyGoalsOnce);
       setHasCompletedWorldTour(parsed.hasCompletedWorldTour ?? false);
-      setTutorialStep(parsed.tutorialStep ?? 3);
+      setTutorialStep(clampNumber(parsed.tutorialStep, 0, 3, 3));
       setGender(parsed.gender ?? "unspecified");
       setCompletedFollowerMilestones(Array.isArray(parsed.completedFollowerMilestones) ? parsed.completedFollowerMilestones : []);
       setSponsorObligations(parsed.sponsorObligations && typeof parsed.sponsorObligations === "object" ? parsed.sponsorObligations : {});
-      setLoginStreak(parsed.loginStreak ?? 0);
+      setLoginStreak(Math.max(0, Math.floor(toFiniteNumber(parsed.loginStreak, 0))));
       setLastLoginBonus(parsed.lastLoginBonus ?? "");
       setMarinaTasks(Array.isArray(parsed.marinaTasks) ? parsed.marinaTasks.slice(0, 8) : []);
       setLastMarinaTasksLocation(parsed.lastMarinaTasksLocation ?? "");
-      requestStepTransition(safeLoadStep(parsed));
-      requestTabTransition(nextActiveTab);
+      const loadedStep = safeLoadStep(parsed);
+      const loadedTab = loadedStep === "SEA_MODE" ? "liman" : nextActiveTab;
+      requestStepAndTabTransition(loadedStep, loadedTab, { force: true });
 
       upgrades.completedUpgradeObjects.forEach((upgrade) => {
         applyUpgradeEffects(upgrade);

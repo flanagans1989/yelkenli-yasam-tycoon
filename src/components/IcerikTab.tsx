@@ -1,7 +1,8 @@
 ﻿import './IcerikTab.css';
+import { useState } from "react";
 import { ContentResultCard } from "./ContentResultCard";
 import { SponsorTab } from "./SponsorTab";
-import type { ContentResult, StoryHook, Step } from "../types/game";
+import type { ContentResult, StoryHook, Step, ContentHistoryItem } from "../types/game";
 
 type PlatformItem = {
   id: string;
@@ -57,6 +58,7 @@ type IcerikTabProps = {
   onProduceContent: () => void;
   contentResult: ContentResult | null;
   onResetContentResult: () => void;
+  contentHistory: ContentHistoryItem[];
   sponsorTabProps: {
     activeSponsorName: string;
     brandTrust: number;
@@ -108,8 +110,22 @@ export function IcerikTab({
   onProduceContent,
   contentResult,
   onResetContentResult,
+  contentHistory,
   sponsorTabProps,
 }: IcerikTabProps) {
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const CONTENT_TYPE_LABELS: Record<string, string> = {
+    marina_life: "Marina Yaşamı",
+    boat_tour: "Tekne Turu",
+    sailing_vlog: "Yelken Vlog",
+    nature_bay: "Doğa Koyu",
+    city_trip: "Şehir Turu",
+    ocean_diary: "Okyanus Günlüğü",
+    storm_vlog: "Fırtına Vlog",
+    maintenance_upgrade: "Bakım & Upgrade",
+  };
+
   return (
     <div className="tab-content fade-in">
       <div className="sub-tab-bar">
@@ -289,6 +305,41 @@ export function IcerikTab({
             </>
           ) : (
             <ContentResultCard result={contentResult} onReset={onResetContentResult} />
+          )}
+
+          {contentHistory.length > 0 && (
+            <div className="cs-history-accordion glass-card">
+              <button className="cs-history-hdr" onClick={() => setHistoryOpen(p => !p)}>
+                <span>📋 İçerik Geçmişi</span>
+                <span className={`cs-history-chevron${historyOpen ? " is-open" : ""}`}>›</span>
+              </button>
+              {historyOpen && (
+                <div className="cs-history-list">
+                  {contentHistory.map((item, i) => (
+                    <div key={i} className="cs-history-row">
+                      <div className="cs-history-left">
+                        <span className="cs-history-platform">{item.platform}</span>
+                        <span className="cs-history-type">{CONTENT_TYPE_LABELS[item.contentType] ?? item.contentType}</span>
+                      </div>
+                      <div className="cs-history-mid">
+                        <div className="cs-history-bar">
+                          <div
+                            className={`cs-history-fill${item.quality >= 70 ? " is-high" : item.quality >= 40 ? " is-mid" : " is-low"}`}
+                            style={{ width: `${item.quality}%` }}
+                          />
+                        </div>
+                        <span className="cs-history-quality">%{item.quality}</span>
+                      </div>
+                      <div className="cs-history-right">
+                        {item.viral && <span className="cs-history-viral">VIRAL</span>}
+                        <span className="cs-history-stat cs-history-stat--follow">+{item.followers.toLocaleString("tr-TR")}</span>
+                        <span className="cs-history-stat cs-history-stat--credit">+{item.credits.toLocaleString("tr-TR")} TL</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

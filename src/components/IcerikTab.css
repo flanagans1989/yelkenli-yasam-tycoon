@@ -809,6 +809,117 @@
   100% { opacity: 1; transform: scale(1); }
 }
 
+/* ── Content History Accordion ── */
+.cs-history-accordion {
+  margin-top: 12px;
+  padding: 0;
+  overflow: hidden;
+}
+.cs-history-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  text-align: left;
+}
+.cs-history-chevron {
+  font-size: 18px;
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+.cs-history-chevron.is-open { transform: rotate(90deg); }
+.cs-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 12px 12px;
+}
+.cs-history-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+}
+.cs-history-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 0 0 90px;
+}
+.cs-history-platform {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cyan-glow);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cs-history-type {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cs-history-mid {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+.cs-history-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.cs-history-fill { height: 100%; border-radius: 2px; }
+.cs-history-fill.is-high { background: var(--success-green); }
+.cs-history-fill.is-mid  { background: var(--warning-amber); }
+.cs-history-fill.is-low  { background: var(--danger-red); }
+.cs-history-quality {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  width: 26px;
+  text-align: right;
+}
+.cs-history-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.cs-history-viral {
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(90deg, #ff6b6b, #ee5a24);
+  border-radius: 3px;
+  padding: 1px 4px;
+  letter-spacing: 0.04em;
+}
+.cs-history-stat {
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.cs-history-stat--follow { color: var(--cyan-glow); }
+.cs-history-stat--credit { color: var(--gold-light); }
+
 /* Mobile narrow guards */
 @media (max-width: 360px) {
   .cs-platform-tile { padding: 12px 10px; min-height: 80px; gap: 10px; }

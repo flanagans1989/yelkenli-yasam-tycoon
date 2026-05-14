@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
-import type { Step, Tab, ContentResult, MarinaFilter, StoryHook, Gender, DailyGoal, ToastType, ToastItem } from "./types/game";
+import type { Step, Tab, ContentResult, MarinaFilter, StoryHook, Gender, DailyGoal, ToastType, ToastItem, ContentHistoryItem } from "./types/game";
 import { PLAYER_PROFILES } from "../game-data/playerProfiles";
 import type { PlayerProfile } from "../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../game-data/marinas";
@@ -208,6 +208,7 @@ function App() {
   const [selectedPlatformId, setSelectedPlatformId] = useState<string | null>(null);
   const [selectedContentType, setSelectedContentType] = useState<string | null>(null);
   const [contentResult, setContentResult] = useState<ContentResult | null>(null);
+  const [contentHistory, setContentHistory] = useState<ContentHistoryItem[]>([]);
   const [lastContentAt, setLastContentAt] = useState<number | null>(null);
   const [, setContentCooldownTick] = useState(0);
   const [marinaRestInProgress, setMarinaRestInProgress] = useState<MarinaRestInProgress | null>(null);
@@ -608,6 +609,7 @@ function App() {
         sponsorOffers,
         acceptedSponsors,
         sponsoredContentCount,
+        contentHistory,
         icerikSubTab,
         lastContentAt,
         marinaRestInProgress,
@@ -637,7 +639,7 @@ function App() {
     logs, purchasedUpgradeIds, upgradesInProgress, activeTab, currentLocationName, worldProgress, energy, water,
     fuel, boatCondition, currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining,
     currentSeaEvent, pendingDecisionId, selectedPlatformId, selectedContentType, contentResult, activeStoryHook, selectedUpgradeCategory,
-    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, icerikSubTab, lastContentAt, marinaRestInProgress,
+    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, contentHistory, icerikSubTab, lastContentAt, marinaRestInProgress,
     captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
     hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor, activeStoryHook,
     tutorialStep, gender
@@ -672,6 +674,7 @@ function App() {
     setSponsorOffers([]);
     setAcceptedSponsors([]);
     setSponsoredContentCount(0);
+    setContentHistory([]);
     setIcerikSubTab("produce");
     setLastContentAt(null);
     setMarinaRestInProgress(null);
@@ -738,6 +741,7 @@ function App() {
       setSponsorOffers(parsed.sponsorOffers ?? []);
       setAcceptedSponsors(parsed.acceptedSponsors ?? []);
       setSponsoredContentCount(parsed.sponsoredContentCount ?? 0);
+      setContentHistory(Array.isArray(parsed.contentHistory) ? parsed.contentHistory : []);
       setFirstVoyageEventTriggered(parsed.firstVoyageEventTriggered ?? false);
       setRecentSeaEventIds(parsed.recentSeaEventIds ?? []);
       setTestMode(parsed.testMode ?? false);
@@ -1053,6 +1057,16 @@ function App() {
         : undefined,
       sponsorInterestGained: sponsorInterestGained > 0 ? sponsorInterestGained : undefined,
     });
+
+    setContentHistory(prev => [{
+      platform: platform?.name || "Bilinmeyen",
+      contentType,
+      quality,
+      followers: gainFollowers,
+      credits: gainCredits,
+      viral: isViral,
+      timestamp: Date.now(),
+    }, ...prev.slice(0, 9)]);
 
     setCredits(prev => prev + gainCredits);
     setFollowers(prev => prev + gainFollowers);
@@ -1685,6 +1699,7 @@ function App() {
           onAcceptSponsor: handleAcceptSponsor,
           acceptedSponsors,
         }}
+        contentHistory={contentHistory}
       />
     );
   };

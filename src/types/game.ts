@@ -56,3 +56,13 @@ export type ToastItem = {
   title: string;
   text: string;
 };
+
+export type ContentHistoryItem = {
+  platform: string;
+  contentType: string;
+  quality: number;
+  followers: number;
+  credits: number;
+  viral: boolean;
+  timestamp: number;
+};

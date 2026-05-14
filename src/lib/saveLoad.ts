@@ -4,9 +4,8 @@ import { WORLD_ROUTES } from "../../game-data/routes";
 export const SAVE_KEY = "yelkenli_save";
 export const SAVE_VERSION = 2;
 export const MAX_OFFLINE_MINUTES = 480;
-export const MAX_OFFLINE_REWARD_MINUTES = 120;
-export const OFFLINE_CREDITS_PER_MINUTE = 15;
-export const OFFLINE_FOLLOWERS_PER_MINUTE = 1;
+export const MAX_OFFLINE_REWARD_MINUTES = 240;
+export const MAX_OFFLINE_REWARD_MINUTES_EXTENDED = 480;
 
 // Time manipulation guard: anchored at module load time once per session.
 export const SESSION_START_REAL_MS: number = Date.now();
@@ -138,17 +137,23 @@ export function migrateSave(parsed: any) {
   return null;
 }
 
-export function calculateOfflineIncome(lastSavedAt: unknown): { credits: number; followers: number; minutes: number } {
+export function calculateOfflineIncome(
+  lastSavedAt: unknown,
+  captainLevel: number = 1,
+  maxRewardMinutes: number = MAX_OFFLINE_REWARD_MINUTES,
+): { credits: number; followers: number; minutes: number } {
   if (typeof lastSavedAt !== "number" || !Number.isFinite(lastSavedAt)) {
     return { credits: 0, followers: 0, minutes: 0 };
   }
   const offlineMs = Math.max(0, getSafeNow() - lastSavedAt);
   const cappedMinutes = Math.min(Math.floor(offlineMs / 60000), MAX_OFFLINE_MINUTES);
-  const minutes = Math.min(cappedMinutes, MAX_OFFLINE_REWARD_MINUTES);
+  const minutes = Math.min(cappedMinutes, maxRewardMinutes);
+  const creditsPerMin = Math.min(Math.max(captainLevel * 12, 12), 100);
+  const followersPerMin = Math.min(Math.max(Math.round(captainLevel * 0.5), 1), 5);
   return {
     minutes,
-    credits: Math.max(0, minutes * OFFLINE_CREDITS_PER_MINUTE),
-    followers: Math.max(0, minutes * OFFLINE_FOLLOWERS_PER_MINUTE),
+    credits: Math.max(0, minutes * creditsPerMin),
+    followers: Math.max(0, minutes * followersPerMin),
   };
 }
 

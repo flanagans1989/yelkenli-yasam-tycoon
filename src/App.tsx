@@ -885,7 +885,8 @@ function App() {
         return;
       }
 
-      const offline = calculateOfflineIncome(parsed.lastSavedAt);
+      const nextCaptainLevel = parsed.captainLevel ?? 1;
+      const offline = calculateOfflineIncome(parsed.lastSavedAt, nextCaptainLevel);
       const upgrades = processUpgradesFromSave(
         Array.isArray(parsed.upgradesInProgress) ? parsed.upgradesInProgress : null,
         parsed.upgradeInProgress ?? null,
@@ -909,7 +910,6 @@ function App() {
       const nextCompletedRouteIds = Array.isArray(parsed.completedRouteIds) ? parsed.completedRouteIds : [];
       const nextAcceptedSponsors = Array.isArray(parsed.acceptedSponsors) ? parsed.acceptedSponsors : [];
       const nextTotalContentProduced = parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0);
-      const nextCaptainLevel = parsed.captainLevel ?? 1;
       const nextHasCompletedDailyGoalsOnce = parsed.hasCompletedDailyGoalsOnce ?? false;
       const loadedAchievementIds = ACHIEVEMENTS
         .filter((achievement) => achievement.isUnlocked({

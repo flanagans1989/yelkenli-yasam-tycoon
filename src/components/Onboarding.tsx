@@ -1,4 +1,5 @@
-﻿import { useRef, useState } from "react";
+﻿import './Onboarding.css';
+import { useRef, useState } from "react";
 import type { Dispatch, SetStateAction, TouchEvent as ReactTouchEvent } from "react";
 import { MicoSvg, MicoGuide } from "./MicoGuide";
 import type { Step, MarinaFilter, Gender } from "../types/game";

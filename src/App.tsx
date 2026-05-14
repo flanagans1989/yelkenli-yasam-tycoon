@@ -31,12 +31,14 @@ import { SEA_DECISION_EVENTS } from "./data/seaEvents";
 import { ACHIEVEMENTS, ACHIEVEMENT_ICONS } from "./data/achievements";
 import { getContentComment } from "./data/contentComments";
 import { getDailyGoalTheme, getCaptainLevel, getContentCooldownMs, getBoatUpgradeDurationMs, getCaptainRankLabel } from "./data/captainData";
+import {
+  SAVE_KEY, SAVE_VERSION,
+  migrateSave, calculateOfflineIncome, processUpgradesFromSave,
+  processMarinaRestFromSave, buildOfflineMessages, safeLoadStep,
+} from "./lib/saveLoad";
+import type { UpgradeInProgressItem, MarinaRestInProgress } from "./lib/saveLoad";
+import { calculateContentQuality, calculateContentRewards, formatSeaDecisionEffectSummary } from "./lib/gameLogic";
 
-const SAVE_KEY = "yelkenli_save";
-const SAVE_VERSION = 2;
-const MAX_OFFLINE_MINUTES = 480;
-const OFFLINE_CREDITS_PER_MINUTE = 15;
-const OFFLINE_FOLLOWERS_PER_MINUTE = 1;
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
 const MARINA_REST_DURATION_MS = 2 * 60 * 1000;
 
@@ -50,20 +52,6 @@ const makeDailyGoals = (dateKey: string = new Date().toISOString().slice(0, 10))
     { id: "dg_route", title: theme.goals.complete_route, type: "complete_route", completed: false },
     { id: "dg_upgrade", title: theme.goals.buy_upgrade, type: "buy_upgrade", completed: false },
   ];
-};
-
-type UpgradeInProgressItem = {
-  upgradeId: string;
-  completesAt: number;
-  startedAt: number;
-  durationMs: number;
-  slot: 0 | 1 | 2;
-};
-
-type MarinaRestInProgress = {
-  startedAt: number;
-  completesAt: number;
-  durationMs: number;
 };
 
 type DailyGoal = {
@@ -101,27 +89,6 @@ const upgradeEffectLabels: Record<string, string> = {
   contentQuality: "İçerik Kalitesi",
   speed: "Hız",
   engine: "Motor",
-};
-
-const getLocationContentBonus = (region: string, contentType: string): number => {
-  const r = region.toLocaleLowerCase("tr-TR");
-  const isEge = r.includes("ege");
-  const isAkdeniz = r.includes("akdeniz") || r.includes("antalya");
-  const isMarmara = r.includes("marmara") || r.includes("istanbul");
-
-  if (isEge) {
-    if (contentType === "nature_bay") return 10;
-    if (contentType === "sailing_vlog") return 5;
-  }
-  if (isAkdeniz) {
-    if (contentType === "sailing_vlog") return 10;
-    if (contentType === "nature_bay") return 10;
-  }
-  if (isMarmara) {
-    if (contentType === "city_trip") return 10;
-    if (contentType === "marina_life") return 5;
-  }
-  return 0;
 };
 
 const getLocationBonusLabel = (region: string): { contentType: string; label: string } | null => {
@@ -218,39 +185,6 @@ const createSeaEventStoryHook = (decisionId: string, routeId?: string): StoryHoo
 
   return null;
 };
-
-function migrateSave(parsed: any) {
-  if (!parsed || typeof parsed !== "object") return null;
-
-  const version = parsed.saveVersion ?? 1;
-
-  if (version === 1) {
-    const dailyGoalsCompleted =
-      Array.isArray(parsed.dailyGoals) &&
-      parsed.dailyGoals.length > 0 &&
-      parsed.dailyGoals.every((goal: any) => goal?.completed);
-
-    return {
-      ...parsed,
-      saveVersion: SAVE_VERSION,
-      hasSave: parsed.hasSave ?? true,
-      totalContentProduced: parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0),
-      hasCompletedDailyGoalsOnce:
-        parsed.hasCompletedDailyGoalsOnce ?? Boolean(dailyGoalsCompleted && parsed.dailyRewardClaimed),
-    };
-  }
-
-  if (version === SAVE_VERSION) {
-    return {
-      ...parsed,
-      hasSave: parsed.hasSave ?? true,
-      totalContentProduced: parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0),
-      hasCompletedDailyGoalsOnce: parsed.hasCompletedDailyGoalsOnce ?? false,
-    };
-  }
-
-  return null;
-}
 
 function App() {
   const [step, setStep] = useState<Step>("WELCOME");
@@ -779,139 +713,28 @@ function App() {
       const parsed = migrateSave(JSON.parse(saved));
       if (!parsed) return;
 
-      const savedPurchasedUpgradeIds = parsed.purchasedUpgradeIds ?? [];
-      const savedUpgradesInProgress = Array.isArray(parsed.upgradesInProgress) ? parsed.upgradesInProgress : null;
-      const savedUpgradeInProgress = parsed.upgradeInProgress ?? null;
-      const savedCredits = parsed.credits ?? 0;
-      const savedLogs = parsed.logs ?? [];
-      const savedLastSavedAt = parsed.lastSavedAt;
-
-      let offlineMinutes = 0;
-      let offlineCredits = 0;
-      let offlineFollowers = 0;
-      let nextPurchasedUpgradeIds = savedPurchasedUpgradeIds;
-      let nextUpgradesInProgress: UpgradeInProgressItem[] = [];
-      const completedUpgradeIds: string[] = [];
-      let nextMarinaRestInProgress: MarinaRestInProgress | null = null;
-      let marinaRestCompletedOffline = false;
-
-      if (typeof savedLastSavedAt === "number" && Number.isFinite(savedLastSavedAt)) {
-        const offlineMs = Math.max(0, Date.now() - savedLastSavedAt);
-        offlineMinutes = Math.min(Math.floor(offlineMs / 60000), MAX_OFFLINE_MINUTES);
-        offlineCredits = Math.max(0, offlineMinutes * OFFLINE_CREDITS_PER_MINUTE);
-        offlineFollowers = Math.max(0, offlineMinutes * OFFLINE_FOLLOWERS_PER_MINUTE);
-      }
-
-      const isValidUpgradeId = (upgradeId: string) => BOAT_UPGRADES.some((upgrade) => upgrade.id === upgradeId);
-      const usedSlots = new Set<number>();
-      const registerSavedUpgrade = (rawItem: unknown, fallbackSlot: 0 | 1 | 2) => {
-        if (!rawItem || typeof rawItem !== "object") return;
-        const item = rawItem as Partial<UpgradeInProgressItem> & { upgradeId?: unknown; completesAt?: unknown };
-        if (typeof item.upgradeId !== "string" || !isValidUpgradeId(item.upgradeId)) return;
-        if (nextPurchasedUpgradeIds.includes(item.upgradeId)) return;
-        if (nextUpgradesInProgress.some((existing) => existing.upgradeId === item.upgradeId)) return;
-        if (typeof item.completesAt !== "number" || !Number.isFinite(item.completesAt)) return;
-
-        if (item.completesAt <= Date.now()) {
-          completedUpgradeIds.push(item.upgradeId);
-          return;
-        }
-
-        let slot = fallbackSlot;
-        if (typeof item.slot === "number" && item.slot >= 0 && item.slot < MAX_PARALLEL_UPGRADES && !usedSlots.has(item.slot)) {
-          slot = item.slot as 0 | 1 | 2;
-        } else {
-          const nextSlot = ([0, 1, 2] as const).find((candidate) => !usedSlots.has(candidate));
-          if (nextSlot === undefined) return;
-          slot = nextSlot;
-        }
-
-        const startedAt =
-          typeof item.startedAt === "number" && Number.isFinite(item.startedAt)
-            ? item.startedAt
-            : Math.min(Date.now(), item.completesAt);
-        const durationMs =
-          typeof item.durationMs === "number" && Number.isFinite(item.durationMs)
-            ? item.durationMs
-            : Math.max(0, item.completesAt - startedAt);
-
-        usedSlots.add(slot);
-        nextUpgradesInProgress.push({
-          upgradeId: item.upgradeId,
-          completesAt: item.completesAt,
-          startedAt,
-          durationMs,
-          slot,
-        });
-      };
-
-      if (savedUpgradesInProgress) {
-        savedUpgradesInProgress.forEach((item: unknown, index: number) => {
-          const fallbackSlot = (index < MAX_PARALLEL_UPGRADES ? index : 0) as 0 | 1 | 2;
-          registerSavedUpgrade(item, fallbackSlot);
-        });
-      } else if (savedUpgradeInProgress) {
-        registerSavedUpgrade(savedUpgradeInProgress, 0);
-      }
-
-      const savedMarinaRest = parsed.marinaRestInProgress;
-      if (savedMarinaRest && typeof savedMarinaRest === "object") {
-        const startedAtRaw = (savedMarinaRest as { startedAt?: unknown }).startedAt;
-        const completesAtRaw = (savedMarinaRest as { completesAt?: unknown }).completesAt;
-        const durationMsRaw = (savedMarinaRest as { durationMs?: unknown }).durationMs;
-        const startedAt = typeof startedAtRaw === "number" && Number.isFinite(startedAtRaw) ? startedAtRaw : Date.now();
-        const completesAt = typeof completesAtRaw === "number" && Number.isFinite(completesAtRaw) ? completesAtRaw : NaN;
-        const durationMs = typeof durationMsRaw === "number" && Number.isFinite(durationMsRaw)
-          ? durationMsRaw
-          : Math.max(0, completesAt - startedAt);
-
-        if (Number.isFinite(completesAt)) {
-          if (completesAt <= Date.now()) {
-            marinaRestCompletedOffline = true;
-          } else {
-            nextMarinaRestInProgress = { startedAt, completesAt, durationMs };
-          }
-        }
-      }
-
-      const completedUpgradeObjects = [...new Set(completedUpgradeIds)]
-        .map((upgradeId) => BOAT_UPGRADES.find((upgrade) => upgrade.id === upgradeId))
-        .filter(Boolean) as typeof BOAT_UPGRADES;
-
-      completedUpgradeObjects.forEach((upgrade) => {
-        if (!nextPurchasedUpgradeIds.includes(upgrade.id)) {
-          nextPurchasedUpgradeIds = [...nextPurchasedUpgradeIds, upgrade.id];
-        }
-      });
-
-      const passiveIncomeMessage =
-        (offlineCredits > 0 || offlineFollowers > 0)
-          ? `Sen yokken içeriklerin izlenmeye devam etti: +${offlineCredits.toLocaleString("tr-TR")} TL, +${offlineFollowers.toLocaleString("tr-TR")} takipçi.`
-          : "";
-      const installationCompleteMessage = completedUpgradeObjects.length > 0
-        ? completedUpgradeObjects.length === 1
-          ? `Kurulum tamamlandı: ${completedUpgradeObjects[0].name} aktif edildi.`
-          : `${completedUpgradeObjects.length} upgrade tamamlandı: ${completedUpgradeObjects.map((upgrade) => upgrade.name).join(", ")}.`
-        : "";
-      const marinaRestMessage = marinaRestCompletedOffline
-        ? "Marina dinlenme hizmeti siz yokken tamamlandi. Kaynaklar toparlandi."
-        : "";
-      const nextLogs = [installationCompleteMessage, marinaRestMessage, passiveIncomeMessage, ...savedLogs]
-        .filter(Boolean)
-        .slice(0, 5) as string[];
-      const nextSeaEvent =
-        installationCompleteMessage || marinaRestMessage || passiveIncomeMessage || (parsed.currentSeaEvent ?? "");
+      const offline = calculateOfflineIncome(parsed.lastSavedAt);
+      const upgrades = processUpgradesFromSave(
+        Array.isArray(parsed.upgradesInProgress) ? parsed.upgradesInProgress : null,
+        parsed.upgradeInProgress ?? null,
+        parsed.purchasedUpgradeIds ?? [],
+      );
+      const marina = processMarinaRestFromSave(parsed.marinaRestInProgress);
+      const { messages, nextSeaEvent } = buildOfflineMessages(
+        offline.credits, offline.followers, upgrades.completedUpgradeObjects, marina.completedOffline,
+      );
+      const nextLogs = [...messages, ...(parsed.logs ?? [])].filter(Boolean).slice(0, 5) as string[];
 
       setProfileIndex(parsed.profileIndex ?? 0);
       setMarinaIndex(parsed.marinaIndex ?? 0);
       setBoatIndex(parsed.boatIndex ?? 0);
       setBoatName(parsed.boatName ?? "");
-      setCredits(savedCredits + offlineCredits);
-      setFollowers((parsed.followers ?? 0) + offlineFollowers);
+      setCredits((parsed.credits ?? 0) + offline.credits);
+      setFollowers((parsed.followers ?? 0) + offline.followers);
       setFirstContentDone(parsed.firstContentDone ?? false);
       setLogs(nextLogs);
-      setPurchasedUpgradeIds(nextPurchasedUpgradeIds);
-      setUpgradesInProgress(nextUpgradesInProgress);
+      setPurchasedUpgradeIds(upgrades.purchasedUpgradeIds);
+      setUpgradesInProgress(upgrades.upgradesInProgress);
       setCurrentLocationName(parsed.currentLocationName ?? "");
       setWorldProgress(parsed.worldProgress ?? 0);
       setEnergy(parsed.energy ?? 100);
@@ -922,7 +745,7 @@ function App() {
       setCompletedRouteIds(parsed.completedRouteIds ?? []);
       setVoyageTotalDays(parsed.voyageTotalDays ?? 0);
       setVoyageDaysRemaining(parsed.voyageDaysRemaining ?? 0);
-      setCurrentSeaEvent(nextSeaEvent);
+      setCurrentSeaEvent(nextSeaEvent || (parsed.currentSeaEvent ?? ""));
       setPendingDecisionId(parsed.pendingDecisionId ?? null);
       setSelectedPlatformId(parsed.selectedPlatformId ?? null);
       setSelectedContentType(parsed.selectedContentType ?? null);
@@ -939,7 +762,7 @@ function App() {
       setActiveStoryHook(parsed.activeStoryHook ?? null);
       setIcerikSubTab(parsed.icerikSubTab ?? "produce");
       setLastContentAt(parsed.lastContentAt ?? null);
-      setMarinaRestInProgress(nextMarinaRestInProgress);
+      setMarinaRestInProgress(marina.marinaRest);
       setMarinaRestCooldownTick(Date.now());
       setCaptainXp(parsed.captainXp ?? 0);
       setCaptainLevel(parsed.captainLevel ?? 1);
@@ -950,17 +773,14 @@ function App() {
       setHasCompletedDailyGoalsOnce(parsed.hasCompletedDailyGoalsOnce ?? false);
       setTutorialStep(parsed.tutorialStep ?? 3);
       setGender(parsed.gender ?? "unspecified");
-
-      const safeStep = parsed.step && ["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(parsed.step) ? parsed.step : "HUB";
-      const routeValid = WORLD_ROUTES.some(r => r.id === parsed.currentRouteId);
-      setStep(safeStep === "SEA_MODE" && !routeValid ? "HUB" : safeStep);
+      setStep(safeLoadStep(parsed));
       setActiveTab(parsed.activeTab ?? "liman");
 
-      completedUpgradeObjects.forEach((upgrade) => {
+      upgrades.completedUpgradeObjects.forEach((upgrade) => {
         applyUpgradeEffects(upgrade);
         pushToast("upgrade", "Upgrade Tamamlandı!", `${upgrade.name} kurulumu tamamlandı!`);
       });
-      if (marinaRestCompletedOffline) {
+      if (marina.completedOffline) {
         setEnergy((prev) => Math.min(100, prev + 30));
         setWater((prev) => Math.min(100, prev + 30));
         setFuel((prev) => Math.min(100, prev + 20));
@@ -1210,65 +1030,26 @@ function App() {
       return;
     }
 
-    let quality = 40;
-    quality += (selectedProfile.skills.content || 0) * 5;
-
-    const platform = SOCIAL_PLATFORMS.find(p => p.id === platformId);
-    if (platform && platform.bestContentTypes.includes(contentType as any)) {
-      quality += 10;
-    }
-
-    const isViewTubeMatch = platformId === "viewTube" && ["boat_tour", "maintenance_upgrade", "sailing_vlog"].includes(contentType);
-    const isClipTokMatch = platformId === "clipTok" && ["nature_bay", "sailing_vlog", "storm_vlog"].includes(contentType);
-    const isInstaSeaMatch = platformId === "instaSea" && ["marina_life", "city_trip", "nature_bay"].includes(contentType);
-    const isFacePortMatch = platformId === "facePort" && ["marina_life", "boat_tour", "ocean_diary"].includes(contentType);
-
-    if (isViewTubeMatch || isClipTokMatch || isInstaSeaMatch || isFacePortMatch) {
-      quality += 10;
-    }
-
-    quality += upgradeContentBonus;
-    quality += getLocationContentBonus(selectedMarina?.region ?? "", contentType);
-
-    if (step === "SEA_MODE" && currentRoute) {
-      if (currentRoute.contentPotential === "very_high") quality += 15;
-      else if (currentRoute.contentPotential === "high") quality += 10;
-      else if (currentRoute.contentPotential === "medium_high") quality += 5;
-    } else {
-      quality += 5;
-    }
-
-    quality += Math.floor(Math.random() * 26) - 10;
-    quality = Math.max(0, Math.min(100, quality));
-
-    let viralChance = 0;
-    if (quality >= 85) viralChance = 0.25;
-    else if (quality >= 70) viralChance = 0.10;
-    else if (quality >= 40) viralChance = 0.03;
-
-    const isViral = Math.random() < viralChance;
-
-    let gainFollowers = quality * 5;
-    let gainCredits = quality * 8;
-
-    if (platformId === "viewTube") { gainCredits *= 1.5; gainFollowers *= 1.0; }
-    if (platformId === "clipTok") { gainCredits *= 0.8; gainFollowers *= 1.8; }
-    if (platformId === "instaSea") { gainCredits *= 1.1; gainFollowers *= 1.3; }
-    if (platformId === "facePort") { gainCredits *= 1.0; gainFollowers *= 1.1; }
-
-    if (isViral) {
-      gainFollowers *= 3;
-      gainCredits *= 2;
-    }
-
     const storyFollowerBonus = storyHook?.bonusFollowersPct ?? 0;
     const storyCreditBonus = storyHook?.bonusCreditsPct ?? 0;
 
-    if (storyFollowerBonus > 0) gainFollowers *= 1 + storyFollowerBonus / 100;
-    if (storyCreditBonus > 0) gainCredits *= 1 + storyCreditBonus / 100;
+    const quality = calculateContentQuality({
+      profileContentSkill: selectedProfile.skills.content || 0,
+      platformId,
+      contentType,
+      upgradeContentBonus,
+      marinaRegion: selectedMarina?.region ?? "",
+      isSeaMode: step === "SEA_MODE",
+      routeContentPotential: currentRoute?.contentPotential,
+    });
 
-    gainFollowers = Math.floor(gainFollowers);
-    gainCredits = Math.floor(gainCredits);
+    const platform = SOCIAL_PLATFORMS.find(p => p.id === platformId);
+    const { followers: gainFollowers, credits: gainCredits, viral: isViral } = calculateContentRewards({
+      quality,
+      platformId,
+      storyFollowerBonusPct: storyFollowerBonus,
+      storyCreditBonusPct: storyCreditBonus,
+    });
 
     const comment = getContentComment(contentType, quality, isViral);
     const sponsorInterestGained = storyHook?.sponsorInterest ?? 0;
@@ -1371,17 +1152,7 @@ function App() {
       setVoyageDaysRemaining(prev => Math.max(0, prev + remainingDaysDelta));
     }
 
-    const effectSummary = [
-      typeof followersDelta === "number" ? `${followersDelta > 0 ? "+" : ""}${followersDelta} takipci` : null,
-      typeof creditsDelta === "number" ? `${creditsDelta > 0 ? "+" : ""}${creditsDelta} TL` : null,
-      typeof energyDelta === "number" ? `${energyDelta > 0 ? "+" : ""}${energyDelta} enerji` : null,
-      typeof waterDelta === "number" ? `${waterDelta > 0 ? "+" : ""}${waterDelta} su` : null,
-      typeof fuelDelta === "number" ? `${fuelDelta > 0 ? "+" : ""}${fuelDelta} yakit` : null,
-      typeof boatConditionDelta === "number" ? `${boatConditionDelta > 0 ? "+" : ""}${boatConditionDelta} tekne durumu` : null,
-      typeof remainingDaysDelta === "number" ? `${remainingDaysDelta > 0 ? "+" : ""}${remainingDaysDelta} gun` : null,
-    ]
-      .filter(Boolean)
-      .join(" · ");
+    const effectSummary = formatSeaDecisionEffectSummary(effect);
 
     setCurrentSeaEvent(choice.resultText);
     setLogs(prev => [`${decision.title}: ${choice.resultText}`, ...prev.slice(0, 4)]);

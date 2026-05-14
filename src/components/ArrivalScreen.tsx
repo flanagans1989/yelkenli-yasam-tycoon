@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from "react";
+﻿import './ArrivalScreen.css';
+import { useEffect, useState } from "react";
 import { WORLD_ROUTES } from "../../game-data/routes";
 
 function useCountUp(target: number, delayMs: number, durationMs: number): number {

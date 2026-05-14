@@ -1,3 +1,4 @@
+﻿import './TekneTab.css';
 import type { ReactNode } from "react";
 import type { UpgradeCategoryId } from "../../game-data/upgrades";
 

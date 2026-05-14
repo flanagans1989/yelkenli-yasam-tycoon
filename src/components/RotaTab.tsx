@@ -1,4 +1,5 @@
-﻿import { useState, useEffect } from "react";
+﻿import './RotaTab.css';
+import { useState, useEffect } from "react";
 import { WORLD_ROUTES } from "../../game-data/routes";
 
 interface RouteReadinessValue {

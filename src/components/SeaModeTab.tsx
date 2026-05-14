@@ -1,4 +1,5 @@
-﻿import { getBoatSvg } from "./Onboarding";
+﻿import './SeaModeTab.css';
+import { getBoatSvg } from "./Onboarding";
 
 interface SeaDecisionChoiceView {
   label: string;

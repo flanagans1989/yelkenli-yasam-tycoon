@@ -1,3 +1,4 @@
+﻿import './KaptanTab.css';
 import type { PlayerProfile } from "../../game-data/playerProfiles";
 import { profileIcons, skillLabels } from "../data/labels";
 

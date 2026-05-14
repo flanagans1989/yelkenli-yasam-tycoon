@@ -1,3 +1,4 @@
+﻿import './IcerikTab.css';
 import { ContentResultCard } from "./ContentResultCard";
 import { SponsorTab } from "./SponsorTab";
 import type { ContentResult, StoryHook, Step } from "../types/game";

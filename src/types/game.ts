@@ -57,6 +57,16 @@ export type ToastItem = {
   text: string;
 };
 
+export type MarinaTaskType = "produce_content" | "refill_water" | "refill_fuel" | "check_sponsors" | "repair_boat";
+
+export type MarinaTask = {
+  id: string;
+  type: MarinaTaskType;
+  title: string;
+  reward: number;
+  completed: boolean;
+};
+
 export type ContentHistoryItem = {
   platform: string;
   contentType: string;

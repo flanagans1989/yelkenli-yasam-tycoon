@@ -312,6 +312,18 @@ export function IcerikTab({
             <div className="cs-history-accordion glass-card">
               <button className="cs-history-hdr" onClick={() => setHistoryOpen(p => !p)}>
                 <span>📋 İçerik Geçmişi</span>
+                {contentHistory.length >= 2 && (() => {
+                  const pts = [...contentHistory].reverse().map(i => i.quality);
+                  const W = 60; const H = 20; const n = pts.length;
+                  const min = Math.min(...pts); const max = Math.max(...pts);
+                  const range = max - min || 1;
+                  const coords = pts.map((v, i) => `${(i / (n - 1)) * W},${H - ((v - min) / range) * H}`).join(" ");
+                  return (
+                    <svg className="cs-sparkline" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
+                      <polyline points={coords} fill="none" stroke="var(--accent-cyan,#22d3ee)" strokeWidth="1.5" strokeLinejoin="round" />
+                    </svg>
+                  );
+                })()}
                 <span className={`cs-history-chevron${historyOpen ? " is-open" : ""}`}>›</span>
               </button>
               {historyOpen && (

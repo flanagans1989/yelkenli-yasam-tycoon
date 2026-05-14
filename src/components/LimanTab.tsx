@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { getBoatSvg } from "./Onboarding";
+import type { MarinaTask } from "../types/game";
 
 interface LimanTabProps {
   selectedBoatId: string;
@@ -26,6 +27,7 @@ interface LimanTabProps {
   onGoContent: () => void;
   onGoRoute: () => void;
   renderDailyGoals: () => ReactNode;
+  marinaTasks: MarinaTask[];
 }
 
 const RESOURCE_DEFS: Array<{
@@ -62,6 +64,7 @@ export function LimanTab({
   onGoContent,
   onGoRoute,
   renderDailyGoals,
+  marinaTasks,
 }: LimanTabProps) {
   const [marinaOpen, setMarinaOpen] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
@@ -188,6 +191,20 @@ export function LimanTab({
 
       {/* ── Daily Goals (slotted from App.tsx) ── */}
       {renderDailyGoals()}
+
+      {/* ── Marina Tasks ── */}
+      {marinaTasks.length > 0 && (
+        <div className="lh-marina-tasks glass-card">
+          <span className="lh-marina-tasks-eyebrow">⚓ Marina Görevleri</span>
+          {marinaTasks.map(task => (
+            <div key={task.id} className={`lh-marina-task-row${task.completed ? " is-done" : ""}`}>
+              <span className="lh-marina-task-check">{task.completed ? "✓" : "○"}</span>
+              <span className="lh-marina-task-title">{task.title}</span>
+              <span className="lh-marina-task-reward">+{task.reward} TL</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Beginner Guide (hidden once both milestones done) ── */}
       {!guideComplete && (

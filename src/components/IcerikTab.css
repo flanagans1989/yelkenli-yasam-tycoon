@@ -831,6 +831,7 @@
   cursor: pointer;
   text-align: left;
 }
+.cs-sparkline { display: block; opacity: 0.8; flex-shrink: 0; }
 .cs-history-chevron {
   font-size: 18px;
   transition: transform 0.2s ease;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
-import type { Step, Tab, ContentResult, MarinaFilter, StoryHook, Gender, DailyGoal, ToastType, ToastItem, ContentHistoryItem } from "./types/game";
+import type { Step, Tab, ContentResult, MarinaFilter, StoryHook, Gender, DailyGoal, ToastType, ToastItem, ContentHistoryItem, MarinaTask, MarinaTaskType } from "./types/game";
 import { PLAYER_PROFILES } from "../game-data/playerProfiles";
 import type { PlayerProfile } from "../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../game-data/marinas";
@@ -43,6 +43,25 @@ const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
 const MARINA_REST_DURATION_MS = 2 * 60 * 1000;
 
 const MAX_PARALLEL_UPGRADES = 3;
+
+const MARINA_TASK_REWARD = 500;
+
+function makeMarinaTasksForLocation(location: string): MarinaTask[] {
+  const hash = location.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const secondTypes: MarinaTaskType[] = ["refill_water", "refill_fuel", "check_sponsors", "repair_boat"];
+  const secondType = secondTypes[hash % secondTypes.length];
+  const secondTitles: Record<MarinaTaskType, string> = {
+    refill_water: "Su tanklarını doldur",
+    refill_fuel: "Yakıt ikmali yap",
+    check_sponsors: "Sponsor tekliflerini kontrol et",
+    repair_boat: "Tekneyi onar (%50+)",
+    produce_content: "İçerik yayınla",
+  };
+  return [
+    { id: "mt_content", type: "produce_content", title: "Bu limanda bir içerik üret", reward: MARINA_TASK_REWARD, completed: false },
+    { id: "mt_second", type: secondType, title: secondTitles[secondType], reward: MARINA_TASK_REWARD, completed: false },
+  ];
+}
 
 const makeDailyGoals = (dateKey: string = new Date().toISOString().slice(0, 10)): DailyGoal[] => {
   const theme = getDailyGoalTheme(dateKey);
@@ -263,6 +282,8 @@ function App() {
   const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
   const [loginStreak, setLoginStreak] = useState(0);
   const [lastLoginBonus, setLastLoginBonus] = useState<string>("");
+  const [marinaTasks, setMarinaTasks] = useState<MarinaTask[]>([]);
+  const [lastMarinaTasksLocation, setLastMarinaTasksLocation] = useState<string>("");
   const [totalContentProduced, setTotalContentProduced] = useState(0);
   const [hasCompletedDailyGoalsOnce, setHasCompletedDailyGoalsOnce] = useState(false);
   const [activeStoryHook, setActiveStoryHook] = useState<StoryHook | null>(null);
@@ -574,6 +595,13 @@ function App() {
   }, [dailyGoals, dailyRewardClaimed]);
 
   useEffect(() => {
+    if (step === "HUB" && currentLocationName && currentLocationName !== lastMarinaTasksLocation) {
+      setMarinaTasks(makeMarinaTasksForLocation(currentLocationName));
+      setLastMarinaTasksLocation(currentLocationName);
+    }
+  }, [step, currentLocationName, lastMarinaTasksLocation]);
+
+  useEffect(() => {
     if (tutorialStep === 0 && firstContentDone) setTutorialStep(1);
   }, [firstContentDone, tutorialStep]);
 
@@ -666,6 +694,8 @@ function App() {
         sponsorObligations,
         loginStreak,
         lastLoginBonus,
+        marinaTasks,
+        lastMarinaTasksLocation,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveObj));
       setHasSave(true);
@@ -679,7 +709,8 @@ function App() {
     brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, contentHistory, icerikSubTab, lastContentAt, marinaRestInProgress,
     captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
     hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor, activeStoryHook,
-    tutorialStep, gender, completedFollowerMilestones, sponsorObligations, loginStreak, lastLoginBonus
+    tutorialStep, gender, completedFollowerMilestones, sponsorObligations, loginStreak, lastLoginBonus,
+    marinaTasks, lastMarinaTasksLocation
   ]);
 
   const finalizeGame = () => {
@@ -716,6 +747,8 @@ function App() {
     setSponsorObligations({});
     setLoginStreak(0);
     setLastLoginBonus("");
+    setMarinaTasks([]);
+    setLastMarinaTasksLocation("");
     setIcerikSubTab("produce");
     setLastContentAt(null);
     setMarinaRestInProgress(null);
@@ -805,6 +838,8 @@ function App() {
       setSponsorObligations(parsed.sponsorObligations && typeof parsed.sponsorObligations === "object" ? parsed.sponsorObligations : {});
       setLoginStreak(parsed.loginStreak ?? 0);
       setLastLoginBonus(parsed.lastLoginBonus ?? "");
+      setMarinaTasks(Array.isArray(parsed.marinaTasks) ? parsed.marinaTasks : []);
+      setLastMarinaTasksLocation(parsed.lastMarinaTasksLocation ?? "");
       setStep(safeLoadStep(parsed));
       setActiveTab(parsed.activeTab ?? "liman");
 
@@ -880,6 +915,7 @@ function App() {
     setWater(100);
     triggerFlash("credits");
     setLogs(prev => [`Su ikmali yapıldı: ${cost} TL.`, ...prev.slice(0, 4)]);
+    completeMarinaTask("refill_water");
   };
 
   const handleRefillFuel = () => {
@@ -895,6 +931,7 @@ function App() {
     setFuel(100);
     triggerFlash("credits");
     setLogs(prev => [`Yakıt ikmali yapıldı: ${cost} TL.`, ...prev.slice(0, 4)]);
+    completeMarinaTask("refill_fuel");
   };
 
   const getMarinaRestLabel = () => {
@@ -923,6 +960,7 @@ function App() {
     setBoatCondition(prev => Math.min(100, prev + 35));
     triggerFlash("credits");
     setLogs(prev => ["Tekne onarıldı. Durum 35 puan toparlandı.", ...prev.slice(0, 4)]);
+    completeMarinaTask("repair_boat");
   };
 
   const advanceDay = () => {
@@ -1142,6 +1180,7 @@ function App() {
     setLastContentAt(Date.now());
     setCaptainXp(prev => prev + 20);
     completeGoal("produce_content");
+    completeMarinaTask("produce_content");
 
     if (acceptedSponsors.length > 0) {
       setSponsorObligations(prev => {
@@ -1348,6 +1387,7 @@ function App() {
       setHasReceivedFirstSponsor(true);
       setActiveCelebration({ type: "sponsor", brandName: newOffer.brandName });
     }
+    completeMarinaTask("check_sponsors");
   };
 
   const handleAcceptSponsor = (offerId: string) => {
@@ -1587,6 +1627,7 @@ function App() {
       onGoContent={() => setActiveTab("icerik")}
       onGoRoute={() => setActiveTab("rota")}
       renderDailyGoals={renderDailyGoalsCard}
+      marinaTasks={marinaTasks}
     />
   );
 
@@ -1936,6 +1977,17 @@ function App() {
 
   const completeGoal = (type: DailyGoal["type"]) => {
     setDailyGoals(prev => prev.map(g => g.type === type && !g.completed ? { ...g, completed: true } : g));
+  };
+
+  const completeMarinaTask = (type: MarinaTaskType) => {
+    setMarinaTasks(prev => prev.map(t => {
+      if (t.type === type && !t.completed) {
+        setCredits(c => c + t.reward);
+        pushToast("content", "Marina Görevi Tamamlandı!", `${t.title} · +${t.reward} TL`);
+        return { ...t, completed: true };
+      }
+      return t;
+    }));
   };
 
   const renderDailyGoalsCard = () => {

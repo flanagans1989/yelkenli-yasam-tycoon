@@ -331,6 +331,17 @@
   line-height: 1;
 }
 
+/* ── Marina tasks ── */
+.lh-marina-tasks { padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+.lh-marina-tasks-eyebrow { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 2px; }
+.lh-marina-task-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid rgba(255,255,255,0.06); }
+.lh-marina-task-row.is-done { opacity: 0.5; }
+.lh-marina-task-check { font-size: 14px; color: var(--accent-cyan, #22d3ee); min-width: 16px; }
+.lh-marina-task-row.is-done .lh-marina-task-check { color: #4ade80; }
+.lh-marina-task-title { flex: 1; font-size: 13px; color: var(--text-primary); }
+.lh-marina-task-row.is-done .lh-marina-task-title { text-decoration: line-through; color: var(--text-secondary); }
+.lh-marina-task-reward { font-size: 11px; font-weight: 800; color: #facc15; white-space: nowrap; }
+
 /* ── Beginner guide ── */
 
 .lh-guide-card {

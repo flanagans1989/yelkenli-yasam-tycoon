@@ -18,6 +18,9 @@ interface KaptanTabProps {
   followers: number;
   achievementStatuses: AchievementStatus[];
   logs: string[];
+  totalContentProduced: number;
+  totalCreditsEarned: number;
+  loginStreak: number;
 }
 
 const CAPTAIN_LEVEL_THRESHOLDS = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 6000, 8200, 11000, 14500, 19000, 25000];
@@ -31,6 +34,9 @@ export function KaptanTab({
   followers,
   achievementStatuses,
   logs,
+  totalContentProduced,
+  totalCreditsEarned,
+  loginStreak,
 }: KaptanTabProps) {
   const captainRankLabel =
     captainLevel >= 13
@@ -127,6 +133,38 @@ export function KaptanTab({
             )}
           </div>
         </div>
+      </div>
+
+      {/* ── Career stats strip ── */}
+      <div className="kp-cstats-card glass-card">
+        <div className="kp-cstat">
+          <span className="kp-cstat-val">{totalContentProduced}</span>
+          <span className="kp-cstat-label">İçerik</span>
+        </div>
+        <div className="kp-cstat-div" />
+        <div className="kp-cstat">
+          <span className="kp-cstat-val">{completedRoutesCount}</span>
+          <span className="kp-cstat-label">Rota</span>
+        </div>
+        <div className="kp-cstat-div" />
+        <div className="kp-cstat">
+          <span className="kp-cstat-val">{formatFollowers(followers)}</span>
+          <span className="kp-cstat-label">Takipçi</span>
+        </div>
+        <div className="kp-cstat-div" />
+        <div className="kp-cstat">
+          <span className="kp-cstat-val">{formatFollowers(totalCreditsEarned)}</span>
+          <span className="kp-cstat-label">TL Bütçe</span>
+        </div>
+        {loginStreak > 1 && (
+          <>
+            <div className="kp-cstat-div" />
+            <div className="kp-cstat">
+              <span className="kp-cstat-val kp-cstat-val--streak">🔥{loginStreak}</span>
+              <span className="kp-cstat-label">Seri</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Level / XP card ── */}

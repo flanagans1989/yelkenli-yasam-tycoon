@@ -1840,11 +1840,14 @@ function App() {
       }))
       .filter((item) => item.upgrade !== null);
 
-    const tkStats: Array<{ key: "energy" | "water" | "safety" | "nav"; icon: string; label: string; value: number }> = [
-      { key: "energy", icon: "?", label: "Enerji", value: upgradeEnergyBonus },
-      { key: "water", icon: "??", label: "Su", value: upgradeWaterBonus },
-      { key: "safety", icon: "??", label: "G?venlik", value: upgradeSafetyBonus },
-      { key: "nav", icon: "??", label: "Navigasyon", value: upgradeNavigationBonus },
+    const tkStats: Array<{ key: string; icon: string; label: string; value: number; color?: string }> = [
+      { key: "energy",   icon: "⚡", label: "Enerji",       value: upgradeEnergyBonus,      color: "#facc15" },
+      { key: "water",    icon: "💧", label: "Su",           value: upgradeWaterBonus,        color: "#22d3ee" },
+      { key: "safety",   icon: "🛡", label: "Güvenlik",     value: upgradeSafetyBonus,       color: "#4ade80" },
+      { key: "nav",      icon: "🧭", label: "Navigasyon",   value: upgradeNavigationBonus,   color: "#818cf8" },
+      { key: "maint",    icon: "🔧", label: "Bakım",        value: upgradeMaintenanceBonus,  color: "#fb923c" },
+      { key: "content",  icon: "🎬", label: "İçerik +",     value: upgradeContentBonus,      color: "#f472b6" },
+      { key: "risk",     icon: "⚓", label: "Risk -",       value: upgradeRiskReduction,     color: "#94a3b8" },
     ];
 
     const upgradeCards = filteredUpgrades.map((upgrade) => {
@@ -1925,6 +1928,9 @@ function App() {
       followers={followers}
       achievementStatuses={achievementStatuses}
       logs={logs}
+      totalContentProduced={totalContentProduced}
+      totalCreditsEarned={credits}
+      loginStreak={loginStreak}
     />
   );
 

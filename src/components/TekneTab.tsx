@@ -3,10 +3,11 @@ import type { ReactNode } from "react";
 import type { UpgradeCategoryId } from "../../game-data/upgrades";
 
 type TekneStatItem = {
-  key: "energy" | "water" | "safety" | "nav";
+  key: string;
   icon: string;
   label: string;
   value: number;
+  color?: string;
 };
 
 type ActiveInstallItem = {
@@ -118,7 +119,9 @@ export function TekneTab({
               <span className="tk-stat-icon">{s.icon}</span>
               <div className="tk-stat-body">
                 <span className="tk-stat-label">{s.label}</span>
-                <strong className="tk-stat-val">{s.value}</strong>
+                <strong className="tk-stat-val" style={s.color ? { color: s.color } : undefined}>
+                  {s.value > 0 ? `+${s.value}` : s.value}
+                </strong>
               </div>
             </div>
           ))}

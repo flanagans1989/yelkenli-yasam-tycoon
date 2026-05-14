@@ -132,6 +132,10 @@ export function RotaTab({
   const isReady = weakItems.length === 0;
   const completedCount = completedRouteIds.length;
 
+  const upcomingRoutes = WORLD_ROUTES.filter(
+    r => !completedRouteIds.includes(r.id) && r.id !== currentRoute?.id
+  ).slice(0, 3);
+
   return (
     <div className="rt-tab rt-tab-v2 fade-in">
       <div className="rt-arc-section glass-card">
@@ -154,6 +158,22 @@ export function RotaTab({
           <div className="rt-arc-bar-fill" style={{ width: `${Math.round((completedCount / WORLD_ROUTES.length) * 100)}%` }} />
         </div>
       </div>
+
+      {upcomingRoutes.length > 0 && (
+        <div className="rt-upcoming-card glass-card">
+          <span className="rt-upcoming-eyebrow">🗺 Önümüzdeki Rotalar</span>
+          {upcomingRoutes.map((r, i) => (
+            <div key={r.id} className="rt-upcoming-row">
+              <span className="rt-upcoming-num">{completedCount + (currentRoute ? 1 : 0) + i + 1}</span>
+              <div className="rt-upcoming-body">
+                <span className="rt-upcoming-name">{r.name}</span>
+                <span className="rt-upcoming-meta">{r.from} → {r.to} · {r.baseDurationDays.min}–{r.baseDurationDays.max} gün</span>
+              </div>
+              <span className={`rt-upcoming-risk rt-risk-pill ${getRiskClass(r.riskLevel)}`}>{RISK_LABELS[r.riskLevel] ?? r.riskLevel}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {completedCount > 0 && (
         <div className="rt-completed-list glass-card">

@@ -159,6 +159,14 @@
   color: #c9e4f2;
 }
 
+/* ── Career stats strip ── */
+.kp-tab-v2 .kp-cstats-card { display: flex; align-items: center; justify-content: space-around; padding: 12px 8px; }
+.kp-tab-v2 .kp-cstat { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; }
+.kp-tab-v2 .kp-cstat-val { font-size: 16px; font-weight: 900; color: var(--text-primary); line-height: 1; }
+.kp-tab-v2 .kp-cstat-val--streak { color: #f97316; }
+.kp-tab-v2 .kp-cstat-label { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+.kp-tab-v2 .kp-cstat-div { width: 1px; height: 28px; background: rgba(255,255,255,0.1); }
+
 /* ── Social rank row ── */
 .kp-tab-v2 .kp-social-rank-row {
   display: flex;

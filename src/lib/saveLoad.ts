@@ -91,6 +91,18 @@ export type MarinaRestInProgress = {
 
 const MAX_PARALLEL_UPGRADES = 3;
 
+export type SaveLoadFailureReason =
+  | "missing_save"
+  | "invalid_json"
+  | "checksum_invalid"
+  | "migration_failed"
+  | "unknown_error";
+
+export function classifySaveLoadFailure(error: unknown): SaveLoadFailureReason {
+  if (error instanceof SyntaxError) return "invalid_json";
+  return "unknown_error";
+}
+
 export function migrateSave(parsed: any) {
   if (!parsed || typeof parsed !== "object") return null;
 

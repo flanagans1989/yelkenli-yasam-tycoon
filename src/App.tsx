@@ -40,7 +40,7 @@ import {
   SAVE_KEY, SAVE_VERSION,
   migrateSave, calculateOfflineIncome, processUpgradesFromSave,
   processMarinaRestFromSave, buildOfflineMessages, safeLoadStep,
-  computeChecksum, validateSaveChecksum, stripChecksum,
+  computeChecksum, validateSaveChecksum, stripChecksum, classifySaveLoadFailure,
 } from "./lib/saveLoad";
 import type { UpgradeInProgressItem, MarinaRestInProgress } from "./lib/saveLoad";
 import { calculateContentQuality, calculateContentRewards, formatSeaDecisionEffectSummary } from "./lib/gameLogic";
@@ -213,8 +213,8 @@ const createSeaEventStoryHook = (decisionId: string, routeId?: string): StoryHoo
 
 function App() {
   const { audioEnabled, setAudioEnabled } = useAudioSettings();
-  const [step, setStep] = useState<Step>("WELCOME");
-  const [activeTab, setActiveTab] = useState<Tab>("liman");
+  const [step, setStepState] = useState<Step>("WELCOME");
+  const [activeTab, setActiveTabState] = useState<Tab>("liman");
   const [profileIndex, setProfileIndex] = useState(0);
   const [marinaIndex, setMarinaIndex] = useState(0);
   const [marinaFilter, setMarinaFilter] = useState<MarinaFilter>("all");
@@ -325,6 +325,35 @@ function App() {
   const suppressAchievementCelebrationRef = useRef(false);
   const suppressFollowerCelebrationRef = useRef(false);
   const arrivalCommitInProgressRef = useRef(false);
+
+  const ONBOARDING_STEPS: Step[] = [
+    "WELCOME",
+    "ACCOUNT_SETUP",
+    "MAIN_MENU",
+    "PICK_PROFILE",
+    "PICK_MARINA",
+    "PICK_BOAT",
+    "NAME_BOAT",
+    "PICK_GENDER",
+  ];
+  const isOnboardingStep = (value: Step) => ONBOARDING_STEPS.includes(value);
+
+  const requestStepTransition = (nextStep: Step, opts?: { force?: boolean }) => {
+    setStepState((prevStep) => {
+      if (opts?.force || prevStep === nextStep) return nextStep;
+      if (isOnboardingStep(prevStep) && !isOnboardingStep(nextStep) && nextStep !== "HUB") return prevStep;
+      if (!isOnboardingStep(prevStep) && isOnboardingStep(nextStep)) return prevStep;
+      return nextStep;
+    });
+  };
+
+  const requestTabTransition = (nextTab: Tab, opts?: { force?: boolean }) => {
+    setActiveTabState((prevTab) => {
+      if (opts?.force || prevTab === nextTab) return nextTab;
+      if (step === "HUB" && tutorialStep === 0 && !firstContentDone && nextTab !== "icerik") return prevTab;
+      return nextTab;
+    });
+  };
 
   const selectedProfile: PlayerProfile = PLAYER_PROFILES[clampIndex(profileIndex, PLAYER_PROFILES.length)] ?? PLAYER_PROFILES[0];
   const selectedMarina: StartingMarina = STARTING_MARINAS[clampIndex(marinaIndex, STARTING_MARINAS.length)] ?? STARTING_MARINAS[0];
@@ -475,7 +504,7 @@ function App() {
         if (parsed?.hasSave) {
           setHasSave(true);
           setSaveBoatName(parsed.boatName || "Bilinmeyen Tekne");
-          setStep("MAIN_MENU");
+          requestStepTransition("MAIN_MENU");
         }
       } catch (e) {
         console.error("Save load error", e);
@@ -773,24 +802,32 @@ function App() {
     setHasCompletedWorldTour(false);
     setActiveStoryHook(null);
     setTutorialStep(0);
-    setStep("HUB");
-    setActiveTab("liman");
+    requestStepTransition("HUB");
+    requestTabTransition("liman");
   };
 
   const loadGame = () => {
     const saved = localStorage.getItem(SAVE_KEY);
-    if (!saved) return;
+    if (!saved) {
+      setLogs((prev) => ["Kayit bulunamadi. Yeni oyuna devam edebilirsin.", ...prev.slice(0, 4)]);
+      return;
+    }
 
     try {
       const rawParsed = JSON.parse(saved);
       if (!validateSaveChecksum(rawParsed)) {
         console.warn("Save checksum invalid — kayıt bozuk veya değiştirilmiş.");
         pushToast("warning", "Kayıt Bozuk", "Kayıt dosyası geçersiz veya değiştirilmiş.");
+        setLogs((prev) => ["Kayit dogrulamasi basarisiz. Guvenlik icin kayit silindi.", ...prev.slice(0, 4)]);
         localStorage.removeItem(SAVE_KEY);
         return;
       }
       const parsed = migrateSave(stripChecksum(rawParsed));
-      if (!parsed) return;
+      if (!parsed) {
+        pushToast("warning", "Kayit Surumu Desteklenmiyor", "Kayit surumu acilamadi. Yeni oyunla devam et.");
+        setLogs((prev) => ["Kayit surumu gecersiz. Guvenli fallback uygulandi.", ...prev.slice(0, 4)]);
+        return;
+      }
 
       const offline = calculateOfflineIncome(parsed.lastSavedAt);
       const upgrades = processUpgradesFromSave(
@@ -896,8 +933,8 @@ function App() {
       setLastLoginBonus(parsed.lastLoginBonus ?? "");
       setMarinaTasks(Array.isArray(parsed.marinaTasks) ? parsed.marinaTasks.slice(0, 8) : []);
       setLastMarinaTasksLocation(parsed.lastMarinaTasksLocation ?? "");
-      setStep(safeLoadStep(parsed));
-      setActiveTab(nextActiveTab);
+      requestStepTransition(safeLoadStep(parsed));
+      requestTabTransition(nextActiveTab);
 
       upgrades.completedUpgradeObjects.forEach((upgrade) => {
         applyUpgradeEffects(upgrade);
@@ -912,6 +949,13 @@ function App() {
       }
     } catch (e) {
       console.error("Load error", e);
+      const reason = classifySaveLoadFailure(e);
+      const message =
+        reason === "invalid_json"
+          ? "Kayit dosyasi okunamadi (JSON bozuk)."
+          : "Kayit yuklenirken beklenmeyen bir hata olustu.";
+      pushToast("warning", "Kayit Yukleme Hatasi", message);
+      setLogs((prev) => [message, ...prev.slice(0, 4)]);
     }
   };
 
@@ -1026,8 +1070,8 @@ function App() {
     const isCriticallyDepleted = energy <= 0 || water <= 0 || fuel <= 0 || boatCondition <= 0;
     if (isCriticallyDepleted) {
       // Emergency abort — return to port without route rewards
-      setStep("HUB");
-      setActiveTab("liman");
+      requestStepTransition("HUB");
+      requestTabTransition("liman");
       setVoyageDaysRemaining(0);
       setCurrentSeaEvent("");
       setPendingDecisionId(null);
@@ -1132,7 +1176,7 @@ function App() {
       setLogs(logsPrev => [evt.text, ...logsPrev.slice(0, 4)]);
 
       if (newDays <= 0) {
-        setStep("ARRIVAL_SCREEN");
+        requestStepTransition("ARRIVAL_SCREEN");
       }
       return newDays;
     });
@@ -1332,7 +1376,7 @@ function App() {
     setCaptainXp(prev => prev + 30);
     setPendingDecisionId(null);
     if (forceArrivalFromDecision) {
-      setStep("ARRIVAL_SCREEN");
+      requestStepTransition("ARRIVAL_SCREEN");
     }
   };
 
@@ -1398,8 +1442,8 @@ function App() {
     }
     setPendingDecisionId(null);
     setIsPrestigeVoyage(false);
-    setStep("HUB");
-    setActiveTab(targetTab);
+    requestStepTransition("HUB");
+    requestTabTransition(targetTab);
     setIcerikSubTab("produce");
     pushToast(
       "voyage",
@@ -1678,8 +1722,8 @@ function App() {
     audioManager.play("sailStart");
     setShowSailAnimation(true);
     setTimeout(() => setShowSailAnimation(false), 2800);
-    setStep("SEA_MODE");
-    setActiveTab("liman");
+    requestStepTransition("SEA_MODE");
+    requestTabTransition("liman");
   };
 
   const handleStartPrestigeVoyage = (routeId: string) => {
@@ -1705,8 +1749,8 @@ function App() {
     audioManager.play("sailStart");
     setShowSailAnimation(true);
     setTimeout(() => setShowSailAnimation(false), 2800);
-    setStep("SEA_MODE");
-    setActiveTab("liman");
+    requestStepTransition("SEA_MODE");
+    requestTabTransition("liman");
   };
 
   const UPGRADE_CONFIRM_THRESHOLD = 10000;
@@ -1786,8 +1830,8 @@ function App() {
       onRefillWater={handleRefillWater}
       onRefillFuel={handleRefillFuel}
       onRepairBoat={handleRepairBoat}
-      onGoContent={() => setActiveTab("icerik")}
-      onGoRoute={() => setActiveTab("rota")}
+      onGoContent={() => requestTabTransition("icerik")}
+      onGoRoute={() => requestTabTransition("rota")}
       renderDailyGoals={renderDailyGoalsCard}
       dailyGoalsCompletedCount={dailyGoals.filter(g => g.completed).length}
       dailyGoalsTotal={dailyGoals.length}
@@ -2045,9 +2089,9 @@ function App() {
         isSeaMode={step === "SEA_MODE"}
         completedRouteIds={completedRouteIds}
         onStartVoyage={handleStartVoyage}
-        onGoTekne={() => { setActiveTab("tekne"); setComingFromRotaMissing(false); }}
+        onGoTekne={() => { requestTabTransition("tekne"); setComingFromRotaMissing(false); }}
         onGoUpgradeCategory={(cat) => {
-          setActiveTab("tekne");
+          requestTabTransition("tekne");
           setSelectedUpgradeCategory(cat as UpgradeCategoryId);
           setComingFromRotaMissing(true);
         }}
@@ -2138,7 +2182,7 @@ function App() {
         onSelectUpgradeCategory={setSelectedUpgradeCategory}
         comingFromRotaMissing={comingFromRotaMissing}
         onBackToRotaMissing={() => {
-          setActiveTab("rota");
+          requestTabTransition("rota");
           setComingFromRotaMissing(false);
           setShouldOpenRotaReadiness(true);
         }}
@@ -2260,7 +2304,7 @@ function App() {
             </div>
             <button
               className="next-action-cta primary-button"
-              onClick={() => setActiveTab(
+              onClick={() => requestTabTransition(
                 (!contentGoalDoneToday || followers < 800) ? "icerik" :
                 (firstContentDone && completedRouteIds.length < 2) ? "rota" :
                 (canStartAnyUpgrade || hasAnyCompatibleUpgrade) ? "tekne" : "icerik"
@@ -2288,7 +2332,7 @@ function App() {
       setActiveTab={(tab) => {
         if (step === "HUB" && tutorialStep === 0 && !firstContentDone && tab !== "icerik") return;
         if (tab === "icerik") setIcerikSubTab("produce");
-        setActiveTab(tab);
+        requestTabTransition(tab);
       }}
       lockedTab={step === "HUB" && tutorialStep === 0 && !firstContentDone ? "icerik" : null}
       boatName={boatName}
@@ -2370,7 +2414,7 @@ function App() {
       {["WELCOME", "ACCOUNT_SETUP", "MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT", "PICK_GENDER"].includes(step) && (
         <Onboarding
           step={step}
-          setStep={setStep}
+          setStep={requestStepTransition}
           memberFullName={memberFullName}
           setMemberFullName={setMemberFullName}
           memberUsername={memberUsername}
@@ -2417,7 +2461,7 @@ function App() {
               const tabs: Tab[] = ["icerik", "tekne", "rota"];
               const nextTab = tabs[tutorialStep] ?? "liman";
               if (nextTab === "icerik") setIcerikSubTab("produce");
-              setActiveTab(nextTab);
+              requestTabTransition(nextTab);
             }}
             onDismiss={() => setTutorialStep(3)}
           />

@@ -114,3 +114,33 @@ Kural:
 - npm run audit:mobile-ui -> PASS
 - build/lint/audit:game -> PASS
 - Scroll/tasma/overlay regresyonu bu kontratta kapsandi.
+
+## 13) Faz 4 - Component Temizlik (Davranis Degistirmeden)
+
+### Buyuk Dosya Envanteri (guncel)
+- src/App.tsx: 2566 satir
+- src/App.css: 5991 satir
+- src/components/Onboarding.tsx: 1005 satir
+- src/components/Onboarding.css: 1983 satir
+
+### Parcalama Sirasi (uygulama backlog)
+1. App.tsx -> useGameProgressController (route, voyage, arrival)
+2. App.tsx -> useEconomyController (credits, followers, sponsor)
+3. App.tsx -> useSaveLoadController (save/load/fallback)
+4. App.css -> onboarding/hub/sea katmanlari olarak fiziksel bolme
+
+### Magic Number Backlog (ornekler)
+- Timeouts: 5000, 2800, 30000
+- Caps: 100, 50_000_000, 5_000_000
+- Layout: 390px, 430px, 700px, 100dvh
+- Onboarding map/path koordinatlari (tasarim sabiti olarak korunacak)
+
+### Unused/Temizlik Adaylari
+- App.css icinde A9R bloklari (a9r- prefiksi) ayrik dosyaya tasinabilir.
+- Tekrarlayan media query bloklari birlestirme adayi.
+- Global + onboarding helper sinif ciftleri ownership notu ile sadeleştirilebilir.
+
+### Faz 4 Cikis Durumu
+- Davranis degisikligi uygulanmadi.
+- Envanter ve uygulanabilir parcalama backlogu olustu.
+- build/lint/audit kapilari PASS.

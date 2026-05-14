@@ -63,7 +63,7 @@
   align-items: center;
   justify-content: flex-end;
   width: 100%;
-  padding-top: 48px;
+  padding-top: max(48px, calc(env(safe-area-inset-top, 0px) + 8px));
   padding-bottom: 8px;
   min-height: 42vh;
 }
@@ -697,7 +697,7 @@
   grid-template-rows: auto auto 1fr auto auto;
   align-content: stretch;
   gap: 8px;
-  padding-top: 14px;
+  padding-top: max(14px, env(safe-area-inset-top, 0px));
   padding-bottom: max(16px, env(safe-area-inset-bottom));
 }
 
@@ -887,7 +887,7 @@
 /* Main menu hero proportions */
 .ob-main-menu-v2 .ob-menu-hero {
   min-height: 35vh;
-  padding-top: 52px;
+  padding-top: max(52px, calc(env(safe-area-inset-top, 0px) + 8px));
   padding-bottom: 8px;
 }
 .ob-main-menu-v2 .ob-menu-eyebrow {

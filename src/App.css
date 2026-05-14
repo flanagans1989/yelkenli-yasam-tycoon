@@ -2186,7 +2186,7 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px 16px;
   background: rgba(4, 13, 22, 0.92);
   border-bottom: 1px solid rgba(94, 234, 248, 0.08);
   backdrop-filter: blur(20px);
@@ -3411,7 +3411,7 @@ button {
 
 .sea-topbar {
   text-align: center;
-  padding: 32px 24px 16px 24px;
+  padding: calc(env(safe-area-inset-top, 0px) + 32px) 24px 16px;
   background: linear-gradient(to bottom, rgba(4,13,22,0.9), transparent);
 }
 .sea-topbar h2 { margin: 0 0 8px 0; font-size: 24px; color: #f7fbff;}
@@ -4659,7 +4659,7 @@ button {
   }
 
   .hub-topbar {
-    padding: 14px 16px 12px;
+    padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
   }
 
   .hub-topbar h2,
@@ -5217,7 +5217,7 @@ button {
 
   .ob-main-menu-v2 .ob-menu-hero {
     min-height: 31vh;
-    padding-top: 42px;
+    padding-top: max(42px, calc(env(safe-area-inset-top, 0px) + 8px));
     padding-bottom: 6px;
   }
 
@@ -5258,7 +5258,7 @@ button {
 
   .hub-topbar,
   .sea-topbar {
-    padding-top: 14px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
     padding-bottom: 12px;
   }
 

@@ -68,7 +68,7 @@ Bu checklist, geliştirme sürecinin en başından itibaren store uyumluluğunu,
 
 | 2.3 | Logo konsepti hazır mı? | Bekliyor | Mobil ikonla uyumlu olmalı |
 
-| 2.4 | Uygulama ikonu hazır mı? | Bekliyor | 1024x1024 kaynak ikon gerekecek |
+| 2.4 | Uygulama ikonu hazır mı? | ✓ Hazır | iOS 1024 + Android 512/192 + adaptive 1024 fg — bkz. `assets/store/` |
 
 | 2.5 | Renk paleti belirlendi mi? | Bekliyor | Deniz, marina, premium tycoon hissi |
 
@@ -96,13 +96,13 @@ Bu checklist, geliştirme sürecinin en başından itibaren store uyumluluğunu,
 
 | 3.3 | Anahtar kelime listesi hazır mı? | Bekliyor | Tycoon, simulation, sailing, yacht, world tour vb. |
 
-| 3.4 | Screenshot planı hazır mı? | Bekliyor | Profil seçimi, tekne, marina, rota, upgrade, sosyal medya |
+| 3.4 | Screenshot planı hazır mı? | ✓ Hazır | Storyboard aşağıda §3A'da; çekim §3B'de |
 
 | 3.5 | Store video fragman planı hazır mı? | Bekliyor | 15-30 saniyelik mobil reklam videosu |
 
-| 3.6 | Tanıtım görseli hazır mı? | Bekliyor | Google Play feature graphic gerekebilir |
+| 3.6 | Tanıtım görseli hazır mı? | ✓ Hazır | `assets/store/android/feature-graphic-1024x500.png` üretildi |
 
-| 3.7 | App Store önizleme görselleri hazır mı? | Bekliyor | Cihaz boyutlarına göre hazırlanacak |
+| 3.7 | App Store önizleme görselleri hazır mı? | Plan hazır, çekim bekliyor | 6.9″ iPhone 1290×2796 hedefi — bkz. §3B |
 
 | 3.8 | Basın / tanıtım metni hazır mı? | Bekliyor | İleri aşamada kullanılabilir |
 
@@ -111,6 +111,38 @@ Bu checklist, geliştirme sürecinin en başından itibaren store uyumluluğunu,
 \---
 
 
+
+\## 3A. Screenshot Storyboard (5 kare hedefi)
+
+Her iki mağazada da aynı 5 kare. Üst panelde tek satır Türkçe başlık, oyunun gerçek ekran görüntüsü altta.
+
+| # | Ekran | Başlık önerisi | Ne göstermeli |
+|---:|---|---|---|
+| 1 | Hub / Liman | "Marinandan dünya turuna çık" | Liman sekmesi, captain seviyesi + günlük hedef kartı + para/takipçi |
+| 2 | İçerik üretimi | "Sosyal medyada büyü, sponsor kap" | İçerik sekmesi, platform + içerik türü seçim, viral/quality göstergesi |
+| 3 | Deniz modu / karar | "Denizde her karar bir hikaye" | Sea Mode tab + aktif karar diyaloğu (risk vs güvenli seçim) |
+| 4 | Varış ekranı | "Rotayı tamamla, ödülünü topla" | Arrival screen, kazanılan TL/takipçi/XP, world tour ilerleme |
+| 5 | Tekne upgrade | "Tekneni büyüt, okyanusu fethet" | Tekne sekmesi, aktif kurulum timer'ı + premium upgrade kartları |
+
+İsteğe bağlı 6. kare: Captain seviye atlama animasyonu (rank + bonus).
+
+\---
+
+\## 3B. Çekim Spec'i
+
+| Hedef | Çözünürlük | Adet | Kaynak |
+|---|---|---:|---|
+| App Store 6.9″ iPhone | 1290×2796 portrait PNG | 5 | Safari iOS simulator (iPhone 16 Pro Max) |
+| Google Play telefon | 1080×1920 portrait PNG | 5 | Chrome DevTools device emulation (Pixel 7) |
+| Google Play feature graphic | 1024×500 | 1 | ✓ Hazır: `assets/store/android/feature-graphic-1024x500.png` |
+
+Çekim akışı (manuel):
+1. `npm run dev`, devtools mobil emülasyon, doğru çözünürlük.
+2. Yeni oyun başlat → her storyboard adımı için ekran al.
+3. PNG'leri `assets/store/screenshots/ios-6.9/` ve `.../android-phone/` altına 01- … 05- prefix'li koy.
+4. (Opsiyonel) Üst başlık çubuğunu bir görsel editörde ekle veya marketing template kullan.
+
+\---
 
 \## 4. Mobil UX Kontrolü
 
@@ -316,11 +348,11 @@ Bu checklist, geliştirme sürecinin en başından itibaren store uyumluluğunu,
 
 | 10.2 | Paket adı / bundle id belirlendi mi? | Bekliyor | Yayın için gerekir |
 
-| 10.3 | Uygulama ikonu hazır mı? | Bekliyor | Farklı çözünürlüklerde |
+| 10.3 | Uygulama ikonu hazır mı? | ✓ Hazır | iOS 1024 + Android adaptive/legacy/512 üretildi |
 
 | 10.4 | Splash screen hazır mı? | Bekliyor | İlk açılış ekranı |
 
-| 10.5 | Store görselleri hazır mı? | Bekliyor | Screenshot ve tanıtım görselleri |
+| 10.5 | Store görselleri hazır mı? | Kısmen | Feature graphic ✓, screenshot çekimleri bekliyor |
 
 | 10.6 | Store açıklaması son kontrol edildi mi? | Bekliyor | Yazım ve pazarlama dili |
 
@@ -406,7 +438,7 @@ Bu checklist, geliştirme sürecinin en başından itibaren store uyumluluğunu,
 
 | 13 | Store açıklaması hazır | Bekliyor |
 
-| 14 | Uygulama ikonu hazır | Bekliyor |
+| 14 | Uygulama ikonu hazır | ✓ Hazır |
 
 | 15 | Test kullanıcılarıyla oynanmış | Bekliyor |
 

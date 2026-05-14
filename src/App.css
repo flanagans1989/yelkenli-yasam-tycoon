@@ -2684,8 +2684,13 @@ button {
 .spo-career-line { font-size: 12px !important; font-style: italic; color: rgba(138, 175, 204, 0.65) !important; margin-bottom: 6px !important; line-height: 1.4; }
 .spo-reward-line { font-size: 13px !important; font-weight: 700; color: #f5c76b !important; margin-top: 4px !important; }
 
-.accepted-sponsors-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.spo-badge { background: rgba(46, 196, 160, 0.15); color: #2ec4a0; border: 1px solid rgba(46, 196, 160, 0.3); padding: 8px 16px; border-radius: 12px; font-size: 13px; font-weight: 800; }
+.accepted-sponsors-list { display: flex; flex-direction: column; gap: 10px; }
+.spo-badge { background: rgba(46, 196, 160, 0.15); color: #2ec4a0; border: 1px solid rgba(46, 196, 160, 0.3); padding: 6px 12px; border-radius: 12px; font-size: 13px; font-weight: 800; }
+.spo-obligation-row { display: flex; flex-direction: column; gap: 4px; }
+.spo-obligation-head { display: flex; justify-content: space-between; align-items: center; }
+.spo-obligation-label { font-size: 11px; color: var(--text-secondary); }
+.spo-obligation-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+.spo-obligation-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
 
 
 /* Rota Tab */

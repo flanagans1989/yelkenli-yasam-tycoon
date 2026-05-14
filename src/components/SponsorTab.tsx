@@ -24,7 +24,10 @@ type SponsorTabProps = {
   sponsorOffers: SponsorOfferItem[];
   onAcceptSponsor: (offerId: string) => void;
   acceptedSponsors: string[];
+  sponsorObligations: Record<string, number>;
 };
+
+const OBLIGATION_GOAL = 5;
 
 export function SponsorTab({
   activeSponsorName,
@@ -37,6 +40,7 @@ export function SponsorTab({
   sponsorOffers,
   onAcceptSponsor,
   acceptedSponsors,
+  sponsorObligations,
 }: SponsorTabProps) {
   return (
     <div className="sponsor-section fade-in">
@@ -74,9 +78,22 @@ export function SponsorTab({
         <>
           <h3 className="section-title mt-20">Aktif Sponsorlar</h3>
           <div className="accepted-sponsors-list">
-            {Array.from(new Set(acceptedSponsors.filter(Boolean))).map((name) => (
-              <span key={name} className="spo-badge">{name}</span>
-            ))}
+            {Array.from(new Set(acceptedSponsors.filter(Boolean))).map((name) => {
+              const count = sponsorObligations[name] ?? 0;
+              const pct = Math.min(100, (count / OBLIGATION_GOAL) * 100);
+              const done = count >= OBLIGATION_GOAL;
+              return (
+                <div key={name} className="spo-obligation-row">
+                  <div className="spo-obligation-head">
+                    <span className="spo-badge">{name}</span>
+                    <span className="spo-obligation-label">{done ? "✓ Tamamlandı" : `${count}/${OBLIGATION_GOAL} içerik`}</span>
+                  </div>
+                  <div className="spo-obligation-bar">
+                    <div className="spo-obligation-fill" style={{ width: `${pct}%`, background: done ? "var(--accent-green, #4ade80)" : "var(--accent-cyan, #22d3ee)" }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </>
       )}

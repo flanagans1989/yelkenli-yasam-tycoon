@@ -228,6 +228,7 @@ function App() {
   const [sponsorOffers, setSponsorOffers] = useState<any[]>([]);
   const [acceptedSponsors, setAcceptedSponsors] = useState<string[]>([]);
   const [sponsoredContentCount, setSponsoredContentCount] = useState(0);
+  const [sponsorObligations, setSponsorObligations] = useState<Record<string, number>>({});
   const [icerikSubTab, setIcerikSubTab] = useState<"produce" | "sponsor">("produce");
 
   const [hasSave, setHasSave] = useState(false);
@@ -270,6 +271,7 @@ function App() {
 
   const [celebrationQueue, setCelebrationQueue] = useState<CelebrationItem[]>([]);
   const [activeCelebration, setActiveCelebration] = useState<CelebrationItem | null>(null);
+  const [completedFollowerMilestones, setCompletedFollowerMilestones] = useState<string[]>([]);
   const prevCaptainLevelRef = useRef<number | null>(null);
 
   const previousUnlockedAchievementIdsRef = useRef<string[]>([]);
@@ -367,6 +369,20 @@ function App() {
       }]);
     }
   }, [achievementStatuses]);
+
+  useEffect(() => {
+    const milestones: { key: string; threshold: number; label: string; desc: string }[] = [
+      { key: "1k", threshold: 1_000, label: "1.000 Takipçi!", desc: "İlk binini aştın! Sosyal medyada görünürlüğün artıyor." },
+      { key: "10k", threshold: 10_000, label: "10.000 Takipçi!", desc: "10K kulübe hoş geldin! Micro-influencer seviyesindesin." },
+      { key: "100k", threshold: 100_000, label: "100.000 Takipçi!", desc: "100K! Artık büyük markalar seni arıyor." },
+    ];
+    for (const m of milestones) {
+      if (followers >= m.threshold && !completedFollowerMilestones.includes(m.key)) {
+        setCompletedFollowerMilestones(prev => [...prev, m.key]);
+        setCelebrationQueue(q => [...q, { type: "achievement" as const, title: m.label, description: m.desc, icon: "🎉" }]);
+      }
+    }
+  }, [followers, completedFollowerMilestones]);
 
   useEffect(() => {
     const sponsorOfferIds = sponsorOffers.map((offer) => offer.id);
@@ -629,6 +645,8 @@ function App() {
         activeStoryHook,
         tutorialStep,
         gender,
+        completedFollowerMilestones,
+        sponsorObligations,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveObj));
       setHasSave(true);
@@ -642,7 +660,7 @@ function App() {
     brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, contentHistory, icerikSubTab, lastContentAt, marinaRestInProgress,
     captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
     hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor, activeStoryHook,
-    tutorialStep, gender
+    tutorialStep, gender, completedFollowerMilestones, sponsorObligations
   ]);
 
   const finalizeGame = () => {
@@ -675,6 +693,8 @@ function App() {
     setAcceptedSponsors([]);
     setSponsoredContentCount(0);
     setContentHistory([]);
+    setCompletedFollowerMilestones([]);
+    setSponsorObligations({});
     setIcerikSubTab("produce");
     setLastContentAt(null);
     setMarinaRestInProgress(null);
@@ -760,6 +780,8 @@ function App() {
       setHasCompletedDailyGoalsOnce(parsed.hasCompletedDailyGoalsOnce ?? false);
       setTutorialStep(parsed.tutorialStep ?? 3);
       setGender(parsed.gender ?? "unspecified");
+      setCompletedFollowerMilestones(Array.isArray(parsed.completedFollowerMilestones) ? parsed.completedFollowerMilestones : []);
+      setSponsorObligations(parsed.sponsorObligations && typeof parsed.sponsorObligations === "object" ? parsed.sponsorObligations : {});
       setStep(safeLoadStep(parsed));
       setActiveTab(parsed.activeTab ?? "liman");
 
@@ -1098,6 +1120,16 @@ function App() {
     setCaptainXp(prev => prev + 20);
     completeGoal("produce_content");
 
+    if (acceptedSponsors.length > 0) {
+      setSponsorObligations(prev => {
+        const updated = { ...prev };
+        for (const name of acceptedSponsors) {
+          updated[name] = (updated[name] ?? 0) + 1;
+        }
+        return updated;
+      });
+    }
+
     if (storyHook) {
       const remainingUses = Math.max(0, (storyHook.expiresAfterUses ?? 1) - 1);
       setActiveStoryHook(remainingUses > 0 ? { ...storyHook, expiresAfterUses: remainingUses } : null);
@@ -1432,6 +1464,11 @@ function App() {
 
     if (!currentRoute) return;
 
+    if (currentOceanReadiness < 60) {
+      pushToast("warning", "Hazırlık Yetersiz", `Okyanus hazırlığın %${currentOceanReadiness} — rotaya çıkmak için en az %60 gerekli. Tekne upgrade'leri yap.`);
+      return;
+    }
+
     const minD = currentRoute.baseDurationDays.min;
     const maxD = currentRoute.baseDurationDays.max;
     const days = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
@@ -1698,6 +1735,7 @@ function App() {
           }>,
           onAcceptSponsor: handleAcceptSponsor,
           acceptedSponsors,
+          sponsorObligations,
         }}
         contentHistory={contentHistory}
       />

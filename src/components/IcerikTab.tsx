@@ -76,6 +76,7 @@ type IcerikTabProps = {
     }>;
     onAcceptSponsor: (offerId: string) => void;
     acceptedSponsors: string[];
+    sponsorObligations: Record<string, number>;
   };
 };
 

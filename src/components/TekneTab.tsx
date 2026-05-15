@@ -1,6 +1,7 @@
 ﻿import './TekneTab.css';
 import type { ReactNode } from "react";
 import type { UpgradeCategoryId } from "../../game-data/upgrades";
+import { getOceanReadinessSummaryCopy } from "../lib/routeReadinessUi";
 
 type TekneStatItem = {
   key: string;
@@ -44,6 +45,7 @@ type TekneTabProps = {
   credits: number;
   tokens: number;
   currentOceanReadiness: number;
+  currentRouteOceanReadinessRequired: number;
   tkStats: TekneStatItem[];
   activeInstallRows: ActiveInstallItem[];
   categories: Array<{ id: UpgradeCategoryId; name: string }>;
@@ -67,6 +69,7 @@ export function TekneTab({
   credits,
   tokens,
   currentOceanReadiness,
+  currentRouteOceanReadinessRequired,
   tkStats,
   activeInstallRows,
   categories,
@@ -107,12 +110,15 @@ export function TekneTab({
 
         <div className="tk-readiness-box">
           <div className="tk-readiness-row">
-            <span className="tk-readiness-label">Okyanus Hazırlığı</span>
+            <span className="tk-readiness-label">Mevcut Okyanus Hazırlığı</span>
             <strong className="tk-readiness-val">{currentOceanReadiness}%</strong>
           </div>
           <div className="tk-readiness-track">
             <div className="tk-readiness-fill" style={{ width: `${currentOceanReadiness}%` }} />
           </div>
+          <small className="tk-readiness-note">
+            {getOceanReadinessSummaryCopy(currentRouteOceanReadinessRequired)}
+          </small>
         </div>
 
         {installedUpgradeLabels.length > 0 && (

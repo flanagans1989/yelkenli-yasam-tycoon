@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { WORLD_ROUTES } from "../../game-data/routes";
 import { RoutePreparationModal } from "./RoutePreparationModal";
 import type { RoutePreparationGuidance } from "../lib/routePreparation";
+import { getOceanReadinessRequirementCopy, getVisibleRouteReadinessItems } from "../lib/routeReadinessUi";
 
 interface RouteReadinessValue {
   current: number;
@@ -140,14 +141,11 @@ export function RotaTab({
     }
   }, [openPreparationGuide, onPreparationGuideOpened]);
 
-  const readinessItems = [
-    { label: "Okyanus Hazırlığı", value: routeReadiness.oceanReadiness },
-    { label: "Enerji", value: routeReadiness.energy },
-    { label: "Su", value: routeReadiness.water },
-    { label: "Güvenlik", value: routeReadiness.safety },
-    { label: "Navigasyon", value: routeReadiness.navigation },
-    { label: "Bakım", value: routeReadiness.maintenance },
-  ];
+  const readinessItems = getVisibleRouteReadinessItems(routeReadiness);
+  const oceanReadinessRequired = routeReadiness.oceanReadiness.required > 0;
+  const oceanReadinessCopy = getOceanReadinessRequirementCopy(
+    routeReadiness.oceanReadiness.required,
+  );
 
   const weakItems = readinessItems.filter(({ value }) => value.current < value.required);
   const isReady = weakItems.length === 0;
@@ -287,6 +285,7 @@ export function RotaTab({
 
             {readinessOpen && (
               <div className="rt-readiness-detail">
+                <p className="rt-readiness-hint">{oceanReadinessCopy}</p>
                 {readinessItems.map(({ label, value }) => {
                   const ok = value.current >= value.required;
                   const categoryId = READINESS_UPGRADE_CATEGORY[label];
@@ -305,7 +304,13 @@ export function RotaTab({
                     </div>
                   );
                 })}
-                {!isReady && <p className="rt-readiness-hint">Eksik satırına dokunarak ilgili upgrade kategorisine git.</p>}
+                {!isReady && (
+                  <p className="rt-readiness-hint">
+                    {oceanReadinessRequired
+                      ? "Eksik satırına dokunarak ilgili upgrade kategorisine git."
+                      : "Eksik satırına dokunarak ilgili upgrade kategorisine git. Okyanus Hazırlığı bu rota için şart değil."}
+                  </p>
+                )}
                 {hasSoftRecommendations && (
                   <div className="rt-readiness-guide-block">
                     <div className="rt-readiness-guide-title">Bu rota için önerilen dokunuşlar</div>

@@ -212,6 +212,12 @@
   box-shadow: 0 0 8px rgba(94, 234, 248, 0.45);
   transition: width 0.4s ease;
 }
+.tk-tab-v2 .tk-readiness-note {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
 
 .tk-tab-v2 .tk-stats-grid {
   position: relative;

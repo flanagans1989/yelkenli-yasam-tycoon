@@ -2664,6 +2664,7 @@ function App() {
         credits={credits}
         tokens={tokens}
         currentOceanReadiness={currentOceanReadiness}
+        currentRouteOceanReadinessRequired={currentRoute?.requirements.minOceanReadiness ?? 0}
         tkStats={tkStats}
         activeInstallRows={activeInstallRows.map((item) => ({
           upgradeId: item.upgradeId,

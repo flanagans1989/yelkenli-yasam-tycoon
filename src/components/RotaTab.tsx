@@ -1,6 +1,8 @@
 ﻿import './RotaTab.css';
 import { useState, useEffect } from "react";
 import { WORLD_ROUTES } from "../../game-data/routes";
+import { RoutePreparationModal } from "./RoutePreparationModal";
+import type { RoutePreparationGuidance } from "../lib/routePreparation";
 
 interface RouteReadinessValue {
   current: number;
@@ -48,6 +50,7 @@ interface RotaTabProps {
   };
   nextRoute?: NextRoutePreview;
   routeReadiness: RouteReadiness;
+  preparationGuidance: RoutePreparationGuidance;
   isSeaMode: boolean;
   completedRouteIds: string[];
   onStartVoyage: () => void;
@@ -55,6 +58,8 @@ interface RotaTabProps {
   onGoUpgradeCategory?: (categoryId: string) => void;
   openReadiness?: boolean;
   onReadinessOpened?: () => void;
+  openPreparationGuide?: boolean;
+  onPreparationGuideOpened?: () => void;
   hasCompletedWorldTour?: boolean;
   onStartPrestigeVoyage?: (routeId: string) => void;
 }
@@ -105,16 +110,20 @@ export function RotaTab({
   currentRoute,
   nextRoute,
   routeReadiness,
+  preparationGuidance,
   isSeaMode,
   completedRouteIds,
   onStartVoyage,
   onGoUpgradeCategory,
   openReadiness,
   onReadinessOpened,
+  openPreparationGuide,
+  onPreparationGuideOpened,
   hasCompletedWorldTour,
   onStartPrestigeVoyage,
 }: RotaTabProps) {
   const [readinessOpen, setReadinessOpen] = useState(false);
+  const [preparationGuideOpen, setPreparationGuideOpen] = useState(false);
 
   useEffect(() => {
     if (openReadiness) {
@@ -122,6 +131,14 @@ export function RotaTab({
       onReadinessOpened?.();
     }
   }, [openReadiness]);
+
+  useEffect(() => {
+    if (openPreparationGuide) {
+      setPreparationGuideOpen(true);
+      setReadinessOpen(true);
+      onPreparationGuideOpened?.();
+    }
+  }, [openPreparationGuide, onPreparationGuideOpened]);
 
   const readinessItems = [
     { label: "Okyanus Hazırlığı", value: routeReadiness.oceanReadiness },
@@ -134,6 +151,7 @@ export function RotaTab({
 
   const weakItems = readinessItems.filter(({ value }) => value.current < value.required);
   const isReady = weakItems.length === 0;
+  const hasSoftRecommendations = preparationGuidance.recommended.length > 0;
   const completedCount = completedRouteIds.length;
 
   const upcomingRoutes = WORLD_ROUTES.filter(
@@ -288,6 +306,22 @@ export function RotaTab({
                   );
                 })}
                 {!isReady && <p className="rt-readiness-hint">Eksik satırına dokunarak ilgili upgrade kategorisine git.</p>}
+                {hasSoftRecommendations && (
+                  <div className="rt-readiness-guide-block">
+                    <div className="rt-readiness-guide-title">Bu rota için önerilen dokunuşlar</div>
+                    {preparationGuidance.recommended.slice(0, 3).map((item) => (
+                      <button
+                        key={`inline-${item.key}`}
+                        className="rt-readiness-guide-chip"
+                        onClick={() => onGoUpgradeCategory?.(item.categoryId)}
+                        disabled={!onGoUpgradeCategory}
+                      >
+                        <span>{item.label}</span>
+                        <small>{item.categoryLabel}</small>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -307,18 +341,33 @@ export function RotaTab({
               <>
                 <button
                   className="rt-cta-btn rt-cta-btn--locked"
-                  onClick={() => setReadinessOpen(true)}
+                  onClick={() => {
+                    setReadinessOpen(true);
+                    setPreparationGuideOpen(true);
+                  }}
                 >
                   <span className="rt-cta-btn-icon">⚠️</span>
                   <span className="rt-cta-btn-label">Önce Eksikleri Tamamla</span>
                 </button>
                 <div className="ui-helper-card ui-helper-card--compact rt-cta-helper">
                   <span className="ui-helper-title">Hazırlık gerekiyor</span>
-                  <span className="ui-helper-copy">Hazırlık detayını aç, eksik satıra dokun ve doğru upgrade yoluna git.</span>
+                  <span className="ui-helper-copy">Hazırlık rehberini aç, gerekli ve önerilen geliştirmeleri ayrı ayrı gör.</span>
                 </div>
               </>
             )}
           </div>
+
+          {isReady && hasSoftRecommendations && !isSeaMode && (
+            <div className="ui-helper-card ui-helper-card--compact rt-prep-inline-card">
+              <span className="ui-helper-title">Hazırsın, ama rota daha iyi hazırlanabilir</span>
+              <span className="ui-helper-copy">
+                {preparationGuidance.recommended[0]?.label} ve benzeri güçlendirmeler bu etapta ekstra güvenlik payı yaratır.
+              </span>
+              <button className="rt-inline-guide-btn" onClick={() => setPreparationGuideOpen(true)}>
+                Hazırlık Önerisini Aç
+              </button>
+            </div>
+          )}
 
           {nextRoute && (
             <div className="rt-next-peek glass-card">
@@ -333,6 +382,16 @@ export function RotaTab({
           <span className="rt-all-done-icon">🏆</span>
           <p>Tüm rotalar tamamlandı! Dünya turu başarıyla bitirildi.</p>
         </div>
+      )}
+
+      {currentRoute && preparationGuideOpen && (
+        <RoutePreparationModal
+          routeName={currentRoute.name}
+          requiredItems={preparationGuidance.required}
+          recommendedItems={preparationGuidance.recommended}
+          onClose={() => setPreparationGuideOpen(false)}
+          onGoUpgradeCategory={onGoUpgradeCategory}
+        />
       )}
     </div>
   );

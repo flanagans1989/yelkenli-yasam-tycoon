@@ -117,6 +117,7 @@ import { buildSaveSnapshot } from "./lib/buildSaveSnapshot";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { calculateContentQuality, calculateContentRewards, formatSeaDecisionEffectSummary } from "./lib/gameLogic";
 import type { AdWatchesByFeatureByDate } from "./types/ads";
+import { buildRoutePreparationGuidance } from "./lib/routePreparation";
 
 type TokenSpeedupTarget = string | "content_cooldown" | "marina_rest";
 
@@ -388,6 +389,7 @@ function App() {
   // BUG 3 FIX: session-only flags for route → tekne → route contextual navigation
   const [comingFromRotaMissing, setComingFromRotaMissing] = useState(false);
   const [shouldOpenRotaReadiness, setShouldOpenRotaReadiness] = useState(false);
+  const [shouldOpenRoutePreparationGuide, setShouldOpenRoutePreparationGuide] = useState(false);
 
   // UI dismissal state (session-only, not persisted)
   const [tavsiyeDismissed, setTavsiyeDismissed] = useState(false);
@@ -502,17 +504,50 @@ function App() {
   const upgradeMaintenanceBonus = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.maintenance || 0), 0);
   const upgradeRiskReduction = purchasedUpgradeObjects.reduce((acc, u) => acc + (u.effects.riskReduction || 0), 0);
 
-  const currentRouteReadinessItems = currentRoute ? [
-    { current: currentOceanReadiness, required: currentRoute.requirements.minOceanReadiness ?? 0 },
-    { current: upgradeEnergyBonus, required: currentRoute.requirements.minEnergy },
-    { current: upgradeWaterBonus, required: currentRoute.requirements.minWater },
-    { current: upgradeSafetyBonus, required: currentRoute.requirements.minSafety },
-    { current: upgradeNavigationBonus, required: currentRoute.requirements.minNavigation },
-    { current: upgradeMaintenanceBonus, required: currentRoute.requirements.minMaintenance },
-  ] : [];
+  const currentRouteReadiness = currentRoute
+    ? {
+        oceanReadiness: {
+          current: currentOceanReadiness,
+          required: currentRoute.requirements.minOceanReadiness ?? 0,
+        },
+        energy: {
+          current: upgradeEnergyBonus,
+          required: currentRoute.requirements.minEnergy,
+        },
+        water: {
+          current: upgradeWaterBonus,
+          required: currentRoute.requirements.minWater,
+        },
+        safety: {
+          current: upgradeSafetyBonus,
+          required: currentRoute.requirements.minSafety,
+        },
+        navigation: {
+          current: upgradeNavigationBonus,
+          required: currentRoute.requirements.minNavigation,
+        },
+        maintenance: {
+          current: upgradeMaintenanceBonus,
+          required: currentRoute.requirements.minMaintenance,
+        },
+      }
+    : null;
+
+  const currentRouteReadinessItems = currentRouteReadiness
+    ? Object.values(currentRouteReadiness)
+    : [];
 
   const currentRouteReadinessGapCount = currentRouteReadinessItems.filter(item => item.current < item.required).length;
   const hasRouteReadinessGap = currentRouteReadinessGapCount > 0;
+  const currentRoutePreparationGuidance =
+    currentRoute && currentRouteReadiness
+      ? buildRoutePreparationGuidance({
+          route: currentRoute,
+          readiness: currentRouteReadiness,
+          boatId: selectedBoat.id,
+          ownedUpgradeIds: purchasedUpgradeIds,
+        })
+      : null;
   const totalRoutesCompleted = completedRouteIds.length;
   const totalUpgradesStarted = purchasedUpgradeIds.length + upgradesInProgress.length;
   const achievementStatuses = ACHIEVEMENTS.map((achievement) => ({
@@ -2149,6 +2184,8 @@ function App() {
     if (!currentRoute) return;
 
     if (hasRouteReadinessGap) {
+      setShouldOpenRotaReadiness(true);
+      setShouldOpenRoutePreparationGuide(true);
       pushToast("warning", "Hazırlık Eksik", "Rota için gereken tüm hazırlık kriterleri tamamlanmadan seyir başlatılamaz.");
       return;
     }
@@ -2529,32 +2566,15 @@ function App() {
         nextRoute={nextRouteData
           ? { name: nextRouteData.name, feeling: nextRouteData.feeling, riskLevel: nextRouteData.riskLevel }
           : undefined}
-        routeReadiness={{
-          oceanReadiness: {
-            current: currentOceanReadiness,
-            required: currentRoute?.requirements.minOceanReadiness ?? 0,
-          },
-          energy: {
-            current: upgradeEnergyBonus,
-            required: currentRoute?.requirements.minEnergy ?? 0,
-          },
-          water: {
-            current: upgradeWaterBonus,
-            required: currentRoute?.requirements.minWater ?? 0,
-          },
-          safety: {
-            current: upgradeSafetyBonus,
-            required: currentRoute?.requirements.minSafety ?? 0,
-          },
-          navigation: {
-            current: upgradeNavigationBonus,
-            required: currentRoute?.requirements.minNavigation ?? 0,
-          },
-          maintenance: {
-            current: upgradeMaintenanceBonus,
-            required: currentRoute?.requirements.minMaintenance ?? 0,
-          },
+        routeReadiness={currentRouteReadiness ?? {
+          oceanReadiness: { current: 0, required: 0 },
+          energy: { current: 0, required: 0 },
+          water: { current: 0, required: 0 },
+          safety: { current: 0, required: 0 },
+          navigation: { current: 0, required: 0 },
+          maintenance: { current: 0, required: 0 },
         }}
+        preparationGuidance={currentRoutePreparationGuidance ?? { required: [], recommended: [] }}
         isSeaMode={step === "SEA_MODE"}
         completedRouteIds={completedRouteIds}
         onStartVoyage={handleStartVoyage}
@@ -2566,6 +2586,8 @@ function App() {
         }}
         openReadiness={shouldOpenRotaReadiness}
         onReadinessOpened={() => setShouldOpenRotaReadiness(false)}
+        openPreparationGuide={shouldOpenRoutePreparationGuide}
+        onPreparationGuideOpened={() => setShouldOpenRoutePreparationGuide(false)}
         hasCompletedWorldTour={hasCompletedWorldTour}
         onStartPrestigeVoyage={handleStartPrestigeVoyage}
       />

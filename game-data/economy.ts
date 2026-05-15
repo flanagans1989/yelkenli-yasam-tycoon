@@ -114,6 +114,9 @@ export interface TokenRule {
 
 export const TOKEN_SPEEDUP_COST_CAP = 60;
 export const DAILY_GOALS_TOKEN_BONUS = 3;
+export const TOKEN_STORE_FRONT_ENABLED = false;
+export const TOKEN_STORE_DEFAULT_CURRENCY = "TRY" as const;
+export const TOKEN_STORE_PURCHASE_FLOW = "placeholder_only" as const;
 
 export const CURRENCIES: CurrencyDefinition[] = [
   {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense, useEffectEvent } from "react";
 import { Capacitor } from "@capacitor/core";
 import "./App.css";
 import { audioManager } from "./lib/audioManager";
@@ -22,7 +22,10 @@ import { BOAT_UPGRADES, UPGRADE_CATEGORIES } from "../game-data/upgrades";
 import type { UpgradeCategoryId } from "../game-data/upgrades";
 import {
   calculateProportionalMarinaDebit,
+  DAILY_GOALS_TOKEN_BONUS,
+  getRouteCompletionTokenReward,
   getSponsorTierByFollowers,
+  getSponsorAcceptTokenReward,
   getTokenSpeedupCost,
   isTokenActionAllowed,
   SPONSOR_TIERS,
@@ -100,9 +103,9 @@ const FullScreenFallback = () => (
   </div>
 );
 import { SEA_DECISION_EVENTS } from "./data/seaEvents";
-import { ACHIEVEMENTS, ACHIEVEMENT_ICONS } from "./data/achievements";
+import { ACHIEVEMENTS, ACHIEVEMENT_ICONS, getAchievementTokenReward } from "./data/achievements";
 import { getContentComment } from "./data/contentComments";
-import { getDailyGoalTheme, getCaptainLevel, getContentCooldownMs, getBoatUpgradeDurationMs, getCaptainRankLabel } from "./data/captainData";
+import { getDailyGoalTheme, getCaptainLevel, getCaptainLevelTokenReward, getContentCooldownMs, getBoatUpgradeDurationMs, getCaptainRankLabel } from "./data/captainData";
 import {
   SAVE_KEY,
   migrateSave, calculateOfflineIncome, processUpgradesFromSave,
@@ -552,6 +555,18 @@ function App() {
     previousUnlockedAchievementIdsRef.current = unlockedAchievementIds;
 
     if (newlyUnlockedAchievement) {
+      const tokenReward = getAchievementTokenReward(newlyUnlockedAchievement.id);
+      grantTokens(
+        tokenReward,
+        `${newlyUnlockedAchievement.title} basarimi acildi. +${tokenReward} token kazanildi.`,
+        tokenReward > 0
+          ? {
+              type: "achievement",
+              title: "Basarim Odulu",
+              text: `${newlyUnlockedAchievement.title} · +${tokenReward} token`,
+            }
+          : undefined,
+      );
       setCelebrationQueue(q => [...q, {
         type: "achievement" as const,
         title: newlyUnlockedAchievement.title,
@@ -801,7 +816,19 @@ function App() {
       const newLevel = getCaptainLevel(captainXp);
       if (newLevel > prev) {
         const bonus = newLevel * 500;
+        const tokenReward = getCaptainLevelTokenReward(newLevel);
         setCredits(c => c + bonus);
+        grantTokens(
+          tokenReward,
+          `Kaptan seviyesi yukseldi: Lv.${newLevel} (+${tokenReward} token)`,
+          tokenReward > 0
+            ? {
+                type: "content",
+                title: "Kaptan Seviyesi Artti",
+                text: `Lv.${newLevel} · +${tokenReward} token`,
+              }
+            : undefined,
+        );
         setLogs(logs => [
           `Kaptan seviyesi yükseldi: Lv.${newLevel} (+${bonus.toLocaleString("tr-TR")} TL bonus)`,
           ...logs.slice(0, 4)
@@ -862,6 +889,15 @@ function App() {
       setHasCompletedDailyGoalsOnce(true);
       setCredits(c => c + 2500);
       setDailyRewardClaimed(true);
+      grantTokens(
+        DAILY_GOALS_TOKEN_BONUS,
+        `Gunluk gorevler tamamlandi. +${DAILY_GOALS_TOKEN_BONUS} token bonus.`,
+        {
+          type: "content",
+          title: "Gunluk 3/3 Tamamlandi",
+          text: `+2.500 TL · +${DAILY_GOALS_TOKEN_BONUS} token`,
+        },
+      );
       setLogs(prev => [
         "Günlük görevler tamamlandı! +2.500 TL bonus.",
         ...prev.slice(0, 4),
@@ -969,6 +1005,19 @@ function App() {
     adWatchesByFeatureByDate,
   });
   useAutoSave(saveSnapshot);
+
+  const grantTokens = useEffectEvent((
+    amount: number,
+    logMessage: string,
+    toast?: { type: "achievement" | "sponsor" | "voyage" | "content"; title: string; text: string },
+  ) => {
+    if (amount <= 0) return;
+    setTokens((prev) => prev + amount);
+    setLogs((prev) => [logMessage, ...prev.slice(0, 4)]);
+    if (toast) {
+      pushToast(toast.type, toast.title, toast.text);
+    }
+  });
 
   const applyMarinaDebit = (now: number = getSafeNow(), options?: { announce?: boolean }) => {
     if (step !== "HUB" || !currentLocationName) {
@@ -1788,6 +1837,7 @@ function App() {
     const prestigeMultiplier = isPrestige ? 1.5 : 1;
     const arrivalCredits = Math.round(reward.credits * prestigeMultiplier);
     const arrivalFollowers = Math.round(reward.followers * prestigeMultiplier);
+    const routeTokenReward = isPrestige ? 0 : getRouteCompletionTokenReward(currentRoute.order);
 
     const nextCompleted = completedRouteIds.includes(currentRoute.id)
       ? completedRouteIds
@@ -1811,6 +1861,17 @@ function App() {
     setLastMarinaDebitAt(getSafeNow());
     setCredits(prev => prev + arrivalCredits);
     setFollowers(prev => prev + arrivalFollowers);
+    grantTokens(
+      routeTokenReward,
+      `${currentRoute.name} rotasi tamamlandi. +${routeTokenReward} token kazanildi.`,
+      routeTokenReward > 0
+        ? {
+            type: "voyage",
+            title: "Rota Token Odulu",
+            text: `${currentRoute.name} · +${routeTokenReward} token`,
+          }
+        : undefined,
+    );
     addFloater(`+${arrivalCredits.toLocaleString("tr-TR")} TL`, "credits");
     scheduleTimeout(() => addFloater(`+${arrivalFollowers.toLocaleString("tr-TR")} Takipci`, "followers"), 200);
     scheduleTimeout(() => addFloater(`+80 XP`, "xp"), 400);
@@ -1908,6 +1969,7 @@ function App() {
       tierId: tier.tier,
       minReward: tier.rewardRange.min,
       maxReward: tier.rewardRange.max,
+      tokenReward: getSponsorAcceptTokenReward(tier.tier),
     };
 
     setSponsorOffers(prev => {
@@ -1955,11 +2017,23 @@ function App() {
     }
 
     let baseReward = Math.floor(Math.random() * (offer.maxReward - offer.minReward + 1)) + offer.minReward;
+    const tokenReward = Math.max(0, Math.floor(offer.tokenReward ?? getSponsorAcceptTokenReward(offer.tierId)));
     if (selectedProfile.id === "social_entrepreneur") {
       baseReward = Math.floor(baseReward * 1.1);
     }
 
     setCredits(prev => prev + baseReward);
+    grantTokens(
+      tokenReward,
+      `${brandName} sponsor teklifi kabul edildi. +${tokenReward} token kazanildi.`,
+      tokenReward > 0
+        ? {
+            type: "sponsor",
+            title: "Sponsor Odulu",
+            text: `${brandName} · +${tokenReward} token`,
+          }
+        : undefined,
+    );
 
     setAcceptedSponsors(prev => {
       const cleanedSponsors = Array.from(
@@ -1993,7 +2067,7 @@ function App() {
     pushToast(
       "sponsor",
       "Sponsor Teklifi Kabul Edildi!",
-      `${brandName} · +${baseReward.toLocaleString("tr-TR")} TL`,
+      `${brandName} · +${baseReward.toLocaleString("tr-TR")} TL · +${tokenReward} token`,
     );
 
     const newCount = sponsoredContentCount + 1;

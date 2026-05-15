@@ -108,6 +108,7 @@ export interface TokenRule {
 }
 
 export const TOKEN_SPEEDUP_COST_CAP = 60;
+export const DAILY_GOALS_TOKEN_BONUS = 3;
 
 export const CURRENCIES: CurrencyDefinition[] = [
   {
@@ -460,6 +461,26 @@ export function getTokenSpeedupCost(
   const safeSeconds = Math.max(0, Number.isFinite(remainingSeconds) ? remainingSeconds : 0);
   const cappedCost = Math.min(Math.max(1, cap), Math.ceil(safeSeconds / 60));
   return Math.max(1, cappedCost);
+}
+
+export function getRouteCompletionTokenReward(routeOrder: number): number {
+  if (routeOrder >= 15) return 3;
+  if (routeOrder >= 9) return 2;
+  return 1;
+}
+
+export function getSponsorAcceptTokenReward(tierId: string): number {
+  switch (tierId) {
+    case "global":
+      return 3;
+    case "medium":
+    case "large":
+      return 2;
+    case "micro":
+    case "small":
+    default:
+      return 1;
+  }
 }
 
 export function getAnchoredMarinaCostProfile(worldProgress: number): {

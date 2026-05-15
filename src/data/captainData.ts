@@ -1,4 +1,5 @@
 export const CAPTAIN_LEVEL_THRESHOLDS = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 6000, 8200, 11000, 14500, 19000, 25000];
+export const CAPTAIN_LEVEL_TWO_TOKEN_REWARD = 10;
 
 const DAILY_GOAL_THEMES = [
   {
@@ -49,6 +50,12 @@ export const getCaptainLevel = (xp: number): number => {
     if (xp >= CAPTAIN_LEVEL_THRESHOLDS[i]) return i + 1;
   }
   return 1;
+};
+
+export const getCaptainLevelTokenReward = (level: number): number => {
+  if (level === 2) return CAPTAIN_LEVEL_TWO_TOKEN_REWARD;
+  if (level >= 3) return 2;
+  return 0;
 };
 
 export const getContentCooldownMs = (captainLevel: number, isTestMode: boolean = false): number => {

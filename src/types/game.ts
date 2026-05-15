@@ -85,4 +85,5 @@ export type SponsorOffer = {
   tierId: string;
   minReward: number;
   maxReward: number;
+  tokenReward?: number;
 };

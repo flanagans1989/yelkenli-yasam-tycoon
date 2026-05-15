@@ -52,6 +52,21 @@ describe("saveLoad helpers", () => {
     expect(result?.save.memberPassword).toBeUndefined();
   });
 
+  it("preserves explicit token balances and defaults missing ones during migration", () => {
+    const withTokens = migrateSave({
+      saveVersion: SAVE_VERSION,
+      tokens: 42,
+      hasSave: true,
+    });
+    const withoutTokens = migrateSave({
+      saveVersion: 1,
+      hasSave: true,
+    });
+
+    expect(withTokens?.save.tokens).toBe(42);
+    expect(withoutTokens?.save.tokens).toBeGreaterThan(0);
+  });
+
   it("best-effort migrates future save versions but rejects invalid versions", () => {
     const future = migrateSave({
       saveVersion: SAVE_VERSION + 3,

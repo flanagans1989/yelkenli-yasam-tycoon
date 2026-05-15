@@ -5924,3 +5924,102 @@ button, input, select, textarea {
 }
 /* === A9R_10 PATCH END === */
 
+/* ============================================================
+   Mobile UI guardrails — boat selection + helper classes
+   Keeps the sticky "BU TEKNEYİ SEÇ" CTA visible while the boat
+   details scroll inside their own container. Required by
+   `npm run audit:mobile-ui`.
+   ============================================================ */
+
+.ob-boat-screen-v2 {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+.ob-boat-screen-v2 .ob-boat-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+}
+
+.ob-boat-screen-v2 .ob-screen-actions {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 5;
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(180deg, rgba(14, 58, 95, 0) 0%, rgba(8, 28, 48, 0.92) 35%, rgba(8, 28, 48, 0.98) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+@media (max-height: 700px) {
+    .ob-boat-screen-v2 .ob-boat-scroll {
+        padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    }
+    .ob-boat-screen-v2 .ob-boat-hero-card {
+        padding: 12px;
+    }
+    .ob-boat-screen-v2 .ob-boat-hero-svg {
+        transform: scale(0.85);
+    }
+    .ob-boat-screen-v2 .ob-stat-grid {
+        gap: 6px;
+    }
+}
+
+@media (max-width: 390px) {
+    .ob-boat-screen-v2 .ob-boat-scroll {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+    .ob-boat-screen-v2 .ob-boat-tabs {
+        gap: 4px;
+    }
+    .ob-boat-screen-v2 .ob-boat-tab {
+        font-size: 13px;
+        padding: 6px 10px;
+    }
+}
+
+/* Shared compact-guidance helper classes (inline tip / note blocks). */
+.ui-helper-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(14, 58, 95, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ui-helper-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #cfe7ff;
+}
+
+.ui-helper-copy {
+    font-size: 13px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.ui-helper-note {
+    font-size: 12px;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.62);
+    font-style: italic;
+}
+/* === MOBILE UI GUARDRAILS END === */
+

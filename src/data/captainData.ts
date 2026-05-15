@@ -57,7 +57,9 @@ export const getContentCooldownMs = (captainLevel: number, isTestMode: boolean =
   if (captainLevel === 2) return 8 * 60 * 1000;
   if (captainLevel === 3) return 12 * 60 * 1000;
   if (captainLevel === 4) return 18 * 60 * 1000;
-  return 30 * 60 * 1000;
+  if (captainLevel === 5) return 16 * 60 * 1000;
+  if (captainLevel === 6) return 14 * 60 * 1000;
+  return 12 * 60 * 1000;
 };
 
 const UPGRADE_TIER_BASE_MS: Record<string, number> = {

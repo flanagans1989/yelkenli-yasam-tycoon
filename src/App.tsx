@@ -41,6 +41,7 @@ import {
 } from "./lib/saveLoad";
 import type { UpgradeInProgressItem, MarinaRestInProgress } from "./lib/saveLoad";
 import { calculateContentQuality, calculateContentRewards, formatSeaDecisionEffectSummary } from "./lib/gameLogic";
+import { startCadenceMonitor, trackCadenceEvent } from "./lib/cadenceTelemetry";
 
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
 const MARINA_REST_DURATION_MS = 2 * 60 * 1000;
@@ -429,6 +430,7 @@ function App() {
     previousUnlockedAchievementIdsRef.current = unlockedAchievementIds;
 
     if (newlyUnlockedAchievement) {
+      trackCadenceEvent("achievement", newlyUnlockedAchievement.title);
       setCelebrationQueue(q => [...q, {
         type: "achievement" as const,
         title: newlyUnlockedAchievement.title,
@@ -452,6 +454,7 @@ function App() {
     for (const m of milestones) {
       if (followers >= m.threshold && !completedFollowerMilestones.includes(m.key)) {
         setCompletedFollowerMilestones(prev => [...prev, m.key]);
+        trackCadenceEvent("followers_milestone", m.key);
         setCelebrationQueue(q => [...q, { type: "achievement" as const, title: m.label, description: m.desc, icon: "🎉" }]);
       }
     }
@@ -473,6 +476,7 @@ function App() {
     previousSponsorOfferIdsRef.current = sponsorOfferIds;
 
     if (newlyAddedOffer) {
+      trackCadenceEvent("sponsor_offer", newlyAddedOffer.brandName);
       pushToast(
         "sponsor",
         "Sponsor Teklifi Geldi!",
@@ -516,6 +520,10 @@ function App() {
     const resume = () => audioManager.resume();
     window.addEventListener("pointerdown", resume, { once: true });
     return () => window.removeEventListener("pointerdown", resume);
+  }, []);
+
+  useEffect(() => {
+    startCadenceMonitor();
   }, []);
 
   useEffect(() => {
@@ -593,6 +601,7 @@ function App() {
       return;
     }
     if (captainLevel > prevCaptainLevelRef.current) {
+      trackCadenceEvent("level_up", String(captainLevel));
       audioManager.play("levelUp");
       const bonus = captainLevel * 500;
       setCelebrationQueue(q => [...q, {
@@ -1290,6 +1299,7 @@ function App() {
     );
     audioManager.play(isViral ? "viral" : "publish");
     setLastContentAt(Date.now());
+    trackCadenceEvent("content_published", platform?.name);
     setCaptainXp(prev => prev + 20);
     completeGoal("produce_content");
     completeMarinaTask("produce_content");
@@ -1383,6 +1393,7 @@ function App() {
       }
     }
     setCaptainXp(prev => prev + 30);
+    trackCadenceEvent("sea_decision", decision.title);
     setPendingDecisionId(null);
     if (forceArrivalFromDecision) {
       setStep("ARRIVAL_SCREEN");
@@ -1442,6 +1453,7 @@ function App() {
     const worldTourLogMsg = isFirstWorldTourCompletion ? "Dünya Turu tamamlandı! Tüm rotalar keşfedildi." : null;
     setLogs(prev => [arrivalLogMsg, ...(worldTourLogMsg ? [worldTourLogMsg] : []), ...prev.slice(0, worldTourLogMsg ? 3 : 4)]);
     setCaptainXp(prev => prev + 80);
+    trackCadenceEvent("route_completed", currentRoute.name);
     setContentResult(null);
     setActiveStoryHook(nextStoryHook);
     if (isPrestige) {
@@ -1613,6 +1625,7 @@ function App() {
       setBrandTrust(prev => prev + 2);
       setLogs(prev => [`${brandName} teklifi kabul edildi (+${baseReward} TL). Marka güveni arttı.`, ...prev.slice(0, 4)]);
     }
+    trackCadenceEvent("sponsor_accepted", brandName);
   };
 
   const getUpgradeInstallMs = (upgrade: (typeof BOAT_UPGRADES)[number], captainLevelForDuration: number = captainLevel) => {
@@ -1683,6 +1696,7 @@ function App() {
     audioManager.play("upgradeDone");
     setLogs(prev => [`Kurulum tamamlandı: ${upgrade.name} aktif edildi.`, ...prev.slice(0, 4)]);
     pushToast("upgrade", "Upgrade Tamamlandı!", `${upgrade.name} kurulumu tamamlandı!`);
+    trackCadenceEvent("upgrade_completed", upgrade.name);
   };
 
   const handleStartVoyage = () => {
@@ -1813,6 +1827,7 @@ function App() {
     audioManager.play("upgradeStart");
     setLogs(prev => [`Kurulum başladı: ${upgrade.name}. Tahmini tamamlanma: ${installMinutes} dakika.`, ...prev.slice(0, 4)]);
     completeGoal("buy_upgrade");
+    trackCadenceEvent("upgrade_started", upgrade.name);
     upgradePurchasingRef.current = false;
   };
 
@@ -2221,7 +2236,11 @@ function App() {
   );
 
   const completeGoal = (type: DailyGoal["type"]) => {
-    setDailyGoals(prev => prev.map(g => g.type === type && !g.completed ? { ...g, completed: true } : g));
+    setDailyGoals(prev => {
+      const goal = prev.find(g => g.type === type && !g.completed);
+      if (goal) trackCadenceEvent("daily_goal", type);
+      return prev.map(g => g.type === type && !g.completed ? { ...g, completed: true } : g);
+    });
   };
 
   const completeMarinaTask = (type: MarinaTaskType, rewardOverride?: number) => {

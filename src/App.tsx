@@ -1927,6 +1927,50 @@ function App() {
 
     const comment = getContentComment(contentType, quality, isViral);
     const sponsorInterestGained = storyHook?.sponsorInterest ?? 0;
+    const publishNow = Date.now();
+
+    // Pre-compute values for dispatch (mirrors what the existing setters below produce)
+    const matchingMarinaTask = marinaTasks.find(t => t.type === "produce_content" && !t.completed);
+    const marinaTaskCredits = matchingMarinaTask ? Math.max(0, Math.floor(matchingMarinaTask.reward)) : 0;
+    const updatedStoryHookForDispatch = storyHook
+      ? (() => { const r = Math.max(0, (storyHook.expiresAfterUses ?? 1) - 1); return r > 0 ? { ...storyHook, expiresAfterUses: r } : null; })()
+      : activeStoryHook;
+    dispatch({ type: "CONTENT/PUBLISH", payload: {
+      platformId,
+      contentType,
+      result: {
+        platform: platform?.name || "Bilinmeyen",
+        type: contentType,
+        quality,
+        viral: isViral,
+        followersGained: gainFollowers,
+        creditsGained: gainCredits,
+        comment,
+        storyHookTitle: storyHook?.title,
+        storyHookSummary: storyHook
+          ? `Hikaye bonusu: +%${storyHook.bonusFollowersPct ?? 0} takipçi · +%${storyHook.bonusCreditsPct ?? 0} TL`
+          : undefined,
+        sponsorInterestGained: sponsorInterestGained > 0 ? sponsorInterestGained : undefined,
+      },
+      historyEntry: {
+        platform: platform?.name || "Bilinmeyen",
+        contentType,
+        quality,
+        followers: gainFollowers,
+        credits: gainCredits,
+        viral: isViral,
+        timestamp: publishNow,
+      },
+      creditsGained: gainCredits + marinaTaskCredits,
+      followersGained: gainFollowers,
+      captainXpGained: 20,
+      brandTrustGained: sponsorInterestGained,
+      sponsorObligationUpdates: Object.fromEntries(acceptedSponsors.map(name => [name, 1])),
+      updatedStoryHook: updatedStoryHookForDispatch,
+      timestamp: publishNow,
+      updatedDailyGoals: dailyGoals.map(g => g.type === "produce_content" && !g.completed ? { ...g, completed: true } : g),
+      updatedMarinaTasks: marinaTasks.map(t => t.type === "produce_content" && !t.completed ? { ...t, completed: true } : t),
+    }});
 
     setLastUsedPlatformId(platformId);
     setLastUsedContentType(contentType);
@@ -2106,6 +2150,30 @@ function App() {
       !completedRouteIds.includes(currentRoute.id) &&
       nextCompleted.length >= WORLD_ROUTES.length &&
       !hasCompletedWorldTour;
+
+    // Pre-compute for dispatch (mirrors what the existing setters below produce)
+    const nextRouteId = !isPrestige
+      ? (getNextRoute(currentRoute.id as RouteId)?.id ?? currentRoute.id)
+      : currentRoute.id;
+    const goalType = isPrestige ? "prestige_route" : "complete_route";
+    dispatch({ type: "VOYAGE/ARRIVE", payload: {
+      worldProgress: isPrestige ? worldProgress : currentRoute.worldProgressPercent,
+      completedRouteIds: isPrestige ? completedRouteIds : nextCompleted,
+      hasCompletedWorldTour: isPrestige ? hasCompletedWorldTour : (isFirstWorldTourCompletion ? true : hasCompletedWorldTour),
+      currentLocationName: currentRoute.to,
+      lastMarinaDebitAt: getSafeNow(),
+      creditsGained: arrivalCredits,
+      followersGained: arrivalFollowers,
+      tokensGained: routeTokenReward,
+      nextRouteId,
+      captainXpGained: 80,
+      activeStoryHook: nextStoryHook,
+      step: "HUB",
+      activeTab: targetTab,
+      icerikSubTab: "produce",
+    }});
+    // Additionally mark goal complete in reducer
+    dispatch({ type: "CAPTAIN/COMPLETE_GOAL", payload: goalType });
 
     if (!isPrestige) {
       setWorldProgress(currentRoute.worldProgressPercent);

@@ -193,9 +193,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         updatedDailyGoals,
         updatedMarinaTasks,
       } = action.payload;
+      // Apply obligation deltas and compute 5-content milestone bonuses
       const nextObligations = { ...state.sponsorObligations };
-      for (const [k, v] of Object.entries(sponsorObligationUpdates)) {
-        nextObligations[k] = (nextObligations[k] ?? 0) + v;
+      let milestoneCredits = 0;
+      let milestoneBrandTrust = 0;
+      for (const [name, delta] of Object.entries(sponsorObligationUpdates)) {
+        const prev = nextObligations[name] ?? 0;
+        const next = prev + delta;
+        nextObligations[name] = next;
+        if (prev < 5 && next >= 5) {
+          milestoneCredits += 500;
+          milestoneBrandTrust += 5;
+        }
       }
       return {
         ...state,
@@ -203,10 +212,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         selectedContentType: contentType,
         contentResult: result,
         contentHistory: [historyEntry, ...state.contentHistory].slice(0, 50),
-        credits: state.credits + creditsGained,
+        credits: state.credits + creditsGained + milestoneCredits,
         followers: state.followers + followersGained,
         captainXp: state.captainXp + captainXpGained,
-        brandTrust: state.brandTrust + brandTrustGained,
+        brandTrust: Math.min(100, state.brandTrust + brandTrustGained + milestoneBrandTrust),
         sponsorObligations: nextObligations,
         activeStoryHook: updatedStoryHook,
         lastContentAt: timestamp,

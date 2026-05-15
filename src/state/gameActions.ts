@@ -16,6 +16,7 @@ import type { GameSaveSnapshotInput } from "../lib/buildSaveSnapshot";
 // ── Full-state bulk ──────────────────────────────────────────────────────────
 export type GameInitializeAction = { type: "GAME/INITIALIZE"; payload: GameSaveSnapshotInput };
 export type GameLoadAction = { type: "GAME/LOAD"; payload: GameSaveSnapshotInput };
+export type GamePatchAction = { type: "GAME/PATCH"; payload: Partial<GameSaveSnapshotInput> };
 
 // ── Economy ──────────────────────────────────────────────────────────────────
 export type EconomySetCreditsAction = { type: "ECONOMY/SET_CREDITS"; payload: number };
@@ -221,6 +222,7 @@ export type AdApplyRewardAction = {
 export type GameAction =
   | GameInitializeAction
   | GameLoadAction
+  | GamePatchAction
   | EconomySetCreditsAction
   | EconomyAddCreditsAction
   | EconomySetTokensAction

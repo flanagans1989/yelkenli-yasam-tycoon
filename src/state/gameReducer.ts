@@ -81,6 +81,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "GAME/INITIALIZE":
     case "GAME/LOAD":
       return action.payload;
+    case "GAME/PATCH":
+      return { ...state, ...action.payload };
 
     // ── Economy ──────────────────────────────────────────────────────────────
     case "ECONOMY/SET_CREDITS":

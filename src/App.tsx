@@ -353,17 +353,26 @@ function App() {
   // Phase 6: individual useStates removed; saveSnapshot switches to buildSaveSnapshot(gameState).
   const [gameState, dispatch] = useReducer(gameReducer, undefined, getInitialGameState);
 
-  const [step, setStepState] = useState<Step>("WELCOME");
-  const [activeTab, setActiveTabState] = useState<Tab>("liman");
-  const [profileIndex, setProfileIndex] = useState(0);
-  const [marinaIndex, setMarinaIndex] = useState(0);
+  // Navigation reads from gameState
+  const { step, activeTab } = gameState;
+  const setStepState = (arg: Step | ((prev: Step) => Step)) =>
+    dispatch({ type: "NAVIGATION/SET_STEP", payload: typeof arg === "function" ? arg(step) : arg });
+  const setActiveTabState = (arg: Tab | ((prev: Tab) => Tab)) =>
+    dispatch({ type: "NAVIGATION/SET_TAB", payload: typeof arg === "function" ? arg(activeTab) : arg });
+  const { profileIndex, marinaIndex } = gameState;
+  const setProfileIndex = (v: number | ((p: number) => number)) =>
+    dispatch({ type: "GAME/PATCH", payload: { profileIndex: typeof v === "function" ? v(profileIndex) : v } });
+  const setMarinaIndex = (v: number | ((p: number) => number)) =>
+    dispatch({ type: "GAME/PATCH", payload: { marinaIndex: typeof v === "function" ? v(marinaIndex) : v } });
   const [marinaFilter, setMarinaFilter] = useState<MarinaFilter>("all");
-  const [boatIndex, setBoatIndex] = useState(0);
-  const [boatName, setBoatName] = useState("");
+  const { boatIndex, boatName } = gameState;
+  const setBoatIndex = (v: number) => dispatch({ type: "GAME/PATCH", payload: { boatIndex: v } });
+  const setBoatName = (v: string) => dispatch({ type: "GAME/PATCH", payload: { boatName: v } });
   const [onboardingMessage, setOnboardingMessage] = useState("");
-  const [memberFullName, setMemberFullName] = useState("");
-  const [memberUsername, setMemberUsername] = useState("");
-  const [memberEmail, setMemberEmail] = useState("");
+  const { memberFullName, memberUsername, memberEmail } = gameState;
+  const setMemberFullName = (v: string) => dispatch({ type: "GAME/PATCH", payload: { memberFullName: v } });
+  const setMemberUsername = (v: string) => dispatch({ type: "GAME/PATCH", payload: { memberUsername: v } });
+  const setMemberEmail = (v: string) => dispatch({ type: "GAME/PATCH", payload: { memberEmail: v } });
   const [memberPassword, setMemberPassword] = useState("");
   
   // Economy reads from gameState
@@ -379,41 +388,64 @@ function App() {
     const next = typeof arg === "function" ? arg(logs) : arg;
     dispatch({ type: "LOGS/SET", payload: next });
   };
-  const [firstContentDone, setFirstContentDone] = useState(false);
-  const [purchasedUpgradeIds, setPurchasedUpgradeIds] = useState<string[]>([]);
-  const [upgradesInProgress, setUpgradesInProgress] = useState<UpgradeInProgressItem[]>([]);
+  const { firstContentDone } = gameState;
+  const setFirstContentDone = (v: boolean) => dispatch({ type: "GAME/PATCH", payload: { firstContentDone: v } });
+  const { purchasedUpgradeIds, upgradesInProgress } = gameState;
+  const setPurchasedUpgradeIds = (v: string[] | ((p: string[]) => string[])) =>
+    dispatch({ type: "GAME/PATCH", payload: { purchasedUpgradeIds: typeof v === "function" ? v(purchasedUpgradeIds) : v } });
+  const setUpgradesInProgress = (v: UpgradeInProgressItem[] | ((p: UpgradeInProgressItem[]) => UpgradeInProgressItem[])) =>
+    dispatch({ type: "GAME/PATCH", payload: { upgradesInProgress: typeof v === "function" ? v(upgradesInProgress) : v } });
 
-  // Sea Mode MVP states
-  const [currentLocationName, setCurrentLocationName] = useState("");
-  const [worldProgress, setWorldProgress] = useState(0);
-  const [lastMarinaDebitAt, setLastMarinaDebitAt] = useState<number | null>(null);
-  const [energy, setEnergy] = useState(100);
-  const [water, setWater] = useState(100);
-  const [fuel, setFuel] = useState(100);
-  const [boatCondition, setBoatCondition] = useState(100);
+  // Voyage/route reads from gameState
+  const { currentLocationName, worldProgress, lastMarinaDebitAt } = gameState;
+  const setCurrentLocationName = (v: string) => dispatch({ type: "GAME/PATCH", payload: { currentLocationName: v } });
+  const setWorldProgress = (v: number) => dispatch({ type: "GAME/PATCH", payload: { worldProgress: v } });
+  const setLastMarinaDebitAt = (v: number | null | ((p: number | null) => number | null)) =>
+    dispatch({ type: "GAME/PATCH", payload: { lastMarinaDebitAt: typeof v === "function" ? v(lastMarinaDebitAt) : v } });
+  // Resources read from gameState
+  const { energy, water, fuel, boatCondition } = gameState;
+  const setEnergy = (arg: number | ((prev: number) => number)) =>
+    dispatch({ type: "RESOURCES/SET", payload: { energy: typeof arg === "function" ? arg(energy) : arg } });
+  const setWater = (arg: number | ((prev: number) => number)) =>
+    dispatch({ type: "RESOURCES/SET", payload: { water: typeof arg === "function" ? arg(water) : arg } });
+  const setFuel = (arg: number | ((prev: number) => number)) =>
+    dispatch({ type: "RESOURCES/SET", payload: { fuel: typeof arg === "function" ? arg(fuel) : arg } });
+  const setBoatCondition = (arg: number | ((prev: number) => number)) =>
+    dispatch({ type: "RESOURCES/SET", payload: { boatCondition: typeof arg === "function" ? arg(boatCondition) : arg } });
   
-  const [currentRouteId, setCurrentRouteId] = useState<string>("turkiye_start");
-  const [completedRouteIds, setCompletedRouteIds] = useState<string[]>([]);
-  
-  const [voyageTotalDays, setVoyageTotalDays] = useState(0);
-  const [voyageDaysRemaining, setVoyageDaysRemaining] = useState(0);
-  const [currentSeaEvent, setCurrentSeaEvent] = useState("");
-  const [pendingDecisionId, setPendingDecisionId] = useState<string | null>(null);
-  const [firstVoyageEventTriggered, setFirstVoyageEventTriggered] = useState(false);
+  const { currentRouteId, completedRouteIds, voyageTotalDays, voyageDaysRemaining, currentSeaEvent, pendingDecisionId, firstVoyageEventTriggered } = gameState;
+  const setCurrentRouteId = (v: string) => dispatch({ type: "GAME/PATCH", payload: { currentRouteId: v } });
+  const setCompletedRouteIds = (v: string[] | ((p: string[]) => string[])) =>
+    dispatch({ type: "GAME/PATCH", payload: { completedRouteIds: typeof v === "function" ? v(completedRouteIds) : v } });
+  const setVoyageTotalDays = (v: number) => dispatch({ type: "GAME/PATCH", payload: { voyageTotalDays: v } });
+  const setVoyageDaysRemaining = (v: number | ((p: number) => number)) =>
+    dispatch({ type: "GAME/PATCH", payload: { voyageDaysRemaining: typeof v === "function" ? v(voyageDaysRemaining) : v } });
+  const setCurrentSeaEvent = (v: string) => dispatch({ type: "VOYAGE/SET_SEA_EVENT", payload: v });
+  const setPendingDecisionId = (v: string | null) =>
+    v === null ? dispatch({ type: "GAME/PATCH", payload: { pendingDecisionId: null } }) : dispatch({ type: "VOYAGE/SET_PENDING_DECISION", payload: v });
+  const setFirstVoyageEventTriggered = (v: boolean) => {
+    if (v) dispatch({ type: "VOYAGE/SET_FIRST_EVENT_TRIGGERED" });
+  };
   const [recentSeaEventIds, setRecentSeaEventIds] = useState<string[]>([]);
 
-  // Content V2 States
-  const [selectedPlatformId, setSelectedPlatformId] = useState<string | null>(null);
-  const [selectedContentType, setSelectedContentType] = useState<string | null>(null);
-  const [contentResult, setContentResult] = useState<ContentResult | null>(null);
-  const [contentHistory, setContentHistory] = useState<ContentHistoryItem[]>([]);
-  const [lastContentAt, setLastContentAt] = useState<number | null>(null);
+  // Content reads from gameState
+  const { selectedPlatformId, selectedContentType, contentResult, contentHistory, lastContentAt } = gameState;
+  const setSelectedPlatformId = (v: string | null) => dispatch({ type: "CONTENT/SET_PLATFORM", payload: v });
+  const setSelectedContentType = (v: string | null) => dispatch({ type: "CONTENT/SET_TYPE", payload: v });
+  const setContentResult = (v: ContentResult | null) => dispatch({ type: "CONTENT/SET_RESULT", payload: v });
+  const setContentHistory = (v: ContentHistoryItem[] | ((p: ContentHistoryItem[]) => ContentHistoryItem[])) =>
+    dispatch({ type: "GAME/PATCH", payload: { contentHistory: typeof v === "function" ? v(contentHistory) : v } });
+  const setLastContentAt = (v: number | null | ((p: number | null) => number | null)) =>
+    dispatch({ type: "GAME/PATCH", payload: { lastContentAt: typeof v === "function" ? v(lastContentAt) : v } });
   const [, setContentCooldownTick] = useState(0);
-  const [marinaRestInProgress, setMarinaRestInProgress] = useState<MarinaRestInProgress | null>(null);
+  const { marinaRestInProgress } = gameState;
+  const setMarinaRestInProgress = (v: MarinaRestInProgress | null | ((p: MarinaRestInProgress | null) => MarinaRestInProgress | null)) =>
+    dispatch({ type: "GAME/PATCH", payload: { marinaRestInProgress: typeof v === "function" ? v(marinaRestInProgress) : v } });
   const [marinaRestCooldownTick, setMarinaRestCooldownTick] = useState(0);
 
   // Upgrade V2 State
-  const [selectedUpgradeCategory, setSelectedUpgradeCategory] = useState<UpgradeCategoryId>("energy");
+  const { selectedUpgradeCategory } = gameState;
+  const setSelectedUpgradeCategory = (v: UpgradeCategoryId) => dispatch({ type: "UPGRADES/SET_CATEGORY", payload: v });
   // BUG 3 FIX: session-only flags for route → tekne → route contextual navigation
   const [comingFromRotaMissing, setComingFromRotaMissing] = useState(false);
   const [shouldOpenRotaReadiness, setShouldOpenRotaReadiness] = useState(false);
@@ -430,46 +462,71 @@ function App() {
   const [pendingUpgradeConfirmId, setPendingUpgradeConfirmId] = useState<string | null>(null);
   const upgradePurchasingRef = useRef(false);
 
-  // Sponsor MVP States
-  const [brandTrust, setBrandTrust] = useState(10);
-  const [sponsorOffers, setSponsorOffers] = useState<SponsorOffer[]>([]);
-  const [acceptedSponsors, setAcceptedSponsors] = useState<string[]>([]);
-  const [sponsoredContentCount, setSponsoredContentCount] = useState(0);
-  const [sponsorObligations, setSponsorObligations] = useState<Record<string, number>>({});
-  const [icerikSubTab, setIcerikSubTab] = useState<"produce" | "sponsor">("produce");
+  // Sponsor reads from gameState
+  const { brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount, sponsorObligations } = gameState;
+  const setBrandTrust = (v: number | ((p: number) => number)) =>
+    dispatch({ type: "GAME/PATCH", payload: { brandTrust: typeof v === "function" ? v(brandTrust) : v } });
+  const setSponsorOffers = (v: SponsorOffer[] | ((p: SponsorOffer[]) => SponsorOffer[])) =>
+    dispatch({ type: "SPONSORS/SET_OFFERS", payload: typeof v === "function" ? v(sponsorOffers) : v });
+  const setAcceptedSponsors = (v: string[] | ((p: string[]) => string[])) =>
+    dispatch({ type: "GAME/PATCH", payload: { acceptedSponsors: typeof v === "function" ? v(acceptedSponsors) : v } });
+  const setSponsoredContentCount = (v: number | ((p: number) => number)) =>
+    dispatch({ type: "GAME/PATCH", payload: { sponsoredContentCount: typeof v === "function" ? v(sponsoredContentCount) : v } });
+  const setSponsorObligations = (v: Record<string, number> | ((p: Record<string, number>) => Record<string, number>)) =>
+    dispatch({ type: "GAME/PATCH", payload: { sponsorObligations: typeof v === "function" ? v(sponsorObligations) : v } });
+  const { icerikSubTab } = gameState;
+  const setIcerikSubTab = (v: "produce" | "sponsor") => dispatch({ type: "CONTENT/SET_SUB_TAB", payload: v });
 
   const [hasSave, setHasSave] = useState(false);
   const [saveBoatName, setSaveBoatName] = useState("");
-  const [tutorialStep, setTutorialStep] = useState(3);
-  const [gender, setGender] = useState<Gender>("unspecified");
+  const { tutorialStep } = gameState;
+  const setTutorialStep = (v: number) => dispatch({ type: "NAVIGATION/SET_TUTORIAL_STEP", payload: v });
+  const { gender } = gameState;
+  const setGender = (v: Gender) => dispatch({ type: "GAME/PATCH", payload: { gender: v } });
   const [showMicoFarewell, setShowMicoFarewell] = useState(false);
   const [showSailAnimation, setShowSailAnimation] = useState(false);
   const [isPrestigeVoyage, setIsPrestigeVoyage] = useState(false);
-  const [testMode, setTestMode] = useState(false);
-  const [hasReceivedFirstSponsor, setHasReceivedFirstSponsor] = useState(false);
+  const { testMode } = gameState;
+  const setTestMode = (v: boolean) => dispatch({ type: "GAME/PATCH", payload: { testMode: v } });
+  const { hasReceivedFirstSponsor } = gameState;
+  const setHasReceivedFirstSponsor = (v: boolean) => {
+    if (v) dispatch({ type: "SPONSORS/SET_RECEIVED_FIRST" });
+  };
 
   const { rewardFloaters, addFloater } = useRewardFloaters();
   const { flashCredits, flashFollowers, triggerFlash } = useFlashState();
 
-  const [captainXp, setCaptainXp] = useState(0);
-  const [captainLevel, setCaptainLevel] = useState(1);
-
-  const [dailyGoals, setDailyGoals] = useState<DailyGoal[]>(makeDailyGoals);
-  const [lastDailyReset, setLastDailyReset] = useState<string>("");
-  const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
-  const [loginStreak, setLoginStreak] = useState(0);
-  const [lastLoginBonus, setLastLoginBonus] = useState<string>("");
-  const [marinaTasks, setMarinaTasks] = useState<MarinaTask[]>([]);
-  const [lastMarinaTasksLocation, setLastMarinaTasksLocation] = useState<string>("");
-  const [totalContentProduced, setTotalContentProduced] = useState(0);
-  const [hasCompletedDailyGoalsOnce, setHasCompletedDailyGoalsOnce] = useState(false);
-  const [hasCompletedWorldTour, setHasCompletedWorldTour] = useState(false);
-  const [adWatchesByFeatureByDate, setAdWatchesByFeatureByDate] = useState<AdWatchesByFeatureByDate>({});
-  const [activeStoryHook, setActiveStoryHook] = useState<StoryHook | null>(null);
+  const { captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, loginStreak, lastLoginBonus } = gameState;
+  const setCaptainXp = (v: number | ((p: number) => number)) =>
+    dispatch({ type: "GAME/PATCH", payload: { captainXp: typeof v === "function" ? v(captainXp) : v } });
+  const setCaptainLevel = (v: number | ((p: number) => number)) =>
+    dispatch({ type: "GAME/PATCH", payload: { captainLevel: typeof v === "function" ? v(captainLevel) : v } });
+  const setDailyGoals = (v: DailyGoal[] | ((p: DailyGoal[]) => DailyGoal[])) =>
+    dispatch({ type: "GAME/PATCH", payload: { dailyGoals: typeof v === "function" ? v(dailyGoals) : v } });
+  const setLastDailyReset = (v: string) => dispatch({ type: "GAME/PATCH", payload: { lastDailyReset: v } });
+  const setDailyRewardClaimed = (v: boolean) => dispatch({ type: "GAME/PATCH", payload: { dailyRewardClaimed: v } });
+  const setLoginStreak = (v: number) => dispatch({ type: "GAME/PATCH", payload: { loginStreak: v } });
+  const setLastLoginBonus = (v: string) => dispatch({ type: "GAME/PATCH", payload: { lastLoginBonus: v } });
+  const { marinaTasks, lastMarinaTasksLocation } = gameState;
+  const setMarinaTasks = (v: MarinaTask[] | ((p: MarinaTask[]) => MarinaTask[])) =>
+    dispatch({ type: "GAME/PATCH", payload: { marinaTasks: typeof v === "function" ? v(marinaTasks) : v } });
+  const setLastMarinaTasksLocation = (v: string) => dispatch({ type: "GAME/PATCH", payload: { lastMarinaTasksLocation: v } });
+  const { totalContentProduced } = gameState;
+  const setTotalContentProduced = (v: number | ((p: number) => number)) =>
+    dispatch({ type: "GAME/PATCH", payload: { totalContentProduced: typeof v === "function" ? v(totalContentProduced) : v } });
+  const { hasCompletedDailyGoalsOnce, hasCompletedWorldTour, adWatchesByFeatureByDate } = gameState;
+  const setHasCompletedDailyGoalsOnce = (v: boolean) => dispatch({ type: "GAME/PATCH", payload: { hasCompletedDailyGoalsOnce: v } });
+  const setHasCompletedWorldTour = (v: boolean) => dispatch({ type: "GAME/PATCH", payload: { hasCompletedWorldTour: v } });
+  const setAdWatchesByFeatureByDate = (v: AdWatchesByFeatureByDate | ((p: AdWatchesByFeatureByDate) => AdWatchesByFeatureByDate)) =>
+    dispatch({ type: "GAME/PATCH", payload: { adWatchesByFeatureByDate: typeof v === "function" ? v(adWatchesByFeatureByDate) : v } });
+  const { activeStoryHook } = gameState;
+  const setActiveStoryHook = (v: StoryHook | null) => dispatch({ type: "CONTENT/SET_STORY_HOOK", payload: v });
   const [pendingWelcomeBackReward, setPendingWelcomeBackReward] = useState<PendingWelcomeBackReward | null>(null);
   const { activeToast, isToastLeaving, pushToast, dismissToast } = useToastQueue();
   const { activeCelebration, setActiveCelebration, setCelebrationQueue } = useCelebrationQueue();
-  const [completedFollowerMilestones, setCompletedFollowerMilestones] = useState<string[]>([]);
+  const { completedFollowerMilestones } = gameState;
+  const setCompletedFollowerMilestones = (v: string[] | ((p: string[]) => string[])) =>
+    dispatch({ type: "GAME/PATCH", payload: { completedFollowerMilestones: typeof v === "function" ? v(completedFollowerMilestones) : v } });
   const prevCaptainLevelRef = useRef<number | null>(null);
 
   const previousUnlockedAchievementIdsRef = useRef<string[]>([]);

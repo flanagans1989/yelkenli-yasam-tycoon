@@ -368,13 +368,13 @@ export const TOKEN_ALLOWED_RULES: TokenRule[] = [
   },
   {
     action: "maintenance_speedup",
-    allowed: true,
-    description: "Bakım süresi token ile hızlandırılabilir.",
+    allowed: false,
+    description: "Bakım için tokenlı hızlandırma şu anda aktif değildir.",
   },
   {
     action: "repair_speedup",
-    allowed: true,
-    description: "Tamir süresi token ile hızlandırılabilir.",
+    allowed: false,
+    description: "Tamir için tokenlı hızlandırma şu anda aktif değildir.",
   },
   {
     action: "content_cooldown_speedup",
@@ -388,18 +388,18 @@ export const TOKEN_ALLOWED_RULES: TokenRule[] = [
   },
   {
     action: "emergency_energy",
-    allowed: true,
-    description: "Denizde acil enerji desteği alınabilir.",
+    allowed: false,
+    description: "Token ile dogrudan enerji satin alinamaz.",
   },
   {
     action: "emergency_water",
-    allowed: true,
-    description: "Denizde acil su desteği alınabilir.",
+    allowed: false,
+    description: "Token ile dogrudan su satin alinamaz.",
   },
   {
     action: "emergency_fuel",
-    allowed: true,
-    description: "Denizde acil yakıt desteği alınabilir.",
+    allowed: false,
+    description: "Token ile dogrudan yakit satin alinamaz.",
   },
   {
     action: "buy_followers",

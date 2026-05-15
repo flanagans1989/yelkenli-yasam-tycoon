@@ -4027,8 +4027,8 @@ button {
 .progress-strip {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 6px 16px 8px;
+  gap: 4px;
+  padding: 5px 16px 6px;
   background: rgba(30, 159, 212, 0.07);
   border-bottom: 1px solid rgba(30, 159, 212, 0.1);
   flex-shrink: 0;

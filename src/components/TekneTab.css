@@ -219,6 +219,41 @@
   color: var(--text-muted);
 }
 
+.tk-tab-v2 .tk-stats-empty {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 12px;
+  border-radius: 12px;
+  background: rgba(12, 28, 48, 0.45);
+  border: 1px dashed rgba(94, 234, 248, 0.22);
+  text-align: center;
+}
+
+.tk-tab-v2 .tk-stats-empty-icon {
+  font-size: 22px;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.tk-tab-v2 .tk-stats-empty-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tk-tab-v2 .tk-stats-empty-copy {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  max-width: 28ch;
+}
+
 .tk-tab-v2 .tk-stats-grid {
   position: relative;
   z-index: 1;

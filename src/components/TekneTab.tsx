@@ -88,6 +88,8 @@ export function TekneTab({
   onCancelUpgradeConfirm,
   installedUpgradeLabels = [],
 }: TekneTabProps) {
+  const statsAllZero = tkStats.length > 0 && tkStats.every((stat) => stat.value === 0);
+
   return (
     <div className="tab-content tk-tab-v2 fade-in">
       <div className="tk-hero glass-card">
@@ -136,10 +138,17 @@ export function TekneTab({
           </div>
         )}
 
-        <div className="tk-stats-grid">
-          {tkStats.map((s) => (
-            <div key={s.key} className="tk-stat-chip" data-stat={s.key}>
-              <span className="tk-stat-icon">{s.icon}</span>
+        {statsAllZero ? (
+          <div className="tk-stats-empty">
+            <span className="tk-stats-empty-icon" aria-hidden="true">⚙</span>
+            <p className="tk-stats-empty-title">Henüz yükseltme yok</p>
+            <p className="tk-stats-empty-copy">Starter teknen temel donanımla geliyor. Aşağıdan ilk parçanı takarak okyanusa hazırlan.</p>
+          </div>
+        ) : (
+          <div className="tk-stats-grid">
+            {tkStats.map((s) => (
+              <div key={s.key} className="tk-stat-chip" data-stat={s.key}>
+                <span className="tk-stat-icon">{s.icon}</span>
               <div className="tk-stat-body">
                 <span className="tk-stat-label">{s.label}</span>
                 <strong className="tk-stat-val" style={s.color ? { color: s.color } : undefined}>
@@ -148,7 +157,8 @@ export function TekneTab({
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
 
       {activeInstallRows.length > 0 && (

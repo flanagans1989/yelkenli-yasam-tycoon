@@ -225,23 +225,19 @@ export function Onboarding({
 
   const renderMainMenu = () => (
     <div className="ob-main-menu ob-main-menu-v2">
-      <div className="ob-corners">
-        <button className="ob-corner-btn" aria-label="Ayarlar" onClick={() => console.log("settings")}>
-          <span className="ob-corner-icon">⚙</span>
-          <span className="ob-corner-label">AYARLAR</span>
-        </button>
-        <button className="ob-corner-btn" aria-label="Mağaza" onClick={() => console.log("store")}>
-          <span className="ob-corner-icon">🏪</span>
-          <span className="ob-corner-label">MAĞAZA</span>
-        </button>
-        <button className="ob-corner-btn" aria-label="Başarımlar" onClick={() => console.log("achievements")}>
-          <span className="ob-corner-icon">🏆</span>
-          <span className="ob-corner-label">BAŞARIM</span>
-        </button>
-        <button className="ob-corner-btn" aria-label="Sosyal" onClick={() => console.log("social")}>
-          <span className="ob-corner-icon">👥</span>
-          <span className="ob-corner-label">SOSYAL</span>
-        </button>
+      <div className="ob-corners" aria-label="Yakında gelecek özellikler">
+        {([
+          { icon: "⚙", label: "AYARLAR" },
+          { icon: "🏪", label: "MAĞAZA" },
+          { icon: "🏆", label: "BAŞARIM" },
+          { icon: "👥", label: "SOSYAL" },
+        ] as const).map((item) => (
+          <div key={item.label} className="ob-corner-chip" aria-hidden="true">
+            <span className="ob-corner-icon">{item.icon}</span>
+            <span className="ob-corner-label">{item.label}</span>
+            <span className="ob-corner-soon">Yakında</span>
+          </div>
+        ))}
       </div>
 
       <div className="ob-menu-hero">
@@ -398,7 +394,7 @@ export function Onboarding({
     return (
       <div className="ob-profile-screen ob-profile-screen-v2">
         <div className="ob-step-header">
-          <div className="ob-step-eyebrow">ADIM 1 / 4</div>
+          <div className="ob-step-eyebrow">ADIM 1 / 5</div>
           <h2 className="ob-step-title">KAPTANINI SEÇ</h2>
         </div>
         <MicoGuide message={MICO_MESSAGES.PICK_PROFILE!} visible className="ob-mico-guide" />
@@ -546,7 +542,7 @@ export function Onboarding({
     return (
       <div className="ob-marina-screen ob-marina-screen-v2 ob-marina-screen-v3 ob-marina-screen-v4">
         <div className="ob-step-header">
-          <div className="ob-step-eyebrow">ADIM 2 / 4</div>
+          <div className="ob-step-eyebrow">ADIM 2 / 5</div>
           <h2 className="ob-step-title">ÇIKIŞ LİMANINI SEÇ</h2>
         </div>
         <MicoGuide message={MICO_MESSAGES.PICK_MARINA!} visible />
@@ -806,7 +802,7 @@ export function Onboarding({
       <div className="ob-boat-screen ob-boat-screen-v2">
         <div className="ob-boat-scroll">
         <div className="ob-step-header">
-          <div className="ob-step-eyebrow">ADIM 3 / 4</div>
+          <div className="ob-step-eyebrow">ADIM 3 / 5</div>
           <h2 className="ob-step-title">TEKNENİ SEÇ</h2>
         </div>
         <MicoGuide message={MICO_MESSAGES.PICK_BOAT!} visible />
@@ -877,13 +873,6 @@ export function Onboarding({
           <span>{remainingBudget.toLocaleString("tr-TR")} TL ile başlarsın</span>
           <span className="ob-budget-tier">{budgetTier}</span>
         </div>
-
-        <div className="ui-helper-note" style={{ padding: "12px 14px", marginTop: "12px" }}>
-          <span className="ui-helper-title">Mobil İpucu</span>
-          <span className="ui-helper-copy">
-            Tekne kartları kaydırılabilir, seçim butonu ise altta sabit kalır. Dar ekranlarda son kartların altında da güvenli boşluk korunur.
-          </span>
-        </div>
         </div>
 
         <div className="ob-screen-actions">
@@ -904,7 +893,7 @@ export function Onboarding({
       <MicoGuide message={MICO_MESSAGES.NAME_BOAT!} visible />
       <div className="ob-naming-hero-header">
         <h2 className="ob-naming-title">SON HAZIRLIK</h2>
-        <div className="ob-step-eyebrow">ADIM 4 / 4</div>
+        <div className="ob-step-eyebrow">ADIM 4 / 5</div>
       </div>
 
       <div className="ob-naming-hero">

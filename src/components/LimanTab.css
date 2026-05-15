@@ -106,9 +106,12 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  white-space: nowrap;
+  line-height: 1.25;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .next-action-cta {

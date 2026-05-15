@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { getBoatSvg } from "../data/boatSvg";
 import type { MarinaTask } from "../types/game";
+import type { RewardedAdUiHook } from "../types/ads";
 
 interface LimanTabProps {
   selectedBoatId: string;
@@ -23,7 +24,9 @@ interface LimanTabProps {
   marinaRestActionLabel: string;
   marinaRestActionDisabled: boolean;
   marinaRestSpeedupTokenCost: number | null;
+  marinaRestAdHook: RewardedAdUiHook | null;
   onSpeedupMarinaRest: () => void;
+  onTriggerMarinaRestAdHook: () => void;
   onRefillWater: () => void;
   onRefillFuel: () => void;
   onRepairBoat: () => void;
@@ -66,7 +69,9 @@ export function LimanTab({
   marinaRestActionLabel,
   marinaRestActionDisabled,
   marinaRestSpeedupTokenCost,
+  marinaRestAdHook,
   onSpeedupMarinaRest,
+  onTriggerMarinaRestAdHook,
   onRefillWater,
   onRefillFuel,
   onRepairBoat,
@@ -306,6 +311,11 @@ export function LimanTab({
                   {marinaRestSpeedupTokenCost} Token Bitir
                 </button>
               )}
+              {marinaRestAdHook && (
+                <button className="secondary-button lh-service-btn" onClick={onTriggerMarinaRestAdHook}>
+                  {marinaRestAdHook.available ? "Reklam Hook'u" : "Reklam Yakında"}
+                </button>
+              )}
               <button className="secondary-button lh-service-btn" onClick={onRefillWater} disabled={water >= 100}>
                 {water >= 100 ? "Su dolu" : `Su Al – ${Math.max(0, 100 - water) * 1} TL`}
               </button>
@@ -316,6 +326,11 @@ export function LimanTab({
                 {boatCondition >= 100 ? "Tekne sağlam" : "Onar – 250 TL"}
               </button>
             </div>
+            {marinaRestAdHook && (
+              <p className="lh-status-text">
+                {marinaRestAdHook.label} · {marinaRestAdHook.statusText}
+              </p>
+            )}
           </div>
         )}
       </div>

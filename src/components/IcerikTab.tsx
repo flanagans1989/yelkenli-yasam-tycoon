@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ContentResultCard } from "./ContentResultCard";
 import { SponsorTab } from "./SponsorTab";
 import type { ContentHistoryItem, ContentResult, Step, StoryHook, SponsorOffer } from "../types/game";
+import type { RewardedAdUiHook } from "../types/ads";
 
 type PlatformItem = {
   id: string;
@@ -56,9 +57,11 @@ type IcerikTabProps = {
   onContentCooldown: boolean;
   cooldownMinutes: number;
   contentCooldownTokenCost: number | null;
+  contentCooldownAdHook: RewardedAdUiHook | null;
   ctaDisabled: boolean;
   onProduceContent: () => void;
   onSpeedupContentCooldown: () => void;
+  onTriggerContentCooldownAdHook: () => void;
   contentResult: ContentResult | null;
   onResetContentResult: () => void;
   contentHistory: ContentHistoryItem[];
@@ -112,9 +115,11 @@ export function IcerikTab({
   onContentCooldown,
   cooldownMinutes,
   contentCooldownTokenCost,
+  contentCooldownAdHook,
   ctaDisabled,
   onProduceContent,
   onSpeedupContentCooldown,
+  onTriggerContentCooldownAdHook,
   contentResult,
   onResetContentResult,
   contentHistory,
@@ -361,6 +366,21 @@ export function IcerikTab({
                       >
                         {contentCooldownTokenCost} Token ile Bitir
                       </button>
+                    )}
+                    {contentCooldownAdHook && (
+                      <div className="cs-ad-hook-card">
+                        <span className="cs-ad-hook-eyebrow">Ödüllü Reklam</span>
+                        <strong className="cs-ad-hook-title">{contentCooldownAdHook.label}</strong>
+                        <span className="cs-ad-hook-copy">{contentCooldownAdHook.description}</span>
+                        <button
+                          type="button"
+                          className={`cs-ad-hook-btn${contentCooldownAdHook.available ? "" : " is-disabled"}`}
+                          onClick={onTriggerContentCooldownAdHook}
+                        >
+                          {contentCooldownAdHook.available ? "Reklam Hook'unu Aç" : "Yakında"}
+                        </button>
+                        <span className="cs-ad-hook-meta">{contentCooldownAdHook.statusText}</span>
+                      </div>
                     )}
                     <span className="cs-cooldown-text">Bir sonraki içerik için kısa bir nefes.</span>
                   </div>

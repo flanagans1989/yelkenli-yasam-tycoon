@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import type { UpgradeCategoryId } from "../../game-data/upgrades";
 import { getOceanReadinessSummaryCopy } from "../lib/routeReadinessUi";
+import type { RewardedAdUiHook } from "../types/ads";
 
 type TekneStatItem = {
   key: string;
@@ -17,6 +18,7 @@ type ActiveInstallItem = {
   upgradeName: string;
   remainingText: string;
   tokenCost: number;
+  adHook: RewardedAdUiHook | null;
 };
 
 type UpgradeCardItem = {
@@ -56,6 +58,7 @@ type TekneTabProps = {
   upgradeCards: UpgradeCardItem[];
   onBuyUpgrade: (upgradeId: string) => void;
   onSpeedupUpgrade: (upgradeId: string) => void;
+  onTriggerUpgradeAdHook: (upgradeId: string) => void;
   pendingUpgradeConfirmId?: string | null;
   onCancelUpgradeConfirm?: () => void;
   installedUpgradeLabels?: string[];
@@ -80,6 +83,7 @@ export function TekneTab({
   upgradeCards,
   onBuyUpgrade,
   onSpeedupUpgrade,
+  onTriggerUpgradeAdHook,
   pendingUpgradeConfirmId = null,
   onCancelUpgradeConfirm,
   installedUpgradeLabels = [],
@@ -166,6 +170,18 @@ export function TekneTab({
                 >
                   <span className="tk-upg-cta-label">{item.tokenCost} Token Bitir</span>
                 </button>
+                {item.adHook && (
+                  <button
+                    type="button"
+                    className={`tk-upg-cta${item.adHook.available ? "" : " is-disabled"}`}
+                    onClick={() => onTriggerUpgradeAdHook(item.upgradeId)}
+                  >
+                    <span className="tk-upg-cta-label">
+                      {item.adHook.available ? "Reklam Hook'u" : "Reklam Yakında"}
+                    </span>
+                  </button>
+                )}
+                {item.adHook && <span className="tk-install-time">{item.adHook.statusText}</span>}
               </div>
             ))}
           </div>

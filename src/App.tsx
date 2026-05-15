@@ -105,9 +105,11 @@ const FullScreenFallback = () => (
 import { SEA_DECISION_EVENTS } from "./data/seaEvents";
 import { ACHIEVEMENTS, ACHIEVEMENT_ICONS, getAchievementTokenReward } from "./data/achievements";
 import { getContentComment } from "./data/contentComments";
+import { REWARDED_AD_CONFIGS } from "./data/adRewards";
 import { getDailyGoalTheme, getCaptainLevel, getCaptainLevelTokenReward, getContentCooldownMs, getBoatUpgradeDurationMs, getCaptainRankLabel } from "./data/captainData";
 import {
   SAVE_KEY,
+  SESSION_START_REAL_MS,
   migrateSave, calculateOfflineIncome, processUpgradesFromSave,
   processMarinaRestFromSave, buildOfflineMessages, safeLoadStep,
   validateSaveChecksum, stripChecksum, classifySaveLoadFailure, getSafeNow,
@@ -116,8 +118,9 @@ import type { UpgradeInProgressItem, MarinaRestInProgress } from "./lib/saveLoad
 import { buildSaveSnapshot } from "./lib/buildSaveSnapshot";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { calculateContentQuality, calculateContentRewards, formatSeaDecisionEffectSummary } from "./lib/gameLogic";
-import type { AdWatchesByFeatureByDate } from "./types/ads";
+import type { AdRewardFeatureId, AdWatchesByFeatureByDate } from "./types/ads";
 import { buildRoutePreparationGuidance } from "./lib/routePreparation";
+import { buildRewardedAdUiHook } from "./lib/rewardedAds";
 
 type TokenSpeedupTarget = string | "content_cooldown" | "marina_rest";
 
@@ -539,6 +542,8 @@ function App() {
 
   const currentRouteReadinessGapCount = currentRouteReadinessItems.filter(item => item.current < item.required).length;
   const hasRouteReadinessGap = currentRouteReadinessGapCount > 0;
+  const hasCriticalResourceWarning =
+    energy < 25 || water < 25 || fuel < 25 || boatCondition < 25;
   const currentRoutePreparationGuidance =
     currentRoute && currentRouteReadiness
       ? buildRoutePreparationGuidance({
@@ -1395,6 +1400,44 @@ function App() {
     const item = upgradesInProgress.find((entry) => entry.upgradeId === upgradeId);
     if (!item) return 0;
     return Math.max(0, item.completesAt - Date.now());
+  };
+
+  const rewardedAdConfigByFeature = new Map(
+    REWARDED_AD_CONFIGS.map((config) => [config.featureId, config]),
+  );
+  const buildRewardedTimerHook = (
+    featureId: AdRewardFeatureId,
+    timerActive: boolean,
+  ) => {
+    const config = rewardedAdConfigByFeature.get(featureId);
+    if (!config) return null;
+    return buildRewardedAdUiHook(config, adWatchesByFeatureByDate, {
+      nowMs: getSafeNow(),
+      sessionStartedAtMs: SESSION_START_REAL_MS,
+      timerActive,
+      pendingDecisionId,
+      hasCriticalResourceWarning,
+    });
+  };
+  const contentCooldownAdHook = buildRewardedTimerHook(
+    "content_cooldown_skip",
+    getContentCooldownRemainingMs() > 0,
+  );
+  const marinaRestAdHook = buildRewardedTimerHook(
+    "marina_rest_skip",
+    getMarinaRestRemainingMs() > 0,
+  );
+
+  const handleTriggerRewardedAdHook = (featureId: AdRewardFeatureId) => {
+    const config = rewardedAdConfigByFeature.get(featureId);
+    if (!config) return;
+    const hook = buildRewardedTimerHook(featureId, true);
+    const title = hook?.available ? "Ödüllü Reklam Hook'u Hazır" : "Ödüllü Reklam Yakında";
+    const text = hook?.available
+      ? `${config.label} için UI hook hazır. SDK entegrasyonu henüz kapalı.`
+      : hook?.statusText ?? `${config.label} için reklam akışı henüz aktif değil.`;
+    pushToast("content", title, text);
+    setLogs((prev) => [`Reklam hook kontrolü: ${config.featureId}. ${text}`, ...prev.slice(0, 4)]);
   };
 
   const handleTokenSpeedup = (target: TokenSpeedupTarget) => {
@@ -2324,8 +2367,10 @@ function App() {
       marinaRestSpeedupTokenCost={
         isMarinaRestActive ? getTokenSpeedupCost(Math.ceil(getMarinaRestRemainingMs() / 1000)) : null
       }
+      marinaRestAdHook={marinaRestAdHook}
       onMarinaRest={handleMarinaRest}
       onSpeedupMarinaRest={() => handleTokenSpeedup("marina_rest")}
+      onTriggerMarinaRestAdHook={() => handleTriggerRewardedAdHook("marina_rest_skip")}
       onRefillWater={handleRefillWater}
       onRefillFuel={handleRefillFuel}
       onRepairBoat={handleRepairBoat}
@@ -2506,9 +2551,11 @@ function App() {
         onContentCooldown={onContentCooldown}
         cooldownMinutes={cooldownMinutes}
         contentCooldownTokenCost={contentCooldownTokenCost}
+        contentCooldownAdHook={contentCooldownAdHook}
         ctaDisabled={ctaDisabled}
         onProduceContent={handleProduceContentV2}
         onSpeedupContentCooldown={() => handleTokenSpeedup("content_cooldown")}
+        onTriggerContentCooldownAdHook={() => handleTriggerRewardedAdHook("content_cooldown_skip")}
         contentResult={contentResult}
         lastUsedPlatformId={lastUsedPlatformId}
         lastUsedContentType={lastUsedContentType}
@@ -2672,6 +2719,7 @@ function App() {
           upgradeName: item.upgrade?.name ?? "",
           remainingText: formatRemainingInstallTime(item.completesAt),
           tokenCost: getTokenSpeedupCost(Math.ceil(Math.max(0, item.completesAt - Date.now()) / 1000)),
+          adHook: buildRewardedTimerHook("upgrade_install_skip", true),
         }))}
         categories={UPGRADE_CATEGORIES.map((cat) => ({ id: cat.id, name: cat.name }))}
         selectedUpgradeCategory={selectedUpgradeCategory}
@@ -2685,6 +2733,7 @@ function App() {
         upgradeCards={upgradeCards}
         onBuyUpgrade={handleBuyUpgrade}
         onSpeedupUpgrade={handleTokenSpeedup}
+        onTriggerUpgradeAdHook={() => handleTriggerRewardedAdHook("upgrade_install_skip")}
         pendingUpgradeConfirmId={pendingUpgradeConfirmId}
         onCancelUpgradeConfirm={handleCancelUpgradeConfirm}
         installedUpgradeLabels={purchasedUpgradeObjects.map(u => u.name)}

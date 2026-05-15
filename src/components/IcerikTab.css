@@ -1016,6 +1016,50 @@
 .cs-history-stat--follow { color: var(--cyan-glow); }
 .cs-history-stat--credit { color: var(--gold-light); }
 
+.cs-ad-hook-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px dashed rgba(94, 234, 248, 0.28);
+  background: rgba(8, 22, 38, 0.45);
+}
+
+.cs-ad-hook-eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cyan-glow);
+}
+
+.cs-ad-hook-title {
+  font-size: 13px;
+  color: #f0f8ff;
+}
+
+.cs-ad-hook-copy,
+.cs-ad-hook-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.cs-ad-hook-btn {
+  border: 1px solid rgba(94, 234, 248, 0.24);
+  background: rgba(94, 234, 248, 0.12);
+  color: #e6fbff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cs-ad-hook-btn.is-disabled {
+  opacity: 0.7;
+}
+
 /* Mobile narrow guards */
 @media (max-width: 360px) {
   .cs-platform-tile { padding: 12px 10px; min-height: 80px; gap: 10px; }

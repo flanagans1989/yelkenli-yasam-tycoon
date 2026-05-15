@@ -121,8 +121,18 @@ import { calculateContentQuality, calculateContentRewards, formatSeaDecisionEffe
 import type { AdRewardFeatureId, AdWatchesByFeatureByDate } from "./types/ads";
 import { buildRoutePreparationGuidance } from "./lib/routePreparation";
 import { buildRewardedAdUiHook } from "./lib/rewardedAds";
+import { WelcomeBackModal } from "./components/WelcomeBackModal";
+import {
+  applyWelcomeBackRewardClaim,
+  buildWelcomeBackAdHook,
+} from "./lib/welcomeBackRewards";
+import type { OfflineRewardBundle } from "./lib/welcomeBackRewards";
 
 type TokenSpeedupTarget = string | "content_cooldown" | "marina_rest";
+type PendingWelcomeBackReward = {
+  reward: OfflineRewardBundle;
+  messages: string[];
+};
 
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
 const MARINA_REST_DURATION_MS = 2 * 60 * 1000;
@@ -441,6 +451,7 @@ function App() {
   const [hasCompletedWorldTour, setHasCompletedWorldTour] = useState(false);
   const [adWatchesByFeatureByDate, setAdWatchesByFeatureByDate] = useState<AdWatchesByFeatureByDate>({});
   const [activeStoryHook, setActiveStoryHook] = useState<StoryHook | null>(null);
+  const [pendingWelcomeBackReward, setPendingWelcomeBackReward] = useState<PendingWelcomeBackReward | null>(null);
   const { activeToast, isToastLeaving, pushToast, dismissToast } = useToastQueue();
   const { activeCelebration, setActiveCelebration, setCelebrationQueue } = useCelebrationQueue();
   const [completedFollowerMilestones, setCompletedFollowerMilestones] = useState<string[]>([]);
@@ -712,19 +723,12 @@ function App() {
 
       const offline = calculateOfflineIncome(hiddenAt, step, captainLevel);
       if (offline.credits > 0 || offline.followers > 0) {
-        setCredits((prev) => prev + offline.credits);
-        setFollowers((prev) => prev + offline.followers);
-        setLogs((prev) => [
-          `Arka planda içerikler işlemeye devam etti: +${offline.credits.toLocaleString("tr-TR")} TL, +${offline.followers.toLocaleString("tr-TR")} takipçi.`,
-          ...prev.slice(0, 4),
-        ]);
-        pushToast(
-          "content",
-          "Arka Plan Geliri",
-          `+${offline.credits.toLocaleString("tr-TR")} TL · +${offline.followers.toLocaleString("tr-TR")} takipçi`,
-        );
-        if (offline.credits > 0) triggerFlash("credits");
-        if (offline.followers > 0) triggerFlash("followers");
+        setPendingWelcomeBackReward({
+          reward: offline,
+          messages: [
+            `Yokluğunda biriken gelir hazır: +${offline.credits.toLocaleString("tr-TR")} TL, +${offline.followers.toLocaleString("tr-TR")} takipçi.`,
+          ],
+        });
       }
 
       applyMarinaDebit(getSafeNow(), { announce: true });
@@ -1205,13 +1209,12 @@ function App() {
       const nextWorldProgress = clampNumber(parsed.worldProgress, 0, 100, 0);
       const safeBaseCredits = Math.max(0, Math.min(Number(parsed.credits ?? 0) || 0, 5_000_000));
       const safeBaseFollowers = Math.max(0, Math.min(Number(parsed.followers ?? 0) || 0, 50_000_000));
-      const nextFollowers = safeBaseFollowers + offline.followers;
       const marinaDebitInfo =
         loadedStep === "HUB" && parsed.currentLocationName
           ? calculateProportionalMarinaDebit(parsed.lastMarinaDebitAt, getSafeNow(), nextWorldProgress)
           : null;
       const appliedMarinaDebit = Math.min(
-        safeBaseCredits + offline.credits,
+        safeBaseCredits,
         Math.max(0, marinaDebitInfo?.debit ?? 0),
       );
       const nextLogs = [
@@ -1233,7 +1236,7 @@ function App() {
           totalUpgradesStarted: upgrades.purchasedUpgradeIds.length + upgrades.upgradesInProgress.length,
           captainLevel: nextCaptainLevel,
           hasCompletedDailyGoalsOnce: nextHasCompletedDailyGoalsOnce,
-          followers: nextFollowers,
+          followers: safeBaseFollowers + offline.followers,
           acceptedSponsorsCount: nextAcceptedSponsors.length,
           completedRouteIds: nextCompletedRouteIds,
         }))
@@ -1252,9 +1255,9 @@ function App() {
       setMarinaIndex(nextMarinaIndex);
       setBoatIndex(nextBoatIndex);
       setBoatName(parsed.boatName ?? "");
-      setCredits(Math.max(0, safeBaseCredits + offline.credits - appliedMarinaDebit));
+      setCredits(Math.max(0, safeBaseCredits - appliedMarinaDebit));
       setTokens(Math.max(0, Math.floor(toFiniteNumber(parsed.tokens, STARTING_ECONOMY.startingTokens))));
-      setFollowers(nextFollowers);
+      setFollowers(safeBaseFollowers);
       setFirstContentDone(parsed.firstContentDone ?? false);
       setLogs(nextLogs);
       setPurchasedUpgradeIds(upgrades.purchasedUpgradeIds);
@@ -1320,6 +1323,14 @@ function App() {
         parsed.adWatchesByFeatureByDate && typeof parsed.adWatchesByFeatureByDate === "object"
           ? parsed.adWatchesByFeatureByDate
           : {},
+      );
+      setPendingWelcomeBackReward(
+        offline.credits > 0 || offline.followers > 0
+          ? {
+              reward: offline,
+              messages,
+            }
+          : null,
       );
       const loadedTab = loadedStep === "SEA_MODE" ? "liman" : nextActiveTab;
       requestStepAndTabTransition(loadedStep, loadedTab, { force: true });
@@ -1405,6 +1416,8 @@ function App() {
   const rewardedAdConfigByFeature = new Map(
     REWARDED_AD_CONFIGS.map((config) => [config.featureId, config]),
   );
+  const welcomeBackAdConfig =
+    rewardedAdConfigByFeature.get("welcome_back_offline_bonus") ?? null;
   const buildRewardedTimerHook = (
     featureId: AdRewardFeatureId,
     timerActive: boolean,
@@ -1427,6 +1440,15 @@ function App() {
     "marina_rest_skip",
     getMarinaRestRemainingMs() > 0,
   );
+  const welcomeBackAdHook =
+    pendingWelcomeBackReward && welcomeBackAdConfig
+      ? buildWelcomeBackAdHook(
+          welcomeBackAdConfig,
+          adWatchesByFeatureByDate,
+          pendingWelcomeBackReward.reward,
+          getSafeNow(),
+        )
+      : null;
 
   const handleTriggerRewardedAdHook = (featureId: AdRewardFeatureId) => {
     const config = rewardedAdConfigByFeature.get(featureId);
@@ -1438,6 +1460,36 @@ function App() {
       : hook?.statusText ?? `${config.label} için reklam akışı henüz aktif değil.`;
     pushToast("content", title, text);
     setLogs((prev) => [`Reklam hook kontrolü: ${config.featureId}. ${text}`, ...prev.slice(0, 4)]);
+  };
+
+  const applyPendingWelcomeBackReward = (withAdBonus: boolean) => {
+    if (!pendingWelcomeBackReward || !welcomeBackAdConfig) return;
+
+    const result = applyWelcomeBackRewardClaim({
+      reward: pendingWelcomeBackReward.reward,
+      watches: adWatchesByFeatureByDate,
+      config: welcomeBackAdConfig,
+      nowMs: getSafeNow(),
+      withAdBonus,
+    });
+
+    setCredits((prev) => prev + result.credits);
+    setFollowers((prev) => prev + result.followers);
+    if (result.usedAdBonus) {
+      setAdWatchesByFeatureByDate(result.updatedWatches);
+    }
+
+    const rewardText = `+${result.credits.toLocaleString("tr-TR")} TL · +${result.followers.toLocaleString("tr-TR")} takipçi`;
+    const title = result.usedAdBonus ? "Welcome Back x2" : "Welcome Back Geliri";
+    const logText = result.usedAdBonus
+      ? `Offline gelir reklam bonusuyla ikiye katlandı: ${rewardText}.`
+      : `Offline gelir toplandı: ${rewardText}.`;
+
+    setLogs((prev) => [logText, ...prev.slice(0, 4)]);
+    pushToast("content", title, rewardText);
+    if (result.credits > 0) triggerFlash("credits");
+    if (result.followers > 0) triggerFlash("followers");
+    setPendingWelcomeBackReward(null);
   };
 
   const handleTokenSpeedup = (target: TokenSpeedupTarget) => {
@@ -3046,6 +3098,15 @@ function App() {
         <CelebrationModal
           celebration={activeCelebration}
           onDismiss={() => setActiveCelebration(null)}
+        />
+      )}
+      {pendingWelcomeBackReward && (
+        <WelcomeBackModal
+          reward={pendingWelcomeBackReward.reward}
+          adHook={welcomeBackAdHook}
+          messages={pendingWelcomeBackReward.messages}
+          onClaimBaseReward={() => applyPendingWelcomeBackReward(false)}
+          onClaimAdBonus={() => applyPendingWelcomeBackReward(true)}
         />
       )}
       <div className="global-floaters">

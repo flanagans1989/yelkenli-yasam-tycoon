@@ -6013,3 +6013,149 @@ button, input, select, textarea {
 }
 /* === A9R_10 PATCH END === */
 
+.wb-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.wb-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 8, 20, 0.84);
+  backdrop-filter: blur(12px);
+}
+
+.wb-modal-card {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 100%);
+  padding: 28px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(94, 234, 248, 0.18), transparent 35%),
+    linear-gradient(180deg, rgba(12, 42, 71, 0.95), rgba(8, 22, 38, 0.97));
+  border: 1px solid rgba(94, 234, 248, 0.16);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.wb-modal-eyebrow {
+  display: inline-flex;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9cecff;
+  background: rgba(94, 234, 248, 0.12);
+}
+
+.wb-modal-title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.1;
+  color: #f6fbff;
+}
+
+.wb-modal-copy {
+  margin: 12px 0 0;
+  color: #a8c4d8;
+  line-height: 1.55;
+}
+
+.wb-modal-reward-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.wb-modal-reward {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 6px;
+}
+
+.wb-modal-reward--bonus {
+  background: rgba(94, 234, 248, 0.08);
+  border-color: rgba(94, 234, 248, 0.18);
+}
+
+.wb-modal-reward-label {
+  font-size: 12px;
+  color: #8aafcc;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.wb-modal-reward strong {
+  font-size: 24px;
+  color: #f6fbff;
+}
+
+.wb-modal-reward span {
+  color: #b7ccda;
+}
+
+.wb-modal-meta {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  color: #8fb1c7;
+  font-size: 13px;
+}
+
+.wb-modal-notes {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #c8dae7;
+  display: grid;
+  gap: 8px;
+}
+
+.wb-modal-notes p {
+  margin: 0;
+}
+
+.wb-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.wb-modal-actions .is-disabled {
+  opacity: 0.68;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .wb-modal {
+    padding: 16px;
+    align-items: flex-end;
+  }
+
+  .wb-modal-card {
+    padding: 22px;
+    border-radius: 24px 24px 18px 18px;
+  }
+
+  .wb-modal-reward-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wb-modal-actions {
+    flex-direction: column;
+  }
+}
+

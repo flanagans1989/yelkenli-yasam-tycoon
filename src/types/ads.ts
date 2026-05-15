@@ -6,6 +6,7 @@ export type AdRewardFeatureId =
   | "content_cooldown_skip"
   | "marina_rest_skip"
   | "upgrade_install_skip"
+  | "welcome_back_offline_bonus"
   | "sponsor_offer_refresh";
 
 export type AdRewardKind =

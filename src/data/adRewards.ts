@@ -53,6 +53,16 @@ export const REWARDED_AD_CONFIGS: AdRewardConfig[] = [
     enabled: false,
   },
   {
+    featureId: "welcome_back_offline_bonus",
+    placement: "rewarded_video",
+    rewardKind: "soft_currency",
+    label: "Welcome Back Bonusu",
+    description: "Offline donus odulunu reklam izleyerek ikiye katlamak icin ayrilmis yapi.",
+    dailyLimit: 1,
+    rewardAmount: 2,
+    enabled: false,
+  },
+  {
     featureId: "sponsor_offer_refresh",
     placement: "rewarded_video",
     rewardKind: "offer_refresh",

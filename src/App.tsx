@@ -854,7 +854,9 @@ function App() {
       const parsed = migrateSave(stripChecksum(rawParsed));
       if (!parsed) return;
 
-      const offline = calculateOfflineIncome(parsed.lastSavedAt);
+      const savedPurchasedIds: string[] = Array.isArray(parsed.purchasedUpgradeIds) ? parsed.purchasedUpgradeIds : [];
+      const hasCaptainsQuarters = savedPurchasedIds.includes("captains_quarters");
+      const offline = calculateOfflineIncome(parsed.lastSavedAt, hasCaptainsQuarters);
       const upgrades = processUpgradesFromSave(
         Array.isArray(parsed.upgradesInProgress) ? parsed.upgradesInProgress : null,
         parsed.upgradeInProgress ?? null,

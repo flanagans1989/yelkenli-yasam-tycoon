@@ -623,6 +623,41 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
     unlockHint: "Büyük marina ve güçlü enerji sistemi gerekir.",
   },
   {
+    id: "captains_quarters",
+    categoryId: "comfort",
+    name: "Kaptan Kamarası",
+    size: "large",
+    description: "Kapsamlı kabin dönüşümü. Çevrimdışı gelir birikme süresi 4 saatten 8 saate çıkar.",
+    cost: 35000,
+    installDays: 7,
+    marinaRequirement: "large",
+    effects: {
+      comfort: 20,
+      contentQuality: 5,
+    },
+    compatibility: [
+      {
+        boatId: "kirlangic_28",
+        compatible: true,
+        efficiency: "limited",
+        note: "Küçük teknede kabin alanı kısıtlıdır.",
+      },
+      {
+        boatId: "denizkusu_34",
+        compatible: true,
+        efficiency: "good",
+        note: "Dengeli tekne için ideal konfor artışı sağlar.",
+      },
+      {
+        boatId: "atlas_40",
+        compatible: true,
+        efficiency: "excellent",
+        note: "Büyük tekne için maksimum yaşam kalitesi sağlar.",
+      },
+    ],
+    unlockHint: "Büyük marina gerekir. Çevrimdışı geliri 8 saate kadar biriktirir.",
+  },
+  {
     id: "action_camera",
     categoryId: "content_equipment",
     name: "Aksiyon Kamera",

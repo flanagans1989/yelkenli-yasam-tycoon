@@ -4,7 +4,8 @@ import { WORLD_ROUTES } from "../../game-data/routes";
 export const SAVE_KEY = "yelkenli_save";
 export const SAVE_VERSION = 2;
 export const MAX_OFFLINE_MINUTES = 480;
-export const MAX_OFFLINE_REWARD_MINUTES = 120;
+export const MAX_OFFLINE_REWARD_MINUTES = 240;         // 4-hour baseline cap
+export const EXTENDED_OFFLINE_REWARD_MINUTES = 480;    // 8-hour cap with Captain's Quarters
 export const OFFLINE_CREDITS_PER_MINUTE = 15;
 export const OFFLINE_FOLLOWERS_PER_MINUTE = 1;
 
@@ -125,13 +126,14 @@ export function migrateSave(parsed: any) {
   return null;
 }
 
-export function calculateOfflineIncome(lastSavedAt: unknown): { credits: number; followers: number; minutes: number } {
+export function calculateOfflineIncome(lastSavedAt: unknown, hasCaptainsQuarters = false): { credits: number; followers: number; minutes: number } {
   if (typeof lastSavedAt !== "number" || !Number.isFinite(lastSavedAt)) {
     return { credits: 0, followers: 0, minutes: 0 };
   }
+  const rewardCap = hasCaptainsQuarters ? EXTENDED_OFFLINE_REWARD_MINUTES : MAX_OFFLINE_REWARD_MINUTES;
   const offlineMs = Math.max(0, getSafeNow() - lastSavedAt);
   const cappedMinutes = Math.min(Math.floor(offlineMs / 60000), MAX_OFFLINE_MINUTES);
-  const minutes = Math.min(cappedMinutes, MAX_OFFLINE_REWARD_MINUTES);
+  const minutes = Math.min(cappedMinutes, rewardCap);
   return {
     minutes,
     credits: Math.max(0, minutes * OFFLINE_CREDITS_PER_MINUTE),

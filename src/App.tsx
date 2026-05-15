@@ -20,7 +20,7 @@ import type { RouteId } from "../game-data/routes";
 import { SOCIAL_PLATFORMS } from "../game-data/socialPlatforms";
 import { BOAT_UPGRADES, UPGRADE_CATEGORIES } from "../game-data/upgrades";
 import type { UpgradeCategoryId } from "../game-data/upgrades";
-import { getSponsorTierByFollowers, SPONSOR_TIERS } from "../game-data/economy";
+import { calculateProportionalMarinaDebit, getSponsorTierByFollowers, SPONSOR_TIERS } from "../game-data/economy";
 import { AppBackground } from "./components/AppBackground";
 import { MicoGuide } from "./components/MicoGuide";
 import { HubScreen } from "./components/HubScreen";
@@ -343,6 +343,7 @@ function App() {
   // Sea Mode MVP states
   const [currentLocationName, setCurrentLocationName] = useState("");
   const [worldProgress, setWorldProgress] = useState(0);
+  const [lastMarinaDebitAt, setLastMarinaDebitAt] = useState<number | null>(null);
   const [energy, setEnergy] = useState(100);
   const [water, setWater] = useState(100);
   const [fuel, setFuel] = useState(100);
@@ -659,6 +660,8 @@ function App() {
         if (offline.followers > 0) triggerFlash("followers");
       }
 
+      applyMarinaDebit(getSafeNow(), { announce: true });
+
       if (lastContentAt) {
         setContentCooldownTick(Date.now());
       }
@@ -673,7 +676,7 @@ function App() {
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [captainLevel, lastContentAt, marinaRestInProgress, pushToast, step, triggerFlash]);
+  }, [captainLevel, credits, currentLocationName, lastContentAt, lastMarinaDebitAt, marinaRestInProgress, pushToast, step, triggerFlash, worldProgress]);
 
   useEffect(() => {
     if (!isNativeAndroidPlatform()) return;
@@ -864,6 +867,19 @@ function App() {
   }, [step, currentLocationName, lastMarinaTasksLocation]);
 
   useEffect(() => {
+    if (step !== "HUB" || !currentLocationName) return;
+    if (lastMarinaDebitAt == null) {
+      setLastMarinaDebitAt(getSafeNow());
+      return;
+    }
+
+    const tickId = window.setInterval(() => {
+      applyMarinaDebit(getSafeNow());
+    }, 60000);
+    return () => window.clearInterval(tickId);
+  }, [credits, currentLocationName, lastMarinaDebitAt, step, worldProgress]);
+
+  useEffect(() => {
     if (tutorialStep === 0 && firstContentDone) setTutorialStep(1);
   }, [firstContentDone, tutorialStep]);
 
@@ -935,11 +951,39 @@ function App() {
     firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor,
     activeStoryHook, tutorialStep, gender,
     completedFollowerMilestones, sponsorObligations,
-    loginStreak, lastLoginBonus,
+    loginStreak, lastLoginBonus, lastMarinaDebitAt,
     marinaTasks, lastMarinaTasksLocation,
     hasCompletedWorldTour,
   });
   useAutoSave(saveSnapshot);
+
+  const applyMarinaDebit = (now: number = getSafeNow(), options?: { announce?: boolean }) => {
+    if (step !== "HUB" || !currentLocationName) {
+      return 0;
+    }
+
+    const debitInfo = calculateProportionalMarinaDebit(lastMarinaDebitAt, now, worldProgress);
+    if (debitInfo.nextDebitAt !== lastMarinaDebitAt) {
+      setLastMarinaDebitAt(debitInfo.nextDebitAt);
+    }
+    if (debitInfo.debit <= 0) {
+      return 0;
+    }
+
+    const debitAmount = Math.min(credits, debitInfo.debit);
+    if (debitAmount <= 0) {
+      return 0;
+    }
+
+    setCredits((prev) => Math.max(0, prev - debitAmount));
+    if (options?.announce) {
+      setLogs((prev) => [
+        `Marina ucreti tahsil edildi: -${debitAmount.toLocaleString("tr-TR")} TL (${Math.floor(debitInfo.elapsedMinutes)} dk baglama).`,
+        ...prev.slice(0, 4),
+      ]);
+    }
+    return debitAmount;
+  };
 
   useEffect(() => {
     if (["HUB", "SEA_MODE", "ARRIVAL_SCREEN"].includes(step)) {
@@ -982,6 +1026,7 @@ function App() {
     setSponsorObligations({});
     setLoginStreak(0);
     setLastLoginBonus("");
+    setLastMarinaDebitAt(getSafeNow());
     setMarinaTasks([]);
     setLastMarinaTasksLocation("");
     setIcerikSubTab("produce");
@@ -1045,7 +1090,6 @@ function App() {
       const versionFallbackLog = migrated.usedBestEffortFallback
         ? "Kayit daha yeni bir surumden geldi. Guvenli best-effort fallback uygulandi."
         : "";
-      const nextLogs = [versionFallbackLog, ...messages, ...(parsed.logs ?? [])].filter(Boolean).slice(0, 5) as string[];
       const nextProfileIndex = clampIndex(parsed.profileIndex, PLAYER_PROFILES.length);
       const nextMarinaIndex = clampIndex(parsed.marinaIndex, STARTING_MARINAS.length);
       const nextBoatIndex = clampIndex(parsed.boatIndex, STARTING_BOATS.length);
@@ -1053,9 +1097,27 @@ function App() {
         ? parsed.currentRouteId
         : "turkiye_start";
       const nextActiveTab = safeTab(parsed.activeTab);
+      const loadedStep = safeLoadStep(parsed);
+      const nextWorldProgress = clampNumber(parsed.worldProgress, 0, 100, 0);
       const safeBaseCredits = Math.max(0, Math.min(Number(parsed.credits ?? 0) || 0, 5_000_000));
       const safeBaseFollowers = Math.max(0, Math.min(Number(parsed.followers ?? 0) || 0, 50_000_000));
       const nextFollowers = safeBaseFollowers + offline.followers;
+      const marinaDebitInfo =
+        loadedStep === "HUB" && parsed.currentLocationName
+          ? calculateProportionalMarinaDebit(parsed.lastMarinaDebitAt, getSafeNow(), nextWorldProgress)
+          : null;
+      const appliedMarinaDebit = Math.min(
+        safeBaseCredits + offline.credits,
+        Math.max(0, marinaDebitInfo?.debit ?? 0),
+      );
+      const nextLogs = [
+        versionFallbackLog,
+        appliedMarinaDebit > 0
+          ? `Marina ucreti tahsil edildi: -${appliedMarinaDebit.toLocaleString("tr-TR")} TL (${Math.floor(marinaDebitInfo?.elapsedMinutes ?? 0)} dk baglama).`
+          : "",
+        ...messages,
+        ...(parsed.logs ?? []),
+      ].filter(Boolean).slice(0, 5) as string[];
       const nextCompletedRouteIds = Array.isArray(parsed.completedRouteIds) ? parsed.completedRouteIds : [];
       const nextAcceptedSponsors = Array.isArray(parsed.acceptedSponsors) ? parsed.acceptedSponsors : [];
       const nextTotalContentProduced = parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0);
@@ -1086,14 +1148,14 @@ function App() {
       setMarinaIndex(nextMarinaIndex);
       setBoatIndex(nextBoatIndex);
       setBoatName(parsed.boatName ?? "");
-      setCredits(safeBaseCredits + offline.credits);
+      setCredits(Math.max(0, safeBaseCredits + offline.credits - appliedMarinaDebit));
       setFollowers(nextFollowers);
       setFirstContentDone(parsed.firstContentDone ?? false);
       setLogs(nextLogs);
       setPurchasedUpgradeIds(upgrades.purchasedUpgradeIds);
       setUpgradesInProgress(upgrades.upgradesInProgress);
       setCurrentLocationName(parsed.currentLocationName ?? "");
-      setWorldProgress(clampNumber(parsed.worldProgress, 0, 100, 0));
+      setWorldProgress(nextWorldProgress);
       setEnergy(clampNumber(parsed.energy, 0, 100, 100));
       setWater(clampNumber(parsed.water, 0, 100, 100));
       setFuel(clampNumber(parsed.fuel, 0, 100, 100));
@@ -1142,9 +1204,13 @@ function App() {
       setSponsorObligations(parsed.sponsorObligations && typeof parsed.sponsorObligations === "object" ? parsed.sponsorObligations : {});
       setLoginStreak(Math.max(0, Math.floor(toFiniteNumber(parsed.loginStreak, 0))));
       setLastLoginBonus(parsed.lastLoginBonus ?? "");
+      setLastMarinaDebitAt(
+        loadedStep === "HUB" && parsed.currentLocationName
+          ? (marinaDebitInfo?.nextDebitAt ?? getSafeNow())
+          : null,
+      );
       setMarinaTasks(Array.isArray(parsed.marinaTasks) ? parsed.marinaTasks.slice(0, 8) : []);
       setLastMarinaTasksLocation(parsed.lastMarinaTasksLocation ?? "");
-      const loadedStep = safeLoadStep(parsed);
       const loadedTab = loadedStep === "SEA_MODE" ? "liman" : nextActiveTab;
       requestStepAndTabTransition(loadedStep, loadedTab, { force: true });
 
@@ -1637,6 +1703,7 @@ function App() {
     }
     audioManager.play("arrival");
     setCurrentLocationName(currentRoute.to);
+    setLastMarinaDebitAt(getSafeNow());
     setCredits(prev => prev + arrivalCredits);
     setFollowers(prev => prev + arrivalFollowers);
     addFloater(`+${arrivalCredits.toLocaleString("tr-TR")} TL`, "credits");

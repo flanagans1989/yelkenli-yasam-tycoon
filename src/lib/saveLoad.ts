@@ -119,6 +119,7 @@ function applySaveDefaults(parsed: any, dailyGoalsCompleted: boolean = false) {
     ...parsed,
     saveVersion: SAVE_VERSION,
     hasSave: parsed.hasSave ?? true,
+    lastMarinaDebitAt: parsed.lastMarinaDebitAt ?? null,
     totalContentProduced: parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0),
     hasCompletedDailyGoalsOnce:
       parsed.hasCompletedDailyGoalsOnce ?? Boolean(dailyGoalsCompleted && parsed.dailyRewardClaimed),

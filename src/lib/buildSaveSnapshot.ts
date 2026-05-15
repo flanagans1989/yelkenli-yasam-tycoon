@@ -70,6 +70,7 @@ export interface GameSaveSnapshotInput {
   sponsorObligations: Record<string, number>;
   loginStreak: number;
   lastLoginBonus: string;
+  lastMarinaDebitAt: number | null;
   marinaTasks: MarinaTask[];
   lastMarinaTasksLocation: string;
   hasCompletedWorldTour: boolean;
@@ -145,6 +146,7 @@ export function buildSaveSnapshot(input: GameSaveSnapshotInput): GameSaveSnapsho
     sponsorObligations: input.sponsorObligations,
     loginStreak: input.loginStreak,
     lastLoginBonus: input.lastLoginBonus,
+    lastMarinaDebitAt: input.lastMarinaDebitAt,
     marinaTasks: input.marinaTasks,
     lastMarinaTasksLocation: input.lastMarinaTasksLocation,
     hasCompletedWorldTour: input.hasCompletedWorldTour,

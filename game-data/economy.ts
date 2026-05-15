@@ -440,3 +440,80 @@ export function getSponsorTierByFollowers(
 export function isTokenActionAllowed(action: string): boolean {
   return TOKEN_ALLOWED_RULES.find((rule) => rule.action === action)?.allowed ?? false;
 }
+
+export function getAnchoredMarinaCostProfile(worldProgress: number): {
+  tier: number;
+  costLevel: CostLevel;
+  dailyFee: number;
+  isChargeable: boolean;
+} {
+  const normalizedProgress = Math.max(0, Math.min(100, worldProgress));
+  const tierConfig =
+    normalizedProgress >= 82
+      ? { tier: 6, costLevel: "very_high" as const }
+      : normalizedProgress >= 58
+        ? { tier: 5, costLevel: "high" as const }
+        : normalizedProgress >= 35
+          ? { tier: 4, costLevel: "medium_high" as const }
+          : { tier: 3, costLevel: "medium" as const };
+
+  const profile = MARINA_COST_PROFILES.find((item) => item.costLevel === tierConfig.costLevel);
+  const dailyFee = profile
+    ? Math.round((profile.dailyCostRange.min + profile.dailyCostRange.max) / 2)
+    : 0;
+
+  return {
+    tier: tierConfig.tier,
+    costLevel: tierConfig.costLevel,
+    dailyFee,
+    isChargeable: tierConfig.tier >= 4 && dailyFee > 0,
+  };
+}
+
+export function calculateProportionalMarinaDebit(
+  lastMarinaDebitAt: unknown,
+  now: number,
+  worldProgress: number,
+): {
+  debit: number;
+  elapsedMinutes: number;
+  nextDebitAt: number;
+  tier: number;
+  costLevel: CostLevel;
+  dailyFee: number;
+  isChargeable: boolean;
+} {
+  const safeNow = Number.isFinite(now) ? now : Date.now();
+  const profile = getAnchoredMarinaCostProfile(worldProgress);
+  const safeLastDebitAt =
+    typeof lastMarinaDebitAt === "number" && Number.isFinite(lastMarinaDebitAt)
+      ? lastMarinaDebitAt
+      : safeNow;
+  const elapsedMs = Math.max(0, safeNow - safeLastDebitAt);
+  const elapsedMinutes = elapsedMs / 60000;
+
+  if (!profile.isChargeable || elapsedMs <= 0) {
+    return {
+      debit: 0,
+      elapsedMinutes,
+      nextDebitAt: profile.isChargeable ? safeLastDebitAt : safeNow,
+      tier: profile.tier,
+      costLevel: profile.costLevel,
+      dailyFee: profile.dailyFee,
+      isChargeable: profile.isChargeable,
+    };
+  }
+
+  const rawDebit = profile.dailyFee * (elapsedMs / 86_400_000);
+  const debit = Math.max(0, Math.floor(rawDebit));
+
+  return {
+    debit,
+    elapsedMinutes,
+    nextDebitAt: debit > 0 ? safeNow : safeLastDebitAt,
+    tier: profile.tier,
+    costLevel: profile.costLevel,
+    dailyFee: profile.dailyFee,
+    isChargeable: profile.isChargeable,
+  };
+}

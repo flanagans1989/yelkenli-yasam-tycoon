@@ -1,3 +1,8 @@
+import {
+  calculateContentRewardsDeterministic,
+  getContentViralChance,
+} from "../../game-data/economy";
+
 export type ContentQualityParams = {
   profileContentSkill: number;
   platformId: string;
@@ -60,30 +65,16 @@ export type ContentRewardsParams = {
 };
 
 export function calculateContentRewards(p: ContentRewardsParams): { followers: number; credits: number; viral: boolean } {
-  let viralChance = 0;
-  if (p.quality >= 85) viralChance = 0.25;
-  else if (p.quality >= 70) viralChance = 0.10;
-  else if (p.quality >= 40) viralChance = 0.03;
-  const viral = Math.random() < viralChance;
+  const viral = Math.random() < getContentViralChance(p.quality);
+  const reward = calculateContentRewardsDeterministic({
+    quality: p.quality,
+    platformId: p.platformId,
+    viral,
+    storyFollowerBonusPct: p.storyFollowerBonusPct,
+    storyCreditBonusPct: p.storyCreditBonusPct,
+  });
 
-  let followers = p.quality * 5;
-  let credits = Math.round(p.quality * (5 + 0.06 * p.quality));
-
-  const multipliers: Record<string, [number, number]> = {
-    viewTube: [1.0, 1.5],
-    clipTok: [1.8, 0.8],
-    instaSea: [1.3, 1.1],
-    facePort: [1.1, 1.0],
-  };
-  const [fm, cm] = multipliers[p.platformId] ?? [1, 1];
-  followers *= fm;
-  credits *= cm;
-
-  if (viral) { followers *= 3; credits *= 2; }
-  if (p.storyFollowerBonusPct > 0) followers *= 1 + p.storyFollowerBonusPct / 100;
-  if (p.storyCreditBonusPct > 0) credits *= 1 + p.storyCreditBonusPct / 100;
-
-  return { followers: Math.floor(followers), credits: Math.floor(credits), viral };
+  return { followers: reward.followers, credits: reward.credits, viral };
 }
 
 export function formatSeaDecisionEffectSummary(effect: {

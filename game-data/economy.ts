@@ -71,8 +71,12 @@ export interface SponsorTierDefinition {
 }
 
 export interface ContentIncomeRange {
-  level: "small" | "medium" | "viral" | "major_viral";
+  level: "small" | "medium" | "high" | "viral";
   name: string;
+  qualityRange: {
+    min: number;
+    max: number;
+  };
   incomeRange: {
     min: number;
     max: number;
@@ -81,6 +85,7 @@ export interface ContentIncomeRange {
     min: number;
     max: number;
   };
+  includesViralOutcome: boolean;
   description: string;
 }
 
@@ -125,7 +130,7 @@ export const CURRENCIES: CurrencyDefinition[] = [
     role: "Hızlandırma ve kolaylık birimi",
     canBePurchased: true,
     description:
-      "Başarı satın aldırmaz. Sadece süre hızlandırma, acil destek ve konfor kolaylığı sağlar.",
+      "Başarı satın aldırmak yerine süre hızlandırma ve konfor kolaylığı sağlar.",
   },
 ];
 
@@ -135,6 +140,78 @@ export const STARTING_ECONOMY: StartingEconomy = {
   followerGoal: 1000000,
   oceanReadinessGoal: 80,
 };
+
+export const CONTENT_PLATFORM_REWARD_MULTIPLIERS = {
+  viewTube: { followers: 1.0, credits: 1.5 },
+  clipTok: { followers: 1.8, credits: 0.8 },
+  instaSea: { followers: 1.3, credits: 1.1 },
+  facePort: { followers: 1.1, credits: 1.0 },
+} as const;
+
+export function getContentPlatformRewardMultipliers(platformId: string): {
+  followers: number;
+  credits: number;
+} {
+  return CONTENT_PLATFORM_REWARD_MULTIPLIERS[
+    platformId as keyof typeof CONTENT_PLATFORM_REWARD_MULTIPLIERS
+  ] ?? { followers: 1, credits: 1 };
+}
+
+export function getContentViralChance(quality: number): number {
+  const safeQuality = Math.max(0, Math.min(100, Math.floor(quality)));
+  if (safeQuality >= 85) return 0.25;
+  if (safeQuality >= 70) return 0.10;
+  if (safeQuality >= 40) return 0.03;
+  return 0;
+}
+
+export function getBaseContentRewardForQuality(quality: number): {
+  followers: number;
+  credits: number;
+} {
+  const safeQuality = Math.max(
+    0,
+    Math.min(100, Number.isFinite(quality) ? quality : 0),
+  );
+  return {
+    followers: safeQuality * 5,
+    credits: Math.round(safeQuality * (5 + 0.06 * safeQuality)),
+  };
+}
+
+export function calculateContentRewardsDeterministic(input: {
+  quality: number;
+  platformId: string;
+  viral?: boolean;
+  storyFollowerBonusPct?: number;
+  storyCreditBonusPct?: number;
+}): {
+  followers: number;
+  credits: number;
+} {
+  const { followers: baseFollowers, credits: baseCredits } =
+    getBaseContentRewardForQuality(input.quality);
+  const multipliers = getContentPlatformRewardMultipliers(input.platformId);
+
+  let followers = baseFollowers * multipliers.followers;
+  let credits = baseCredits * multipliers.credits;
+
+  if (input.viral) {
+    followers *= 3;
+    credits *= 2;
+  }
+  if ((input.storyFollowerBonusPct ?? 0) > 0) {
+    followers *= 1 + (input.storyFollowerBonusPct ?? 0) / 100;
+  }
+  if ((input.storyCreditBonusPct ?? 0) > 0) {
+    credits *= 1 + (input.storyCreditBonusPct ?? 0) / 100;
+  }
+
+  return {
+    followers: Math.floor(followers),
+    credits: Math.floor(credits),
+  };
+}
 
 export const BOAT_PURCHASE_COSTS: BoatPurchaseCost[] = [
   {
@@ -160,63 +237,80 @@ export const BOAT_PURCHASE_COSTS: BoatPurchaseCost[] = [
   },
 ];
 
+function buildContentIncomeRange(config: {
+  level: ContentIncomeRange["level"];
+  name: string;
+  qualityRange: { min: number; max: number };
+  includesViralOutcome: boolean;
+  description: string;
+}): ContentIncomeRange {
+  const platformIds = Object.keys(CONTENT_PLATFORM_REWARD_MULTIPLIERS);
+  const rewards = Array.from(
+    { length: config.qualityRange.max - config.qualityRange.min + 1 },
+    (_, index) => config.qualityRange.min + index,
+  ).flatMap((quality) =>
+    platformIds.map((platformId) =>
+      calculateContentRewardsDeterministic({
+        quality,
+        platformId,
+        viral: config.includesViralOutcome,
+      }),
+    ),
+  );
+
+  return {
+    level: config.level,
+    name: config.name,
+    qualityRange: config.qualityRange,
+    incomeRange: {
+      min: Math.min(...rewards.map((reward) => reward.credits)),
+      max: Math.max(...rewards.map((reward) => reward.credits)),
+    },
+    followerRange: {
+      min: Math.min(...rewards.map((reward) => reward.followers)),
+      max: Math.max(...rewards.map((reward) => reward.followers)),
+    },
+    includesViralOutcome: config.includesViralOutcome,
+    description: config.description,
+  };
+}
+
+// Reference-only economy metadata.
+// These ranges are derived from the live runtime reward formula and platform multipliers.
+// No UI currently renders them directly, but if they are surfaced later they should stay accurate.
 export const CONTENT_INCOME_RANGES: ContentIncomeRange[] = [
-  {
+  buildContentIncomeRange({
     level: "small",
-    name: "Küçük İçerik",
-    incomeRange: {
-      min: 200,
-      max: 1000,
-    },
-    followerRange: {
-      min: 50,
-      max: 800,
-    },
+    name: "Düşük Kalite İçerik",
+    qualityRange: { min: 0, max: 39 },
+    includesViralOutcome: false,
     description:
-      "Başlangıçta veya düşük kaliteli içeriklerde görülen küçük ama düzenli gelir.",
-  },
-  {
+      "Kalite 0-39 arasındaki viral olmayan içeriklerin, platform çarpanları dahil referans gelir aralığı.",
+  }),
+  buildContentIncomeRange({
     level: "medium",
-    name: "Orta İçerik",
-    incomeRange: {
-      min: 1000,
-      max: 5000,
-    },
-    followerRange: {
-      min: 800,
-      max: 5000,
-    },
+    name: "Orta Kalite İçerik",
+    qualityRange: { min: 40, max: 69 },
+    includesViralOutcome: false,
     description:
-      "İyi lokasyon, iyi platform uyumu ve yeterli ekipmanla gelen sağlıklı içerik sonucu.",
-  },
-  {
+      "Kalite 40-69 arasındaki viral olmayan içeriklerin, platform çarpanları dahil referans gelir aralığı.",
+  }),
+  buildContentIncomeRange({
+    level: "high",
+    name: "Yüksek Kalite İçerik",
+    qualityRange: { min: 70, max: 100 },
+    includesViralOutcome: false,
+    description:
+      "Kalite 70-100 arasındaki viral olmayan içeriklerin, platform çarpanları dahil referans gelir aralığı.",
+  }),
+  buildContentIncomeRange({
     level: "viral",
-    name: "Viral İçerik",
-    incomeRange: {
-      min: 5000,
-      max: 25000,
-    },
-    followerRange: {
-      min: 5000,
-      max: 50000,
-    },
+    name: "Viral Patlama",
+    qualityRange: { min: 40, max: 100 },
+    includesViralOutcome: true,
     description:
-      "Risk, trend, lokasyon ve platform uyumu güçlü olduğunda gelen büyük sıçrama.",
-  },
-  {
-    level: "major_viral",
-    name: "Büyük Viral İçerik",
-    incomeRange: {
-      min: 25000,
-      max: 100000,
-    },
-    followerRange: {
-      min: 50000,
-      max: 250000,
-    },
-    description:
-      "Okyanus geçişi, fırtına, büyük kriz veya final gibi özel anlarda oluşabilecek büyük patlama.",
-  },
+      "Kalite 40+ içeriklerde oluşan viral sonuçların, iki kat kredi ve üç kat takipçi etkisiyle referans aralığı.",
+  }),
 ];
 
 export const SPONSOR_TIERS: SponsorTierDefinition[] = [
@@ -451,14 +545,20 @@ export function getSponsorTierByFollowers(
 }
 
 export function isTokenActionAllowed(action: string): boolean {
-  return TOKEN_ALLOWED_RULES.find((rule) => rule.action === action)?.allowed ?? false;
+  return (
+    TOKEN_ALLOWED_RULES.find((rule) => rule.action === action)?.allowed ??
+    false
+  );
 }
 
 export function getTokenSpeedupCost(
   remainingSeconds: number,
   cap: number = TOKEN_SPEEDUP_COST_CAP,
 ): number {
-  const safeSeconds = Math.max(0, Number.isFinite(remainingSeconds) ? remainingSeconds : 0);
+  const safeSeconds = Math.max(
+    0,
+    Number.isFinite(remainingSeconds) ? remainingSeconds : 0,
+  );
   const cappedCost = Math.min(Math.max(1, cap), Math.ceil(safeSeconds / 60));
   return Math.max(1, cappedCost);
 }
@@ -499,7 +599,9 @@ export function getAnchoredMarinaCostProfile(worldProgress: number): {
           ? { tier: 4, costLevel: "medium_high" as const }
           : { tier: 3, costLevel: "medium" as const };
 
-  const profile = MARINA_COST_PROFILES.find((item) => item.costLevel === tierConfig.costLevel);
+  const profile = MARINA_COST_PROFILES.find(
+    (item) => item.costLevel === tierConfig.costLevel,
+  );
   const dailyFee = profile
     ? Math.round((profile.dailyCostRange.min + profile.dailyCostRange.max) / 2)
     : 0;

@@ -11,6 +11,7 @@ import type {
 } from "../types/game";
 import type { UpgradeCategoryId } from "../../game-data/upgrades";
 import type { UpgradeInProgressItem, MarinaRestInProgress } from "./saveLoad";
+import type { AdWatchesByFeatureByDate } from "../types/ads";
 import { SAVE_VERSION } from "./saveLoad";
 
 export interface GameSaveSnapshotInput {
@@ -74,6 +75,7 @@ export interface GameSaveSnapshotInput {
   marinaTasks: MarinaTask[];
   lastMarinaTasksLocation: string;
   hasCompletedWorldTour: boolean;
+  adWatchesByFeatureByDate: AdWatchesByFeatureByDate;
 }
 
 export type GameSaveSnapshot = GameSaveSnapshotInput & {
@@ -150,6 +152,7 @@ export function buildSaveSnapshot(input: GameSaveSnapshotInput): GameSaveSnapsho
     marinaTasks: input.marinaTasks,
     lastMarinaTasksLocation: input.lastMarinaTasksLocation,
     hasCompletedWorldTour: input.hasCompletedWorldTour,
+    adWatchesByFeatureByDate: input.adWatchesByFeatureByDate,
     saveVersion: SAVE_VERSION,
     hasSave: true,
   };

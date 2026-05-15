@@ -106,6 +106,7 @@ import type { UpgradeInProgressItem, MarinaRestInProgress } from "./lib/saveLoad
 import { buildSaveSnapshot } from "./lib/buildSaveSnapshot";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { calculateContentQuality, calculateContentRewards, formatSeaDecisionEffectSummary } from "./lib/gameLogic";
+import type { AdWatchesByFeatureByDate } from "./types/ads";
 
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
 const MARINA_REST_DURATION_MS = 2 * 60 * 1000;
@@ -420,6 +421,7 @@ function App() {
   const [totalContentProduced, setTotalContentProduced] = useState(0);
   const [hasCompletedDailyGoalsOnce, setHasCompletedDailyGoalsOnce] = useState(false);
   const [hasCompletedWorldTour, setHasCompletedWorldTour] = useState(false);
+  const [adWatchesByFeatureByDate, setAdWatchesByFeatureByDate] = useState<AdWatchesByFeatureByDate>({});
   const [activeStoryHook, setActiveStoryHook] = useState<StoryHook | null>(null);
   const { activeToast, isToastLeaving, pushToast, dismissToast } = useToastQueue();
   const { activeCelebration, setActiveCelebration, setCelebrationQueue } = useCelebrationQueue();
@@ -954,6 +956,7 @@ function App() {
     loginStreak, lastLoginBonus, lastMarinaDebitAt,
     marinaTasks, lastMarinaTasksLocation,
     hasCompletedWorldTour,
+    adWatchesByFeatureByDate,
   });
   useAutoSave(saveSnapshot);
 
@@ -1029,6 +1032,7 @@ function App() {
     setLastMarinaDebitAt(getSafeNow());
     setMarinaTasks([]);
     setLastMarinaTasksLocation("");
+    setAdWatchesByFeatureByDate({});
     setIcerikSubTab("produce");
     setLastContentAt(null);
     setMarinaRestInProgress(null);
@@ -1211,6 +1215,11 @@ function App() {
       );
       setMarinaTasks(Array.isArray(parsed.marinaTasks) ? parsed.marinaTasks.slice(0, 8) : []);
       setLastMarinaTasksLocation(parsed.lastMarinaTasksLocation ?? "");
+      setAdWatchesByFeatureByDate(
+        parsed.adWatchesByFeatureByDate && typeof parsed.adWatchesByFeatureByDate === "object"
+          ? parsed.adWatchesByFeatureByDate
+          : {},
+      );
       const loadedTab = loadedStep === "SEA_MODE" ? "liman" : nextActiveTab;
       requestStepAndTabTransition(loadedStep, loadedTab, { force: true });
 

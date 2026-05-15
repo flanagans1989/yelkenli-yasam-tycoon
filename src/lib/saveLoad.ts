@@ -1,8 +1,9 @@
 import { BOAT_UPGRADES } from "../../game-data/upgrades";
 import { WORLD_ROUTES } from "../../game-data/routes";
+import type { AdWatchesByFeatureByDate } from "../types/ads";
 
 export const SAVE_KEY = "yelkenli_save";
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 export const MAX_OFFLINE_MINUTES = 480;
 export const MAX_OFFLINE_REWARD_MINUTES = 240;
 export const MAX_OFFLINE_REWARD_MINUTES_EXTENDED = 480;
@@ -114,6 +115,33 @@ function stripSensitiveSaveFields(parsed: any) {
   return rest;
 }
 
+function sanitizeAdWatchesByFeatureByDate(
+  value: unknown,
+): AdWatchesByFeatureByDate {
+  if (!value || typeof value !== "object") return {};
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, perDate]) => perDate && typeof perDate === "object")
+      .map(([featureId, perDate]) => {
+        const safePerDate = Object.fromEntries(
+          Object.entries(perDate as Record<string, unknown>)
+            .filter(([dateKey, count]) => {
+              const safeCount = Number(count);
+              return (
+                typeof dateKey === "string" &&
+                dateKey.length > 0 &&
+                Number.isFinite(safeCount) &&
+                safeCount >= 0
+              );
+            })
+            .map(([dateKey, count]) => [dateKey, Math.floor(Number(count))]),
+        );
+        return [featureId, safePerDate];
+      }),
+  );
+}
+
 function applySaveDefaults(parsed: any, dailyGoalsCompleted: boolean = false) {
   return {
     ...parsed,
@@ -124,6 +152,7 @@ function applySaveDefaults(parsed: any, dailyGoalsCompleted: boolean = false) {
     hasCompletedDailyGoalsOnce:
       parsed.hasCompletedDailyGoalsOnce ?? Boolean(dailyGoalsCompleted && parsed.dailyRewardClaimed),
     hasCompletedWorldTour: parsed.hasCompletedWorldTour ?? false,
+    adWatchesByFeatureByDate: sanitizeAdWatchesByFeatureByDate(parsed.adWatchesByFeatureByDate),
   };
 }
 
@@ -141,6 +170,13 @@ export function migrateSave(parsed: any): SaveMigrationResult | null {
 
     return {
       save: applySaveDefaults(sanitizedParsed, dailyGoalsCompleted),
+      usedBestEffortFallback: false,
+    };
+  }
+
+  if (version === 2) {
+    return {
+      save: applySaveDefaults(sanitizedParsed),
       usedBestEffortFallback: false,
     };
   }

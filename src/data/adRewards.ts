@@ -1,0 +1,45 @@
+import type { AdRewardConfig } from "../types/ads";
+
+// Data model only: rewarded ad SDK integration will bind to these configs later.
+export const REWARDED_AD_CONFIGS: AdRewardConfig[] = [
+  {
+    featureId: "marina_refill_energy",
+    placement: "rewarded_video",
+    rewardKind: "resource_refill",
+    label: "Enerji Doldur",
+    description: "Marinada enerji kaynaginin bir bolumunu yeniler.",
+    dailyLimit: 5,
+    rewardAmount: 25,
+    enabled: false,
+  },
+  {
+    featureId: "marina_refill_water",
+    placement: "rewarded_video",
+    rewardKind: "resource_refill",
+    label: "Su Doldur",
+    description: "Marinada su kaynaginin bir bolumunu yeniler.",
+    dailyLimit: 5,
+    rewardAmount: 25,
+    enabled: false,
+  },
+  {
+    featureId: "content_cooldown_skip",
+    placement: "rewarded_video",
+    rewardKind: "cooldown_skip",
+    label: "Icerik Beklemesini Azalt",
+    description: "Icerik uretim cooldown surecini kisaltmak icin ayrilmis yapi.",
+    dailyLimit: 3,
+    rewardAmount: 12,
+    enabled: false,
+  },
+  {
+    featureId: "sponsor_offer_refresh",
+    placement: "rewarded_video",
+    rewardKind: "offer_refresh",
+    label: "Sponsor Yenile",
+    description: "Sponsor ekraninda teklif havuzunu ileride yenilemek icin ayrilmis yapi.",
+    dailyLimit: 2,
+    rewardAmount: 1,
+    enabled: false,
+  },
+];

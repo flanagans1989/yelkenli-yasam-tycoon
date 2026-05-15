@@ -1885,6 +1885,11 @@ function App() {
     });
 
     triggerFlash("credits");
+    pushToast(
+      "sponsor",
+      "Sponsor Teklifi Kabul Edildi!",
+      `${brandName} · +${baseReward.toLocaleString("tr-TR")} TL`,
+    );
 
     const newCount = sponsoredContentCount + 1;
     setSponsoredContentCount(newCount);

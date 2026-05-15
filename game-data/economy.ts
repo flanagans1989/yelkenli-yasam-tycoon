@@ -107,6 +107,8 @@ export interface TokenRule {
   description: string;
 }
 
+export const TOKEN_SPEEDUP_COST_CAP = 60;
+
 export const CURRENCIES: CurrencyDefinition[] = [
   {
     key: "credit",
@@ -374,6 +376,16 @@ export const TOKEN_ALLOWED_RULES: TokenRule[] = [
     description: "Tamir süresi token ile hızlandırılabilir.",
   },
   {
+    action: "content_cooldown_speedup",
+    allowed: true,
+    description: "Icerik cooldown suresi token ile kisaltilabilir.",
+  },
+  {
+    action: "marina_rest_speedup",
+    allowed: true,
+    description: "Marina dinlenme suresi token ile hizlandirilabilir.",
+  },
+  {
     action: "emergency_energy",
     allowed: true,
     description: "Denizde acil enerji desteği alınabilir.",
@@ -439,6 +451,15 @@ export function getSponsorTierByFollowers(
 
 export function isTokenActionAllowed(action: string): boolean {
   return TOKEN_ALLOWED_RULES.find((rule) => rule.action === action)?.allowed ?? false;
+}
+
+export function getTokenSpeedupCost(
+  remainingSeconds: number,
+  cap: number = TOKEN_SPEEDUP_COST_CAP,
+): number {
+  const safeSeconds = Math.max(0, Number.isFinite(remainingSeconds) ? remainingSeconds : 0);
+  const cappedCost = Math.min(Math.max(1, cap), Math.ceil(safeSeconds / 60));
+  return Math.max(1, cappedCost);
 }
 
 export function getAnchoredMarinaCostProfile(worldProgress: number): {

@@ -34,6 +34,7 @@ type IcerikTabProps = {
   contentCareerText: string;
   followers: number;
   credits: number;
+  tokens: number;
   nextSponsorTierName?: string;
   followersToTier: number;
   step: Step;
@@ -54,8 +55,10 @@ type IcerikTabProps = {
   selectedTypeLabel?: string;
   onContentCooldown: boolean;
   cooldownMinutes: number;
+  contentCooldownTokenCost: number | null;
   ctaDisabled: boolean;
   onProduceContent: () => void;
+  onSpeedupContentCooldown: () => void;
   contentResult: ContentResult | null;
   onResetContentResult: () => void;
   contentHistory: ContentHistoryItem[];
@@ -87,6 +90,7 @@ export function IcerikTab({
   contentCareerText,
   followers,
   credits,
+  tokens,
   nextSponsorTierName,
   followersToTier,
   step,
@@ -107,8 +111,10 @@ export function IcerikTab({
   selectedTypeLabel,
   onContentCooldown,
   cooldownMinutes,
+  contentCooldownTokenCost,
   ctaDisabled,
   onProduceContent,
+  onSpeedupContentCooldown,
   contentResult,
   onResetContentResult,
   contentHistory,
@@ -174,6 +180,10 @@ export function IcerikTab({
               <div className="cs-stat-chip">
                 <span className="cs-stat-label">Bütçe</span>
                 <span className="cs-stat-value cs-stat-value--gold">{credits.toLocaleString("tr-TR")} TL</span>
+              </div>
+              <div className="cs-stat-chip">
+                <span className="cs-stat-label">Token</span>
+                <span className="cs-stat-value">{tokens.toLocaleString("tr-TR")}</span>
               </div>
               {nextSponsorTierName && (
                 <div className="cs-stat-chip cs-stat-chip--target">
@@ -343,6 +353,15 @@ export function IcerikTab({
                   <div className="cs-cooldown-card">
                     <span className="cs-cooldown-eyebrow">Stüdyo Dinleniyor</span>
                     <strong className="cs-cooldown-time">{cooldownMinutes} dk</strong>
+                    {contentCooldownTokenCost != null && (
+                      <button
+                        type="button"
+                        className="cs-story-hook-btn"
+                        onClick={onSpeedupContentCooldown}
+                      >
+                        {contentCooldownTokenCost} Token ile Bitir
+                      </button>
+                    )}
                     <span className="cs-cooldown-text">Bir sonraki içerik için kısa bir nefes.</span>
                   </div>
                 ) : (

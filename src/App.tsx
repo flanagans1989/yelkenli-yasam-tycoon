@@ -20,7 +20,14 @@ import type { RouteId } from "../game-data/routes";
 import { SOCIAL_PLATFORMS } from "../game-data/socialPlatforms";
 import { BOAT_UPGRADES, UPGRADE_CATEGORIES } from "../game-data/upgrades";
 import type { UpgradeCategoryId } from "../game-data/upgrades";
-import { calculateProportionalMarinaDebit, getSponsorTierByFollowers, SPONSOR_TIERS } from "../game-data/economy";
+import {
+  calculateProportionalMarinaDebit,
+  getSponsorTierByFollowers,
+  getTokenSpeedupCost,
+  isTokenActionAllowed,
+  SPONSOR_TIERS,
+  STARTING_ECONOMY,
+} from "../game-data/economy";
 import { AppBackground } from "./components/AppBackground";
 import { MicoGuide } from "./components/MicoGuide";
 import { HubScreen } from "./components/HubScreen";
@@ -107,6 +114,8 @@ import { buildSaveSnapshot } from "./lib/buildSaveSnapshot";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { calculateContentQuality, calculateContentRewards, formatSeaDecisionEffectSummary } from "./lib/gameLogic";
 import type { AdWatchesByFeatureByDate } from "./types/ads";
+
+type TokenSpeedupTarget = string | "content_cooldown" | "marina_rest";
 
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
 const MARINA_REST_DURATION_MS = 2 * 60 * 1000;
@@ -335,6 +344,7 @@ function App() {
   const [memberPassword, setMemberPassword] = useState("");
   
   const [credits, setCredits] = useState(0);
+  const [tokens, setTokens] = useState(STARTING_ECONOMY.startingTokens);
   const [followers, setFollowers] = useState(0);
   const [logs, setLogs] = useState<string[]>([]);
   const [firstContentDone, setFirstContentDone] = useState(false);
@@ -934,7 +944,7 @@ function App() {
   const saveSnapshot = buildSaveSnapshot({
     memberFullName, memberUsername, memberEmail,
     profileIndex, marinaIndex, boatIndex, boatName,
-    credits, followers, firstContentDone, logs,
+    credits, tokens, followers, firstContentDone, logs,
     purchasedUpgradeIds, upgradesInProgress,
     step, activeTab,
     currentLocationName, worldProgress,
@@ -1003,6 +1013,7 @@ function App() {
 
     setOnboardingMessage("");
     setCredits(STARTING_BUDGET - selectedBoat.purchaseCost);
+    setTokens(STARTING_ECONOMY.startingTokens);
     setFollowers(0);
     setPurchasedUpgradeIds([]);
     setUpgradesInProgress([]);
@@ -1153,6 +1164,7 @@ function App() {
       setBoatIndex(nextBoatIndex);
       setBoatName(parsed.boatName ?? "");
       setCredits(Math.max(0, safeBaseCredits + offline.credits - appliedMarinaDebit));
+      setTokens(Math.max(0, Math.floor(toFiniteNumber(parsed.tokens, STARTING_ECONOMY.startingTokens))));
       setFollowers(nextFollowers);
       setFirstContentDone(parsed.firstContentDone ?? false);
       setLogs(nextLogs);
@@ -1282,6 +1294,90 @@ function App() {
       pushToast("voyage", "Dinlenme Tamamlandı", "Marina hizmeti bitti. Enerji toparlandı.");
       return null;
     });
+  };
+
+  const getContentCooldownRemainingMs = () => {
+    if (!lastContentAt) return 0;
+    const cooldownMs = getContentCooldownMs(captainLevel, testMode);
+    return Math.max(0, cooldownMs - (Date.now() - lastContentAt));
+  };
+
+  const getMarinaRestRemainingMs = () => {
+    if (!marinaRestInProgress) return 0;
+    return Math.max(0, marinaRestInProgress.completesAt - Date.now());
+  };
+
+  const getUpgradeRemainingMs = (upgradeId: string) => {
+    const item = upgradesInProgress.find((entry) => entry.upgradeId === upgradeId);
+    if (!item) return 0;
+    return Math.max(0, item.completesAt - Date.now());
+  };
+
+  const handleTokenSpeedup = (target: TokenSpeedupTarget) => {
+    const spendTokens = (cost: number) => {
+      setTokens((prev) => Math.max(0, prev - cost));
+      triggerFlash("credits");
+    };
+
+    if (target === "content_cooldown") {
+      if (!isTokenActionAllowed("content_cooldown_speedup")) return;
+      const remainingMs = getContentCooldownRemainingMs();
+      if (remainingMs <= 0 || !lastContentAt) {
+        setLogs((prev) => ["Icerik cooldown su anda aktif degil.", ...prev.slice(0, 4)]);
+        return;
+      }
+      const tokenCost = getTokenSpeedupCost(Math.ceil(remainingMs / 1000));
+      if (tokens < tokenCost) {
+        pushToast("warning", "Yetersiz Token", `${tokenCost} token gerekiyor.`);
+        setLogs((prev) => ["Icerik cooldown hizlandirmasi icin yeterli token yok.", ...prev.slice(0, 4)]);
+        return;
+      }
+      const cooldownMs = getContentCooldownMs(captainLevel, testMode);
+      spendTokens(tokenCost);
+      setLastContentAt(Date.now() - cooldownMs);
+      setContentCooldownTick(Date.now());
+      pushToast("content", "Cooldown Hizlandi", `Icerik bekleme suresi ${tokenCost} token ile sifirlandi.`);
+      setLogs((prev) => [`Icerik cooldown suresi ${tokenCost} token harcanarak sifirlandi.`, ...prev.slice(0, 4)]);
+      return;
+    }
+
+    if (target === "marina_rest") {
+      if (!isTokenActionAllowed("marina_rest_speedup")) return;
+      const remainingMs = getMarinaRestRemainingMs();
+      if (remainingMs <= 0 || !marinaRestInProgress) {
+        setLogs((prev) => ["Aktif marina dinlenmesi bulunmuyor.", ...prev.slice(0, 4)]);
+        return;
+      }
+      const tokenCost = getTokenSpeedupCost(Math.ceil(remainingMs / 1000));
+      if (tokens < tokenCost) {
+        pushToast("warning", "Yetersiz Token", `${tokenCost} token gerekiyor.`);
+        setLogs((prev) => ["Marina dinlenmesini hizlandirmak icin yeterli token yok.", ...prev.slice(0, 4)]);
+        return;
+      }
+      spendTokens(tokenCost);
+      completeMarinaRestService();
+      pushToast("voyage", "Dinlenme Hizlandi", `Marina dinlenmesi ${tokenCost} token ile tamamlandi.`);
+      setLogs((prev) => [`Marina dinlenmesi ${tokenCost} token harcanarak tamamlandi.`, ...prev.slice(0, 4)]);
+      return;
+    }
+
+    if (!isTokenActionAllowed("upgrade_speedup")) return;
+    const upgrade = BOAT_UPGRADES.find((item) => item.id === target);
+    const remainingMs = getUpgradeRemainingMs(target);
+    if (!upgrade || remainingMs <= 0) {
+      setLogs((prev) => ["Hizlandirilacak aktif upgrade bulunamadi.", ...prev.slice(0, 4)]);
+      return;
+    }
+    const tokenCost = getTokenSpeedupCost(Math.ceil(remainingMs / 1000));
+    if (tokens < tokenCost) {
+      pushToast("warning", "Yetersiz Token", `${tokenCost} token gerekiyor.`);
+      setLogs((prev) => [`${upgrade.name} hizlandirmasi icin yeterli token yok.`, ...prev.slice(0, 4)]);
+      return;
+    }
+    spendTokens(tokenCost);
+    completeUpgradeInstallation(target);
+    setLogs((prev) => [`${upgrade.name} ${tokenCost} token harcanarak aninda tamamlandi.`, ...prev.slice(0, 4)]);
+    pushToast("upgrade", "Kurulum Hizlandi", `${upgrade.name} ${tokenCost} token ile tamamlandi.`);
   };
 
   const handleMarinaRest = () => {
@@ -2103,6 +2199,7 @@ function App() {
       worldProgress={worldProgress}
       currentOceanReadiness={currentOceanReadiness}
       credits={credits}
+      tokens={tokens}
       energy={energy}
       water={water}
       fuel={fuel}
@@ -2113,7 +2210,11 @@ function App() {
       logs={logs}
       marinaRestActionLabel={getMarinaRestLabel()}
       marinaRestActionDisabled={isMarinaRestActive}
+      marinaRestSpeedupTokenCost={
+        isMarinaRestActive ? getTokenSpeedupCost(Math.ceil(getMarinaRestRemainingMs() / 1000)) : null
+      }
       onMarinaRest={handleMarinaRest}
+      onSpeedupMarinaRest={() => handleTokenSpeedup("marina_rest")}
       onRefillWater={handleRefillWater}
       onRefillFuel={handleRefillFuel}
       onRepairBoat={handleRepairBoat}
@@ -2201,6 +2302,10 @@ function App() {
       ? Math.max(0, contentCooldownMs - (Date.now() - lastContentAt))
       : 0;
     const cooldownMinutes = Math.ceil(contentCooldownRemaining / 60000);
+    const contentCooldownTokenCost =
+      contentCooldownRemaining > 0
+        ? getTokenSpeedupCost(Math.ceil(contentCooldownRemaining / 1000))
+        : null;
 
     let contentCareerTitle = "Platform Momentum";
     let contentCareerText =
@@ -2261,6 +2366,7 @@ function App() {
         contentCareerText={contentCareerText}
         followers={followers}
         credits={credits}
+        tokens={tokens}
         nextSponsorTierName={nextSponsorTier?.name}
         followersToTier={followersToTier}
         locationBonusText={getLocationBonusLabel(selectedMarina?.region ?? "")?.label}
@@ -2288,8 +2394,10 @@ function App() {
         selectedTypeLabel={selectedTypeMeta?.label}
         onContentCooldown={onContentCooldown}
         cooldownMinutes={cooldownMinutes}
+        contentCooldownTokenCost={contentCooldownTokenCost}
         ctaDisabled={ctaDisabled}
         onProduceContent={handleProduceContentV2}
+        onSpeedupContentCooldown={() => handleTokenSpeedup("content_cooldown")}
         contentResult={contentResult}
         lastUsedPlatformId={lastUsedPlatformId}
         lastUsedContentType={lastUsedContentType}
@@ -2458,6 +2566,7 @@ function App() {
         selectedBoatName={selectedBoat.name}
         selectedBoatLengthFt={selectedBoat.lengthFt}
         credits={credits}
+        tokens={tokens}
         currentOceanReadiness={currentOceanReadiness}
         tkStats={tkStats}
         activeInstallRows={activeInstallRows.map((item) => ({
@@ -2465,6 +2574,7 @@ function App() {
           slot: item.slot,
           upgradeName: item.upgrade?.name ?? "",
           remainingText: formatRemainingInstallTime(item.completesAt),
+          tokenCost: getTokenSpeedupCost(Math.ceil(Math.max(0, item.completesAt - Date.now()) / 1000)),
         }))}
         categories={UPGRADE_CATEGORIES.map((cat) => ({ id: cat.id, name: cat.name }))}
         selectedUpgradeCategory={selectedUpgradeCategory}
@@ -2477,6 +2587,7 @@ function App() {
         }}
         upgradeCards={upgradeCards}
         onBuyUpgrade={handleBuyUpgrade}
+        onSpeedupUpgrade={handleTokenSpeedup}
         pendingUpgradeConfirmId={pendingUpgradeConfirmId}
         onCancelUpgradeConfirm={handleCancelUpgradeConfirm}
         installedUpgradeLabels={purchasedUpgradeObjects.map(u => u.name)}

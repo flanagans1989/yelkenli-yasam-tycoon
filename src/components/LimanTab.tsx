@@ -10,6 +10,7 @@ interface LimanTabProps {
   worldProgress: number;
   currentOceanReadiness: number;
   credits: number;
+  tokens: number;
   energy: number;
   water: number;
   fuel: number;
@@ -21,6 +22,8 @@ interface LimanTabProps {
   onMarinaRest: () => void;
   marinaRestActionLabel: string;
   marinaRestActionDisabled: boolean;
+  marinaRestSpeedupTokenCost: number | null;
+  onSpeedupMarinaRest: () => void;
   onRefillWater: () => void;
   onRefillFuel: () => void;
   onRepairBoat: () => void;
@@ -50,6 +53,7 @@ export function LimanTab({
   worldProgress,
   currentOceanReadiness,
   credits,
+  tokens,
   energy,
   water,
   fuel,
@@ -61,6 +65,8 @@ export function LimanTab({
   onMarinaRest,
   marinaRestActionLabel,
   marinaRestActionDisabled,
+  marinaRestSpeedupTokenCost,
+  onSpeedupMarinaRest,
   onRefillWater,
   onRefillFuel,
   onRepairBoat,
@@ -125,6 +131,7 @@ export function LimanTab({
             ? "Dünya Turu Kaptanı · Efsane Kaptan"
             : "Kaptanın limanı · Sıradaki hamleye hazır"}
         </p>
+        <p className="lh-stage-sub">Token: {tokens.toLocaleString("tr-TR")}</p>
       </header>
 
       {/* ── Boat hero stage ── */}
@@ -294,6 +301,11 @@ export function LimanTab({
               <button className="secondary-button lh-service-btn" onClick={onMarinaRest} disabled={marinaRestActionDisabled || energy >= 100}>
                 {marinaRestActionLabel}
               </button>
+              {marinaRestSpeedupTokenCost != null && (
+                <button className="secondary-button lh-service-btn" onClick={onSpeedupMarinaRest}>
+                  {marinaRestSpeedupTokenCost} Token Bitir
+                </button>
+              )}
               <button className="secondary-button lh-service-btn" onClick={onRefillWater} disabled={water >= 100}>
                 {water >= 100 ? "Su dolu" : `Su Al – ${Math.max(0, 100 - water) * 1} TL`}
               </button>

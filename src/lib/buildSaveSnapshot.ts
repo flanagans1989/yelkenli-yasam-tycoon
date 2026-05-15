@@ -23,6 +23,7 @@ export interface GameSaveSnapshotInput {
   boatIndex: number;
   boatName: string;
   credits: number;
+  tokens: number;
   followers: number;
   firstContentDone: boolean;
   logs: string[];
@@ -100,6 +101,7 @@ export function buildSaveSnapshot(input: GameSaveSnapshotInput): GameSaveSnapsho
     boatIndex: input.boatIndex,
     boatName: input.boatName,
     credits: input.credits,
+    tokens: input.tokens,
     followers: input.followers,
     firstContentDone: input.firstContentDone,
     logs: input.logs,

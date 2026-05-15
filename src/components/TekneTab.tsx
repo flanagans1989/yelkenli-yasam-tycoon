@@ -15,6 +15,7 @@ type ActiveInstallItem = {
   slot: number;
   upgradeName: string;
   remainingText: string;
+  tokenCost: number;
 };
 
 type UpgradeCardItem = {
@@ -41,6 +42,7 @@ type TekneTabProps = {
   selectedBoatName: string;
   selectedBoatLengthFt: number;
   credits: number;
+  tokens: number;
   currentOceanReadiness: number;
   tkStats: TekneStatItem[];
   activeInstallRows: ActiveInstallItem[];
@@ -51,6 +53,7 @@ type TekneTabProps = {
   onBackToRotaMissing: () => void;
   upgradeCards: UpgradeCardItem[];
   onBuyUpgrade: (upgradeId: string) => void;
+  onSpeedupUpgrade: (upgradeId: string) => void;
   pendingUpgradeConfirmId?: string | null;
   onCancelUpgradeConfirm?: () => void;
   installedUpgradeLabels?: string[];
@@ -62,6 +65,7 @@ export function TekneTab({
   selectedBoatName,
   selectedBoatLengthFt,
   credits,
+  tokens,
   currentOceanReadiness,
   tkStats,
   activeInstallRows,
@@ -72,6 +76,7 @@ export function TekneTab({
   onBackToRotaMissing,
   upgradeCards,
   onBuyUpgrade,
+  onSpeedupUpgrade,
   pendingUpgradeConfirmId = null,
   onCancelUpgradeConfirm,
   installedUpgradeLabels = [],
@@ -93,6 +98,10 @@ export function TekneTab({
           <div className="tk-hero-credits">
             <strong>{credits.toLocaleString("tr-TR")} TL</strong>
             <small>Bütçe</small>
+          </div>
+          <div className="tk-hero-credits">
+            <strong>{tokens.toLocaleString("tr-TR")}</strong>
+            <small>Token</small>
           </div>
         </div>
 
@@ -140,8 +149,17 @@ export function TekneTab({
             <span className="tk-install-eyebrow">KURULUM SÜRÜYOR</span>
             {activeInstallRows.map((item) => (
               <div key={item.upgradeId} className="tk-install-row">
-                <strong className="tk-install-name">Slot {item.slot + 1} · {item.upgradeName}</strong>
-                <span className="tk-install-time">{item.remainingText}</span>
+                <div>
+                  <strong className="tk-install-name">Slot {item.slot + 1} · {item.upgradeName}</strong>
+                  <span className="tk-install-time">{item.remainingText}</span>
+                </div>
+                <button
+                  type="button"
+                  className="tk-upg-cta"
+                  onClick={() => onSpeedupUpgrade(item.upgradeId)}
+                >
+                  <span className="tk-upg-cta-label">{item.tokenCost} Token Bitir</span>
+                </button>
               </div>
             ))}
           </div>

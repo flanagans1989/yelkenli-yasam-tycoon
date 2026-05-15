@@ -1,9 +1,10 @@
 import { BOAT_UPGRADES } from "../../game-data/upgrades";
 import { WORLD_ROUTES } from "../../game-data/routes";
+import { STARTING_ECONOMY } from "../../game-data/economy";
 import type { AdWatchesByFeatureByDate } from "../types/ads";
 
 export const SAVE_KEY = "yelkenli_save";
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export const MAX_OFFLINE_MINUTES = 480;
 export const MAX_OFFLINE_REWARD_MINUTES = 240;
 export const MAX_OFFLINE_REWARD_MINUTES_EXTENDED = 480;
@@ -147,6 +148,7 @@ function applySaveDefaults(parsed: any, dailyGoalsCompleted: boolean = false) {
     ...parsed,
     saveVersion: SAVE_VERSION,
     hasSave: parsed.hasSave ?? true,
+    tokens: Math.max(0, Math.floor(Number(parsed.tokens ?? STARTING_ECONOMY.startingTokens) || STARTING_ECONOMY.startingTokens)),
     lastMarinaDebitAt: parsed.lastMarinaDebitAt ?? null,
     totalContentProduced: parsed.totalContentProduced ?? (parsed.firstContentDone ? 1 : 0),
     hasCompletedDailyGoalsOnce:
@@ -175,6 +177,13 @@ export function migrateSave(parsed: any): SaveMigrationResult | null {
   }
 
   if (version === 2) {
+    return {
+      save: applySaveDefaults(sanitizedParsed),
+      usedBestEffortFallback: false,
+    };
+  }
+
+  if (version === 3) {
     return {
       save: applySaveDefaults(sanitizedParsed),
       usedBestEffortFallback: false,

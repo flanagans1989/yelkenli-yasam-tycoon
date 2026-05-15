@@ -16,6 +16,13 @@ export type MarinaRequirement = "any" | "medium" | "large" | "shipyard";
 
 export type UpgradeSize = "small" | "medium" | "large" | "ocean";
 
+export type UpgradeRole =
+  | "critical"
+  | "income"
+  | "risk_reduction"
+  | "comfort"
+  | "optional";
+
 export interface UpgradeEffects {
   energy?: number;
   navigation?: number;
@@ -41,6 +48,7 @@ export interface BoatCompatibility {
 export interface BoatUpgrade {
   id: string;
   categoryId: UpgradeCategoryId;
+  role: UpgradeRole;
   name: string;
   size: UpgradeSize;
   description: string;
@@ -147,6 +155,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "small_solar_panel",
     categoryId: "energy",
+    role: "income",
     name: "Küçük Güneş Paneli",
     size: "small",
     description: "Günlük enerji üretimini artıran temel güneş paneli sistemi.",
@@ -164,6 +173,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "large_solar_array",
     categoryId: "energy",
+    role: "income",
     name: "Büyük Güneş Paneli Sistemi",
     size: "medium",
     description: "Uzun seyir ve yoğun içerik üretimi için güçlü enerji üretimi sağlar.",
@@ -200,6 +210,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "lithium_battery_bank",
     categoryId: "energy",
+    role: "critical",
     name: "Lityum Akü Bankası",
     size: "large",
     description: "Enerji depolama kapasitesini ciddi şekilde artırır.",
@@ -237,6 +248,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "basic_gps",
     categoryId: "navigation",
+    role: "critical",
     name: "Temel GPS",
     size: "small",
     description: "Temel rota güvenliği ve konum takibi sağlar.",
@@ -254,6 +266,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "chartplotter",
     categoryId: "navigation",
+    role: "critical",
     name: "Chartplotter",
     size: "medium",
     description: "Rota planlama, güvenli seyir ve açık deniz hazırlığı sağlar.",
@@ -271,6 +284,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "radar_system",
     categoryId: "navigation",
+    role: "risk_reduction",
     name: "Radar Sistemi",
     size: "large",
     description: "Kötü hava, gece seyri ve okyanus geçişlerinde güvenliği artırır.",
@@ -308,6 +322,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "ais_transponder",
     categoryId: "navigation",
+    role: "critical",
     name: "AIS Transponder",
     size: "ocean",
     description:
@@ -327,6 +342,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "basic_safety_kit",
     categoryId: "safety",
+    role: "critical",
     name: "Temel Güvenlik Seti",
     size: "small",
     description: "Can yelekleri, işaret fişekleri ve temel ilk yardım malzemeleri.",
@@ -343,6 +359,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "life_raft",
     categoryId: "safety",
+    role: "critical",
     name: "Can Salı",
     size: "medium",
     description: "Büyük rota ve okyanus geçişi için kritik güvenlik ekipmanıdır.",
@@ -360,6 +377,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "epirb",
     categoryId: "safety",
+    role: "critical",
     name: "EPIRB Acil Sinyal Sistemi",
     size: "medium",
     description: "Okyanus geçişi için kritik acil durum sinyal sistemidir.",
@@ -377,6 +395,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "storm_equipment",
     categoryId: "safety",
+    role: "risk_reduction",
     name: "Fırtına Ekipmanı",
     size: "large",
     description: "Sert hava ve fırtına olaylarında hasar riskini azaltır.",
@@ -394,6 +413,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "new_main_sail",
     categoryId: "sail_speed",
+    role: "income",
     name: "Yeni Ana Yelken",
     size: "large",
     description: "Seyir performansını, rota süresini ve fırtına dayanıklılığını artırır.",
@@ -412,6 +432,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "halyard_rope_set",
     categoryId: "sail_speed",
+    role: "risk_reduction",
     name: "Halat Yenileme Seti",
     size: "small",
     description: "Yelken arızası ve fırtına sırasında ekipman riski azalır.",
@@ -430,6 +451,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "engine_service",
     categoryId: "engine_mechanical",
+    role: "critical",
     name: "Motor Bakımı",
     size: "small",
     description: "Motor arızası riskini azaltan temel bakım işlemidir.",
@@ -448,6 +470,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "fuel_system_upgrade",
     categoryId: "engine_mechanical",
+    role: "critical",
     name: "Yakıt Sistemi Yenileme",
     size: "medium",
     description: "Uzun rotalarda motor güvenilirliğini ve acil destek kapasitesini artırır.",
@@ -466,6 +489,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "spare_water_jugs",
     categoryId: "water_life",
+    role: "critical",
     name: "Yedek Su Bidonları",
     size: "small",
     description: "Kısa rotalar ve kriz durumları için yedek su kapasitesi sağlar.",
@@ -482,6 +506,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "water_tank_expansion",
     categoryId: "water_life",
+    role: "comfort",
     name: "Su Tankı Artışı",
     size: "medium",
     description: "Uzun seyirlerde su kapasitesini artırır.",
@@ -518,6 +543,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "watermaker",
     categoryId: "water_life",
+    role: "critical",
     name: "Su Yapıcı",
     size: "ocean",
     description: "Okyanus geçişleri için çok güçlü su güvenliği sağlar.",
@@ -556,6 +582,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "better_beds",
     categoryId: "comfort",
+    role: "comfort",
     name: "Kabin Yatakları",
     size: "small",
     description: "Uzun seyirde moral ve tekne yaşamı kalitesini artırır.",
@@ -572,6 +599,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "fridge_system",
     categoryId: "comfort",
+    role: "comfort",
     name: "Buzdolabı Sistemi",
     size: "medium",
     description: "Yaşam konforunu ve uzun rota hazırlığını güçlendirir.",
@@ -590,6 +618,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "air_conditioning",
     categoryId: "comfort",
+    role: "comfort",
     name: "Klima",
     size: "large",
     description: "Konforu çok artırır ama güçlü enerji sistemi ister.",
@@ -625,6 +654,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "action_camera",
     categoryId: "content_equipment",
+    role: "income",
     name: "Aksiyon Kamera",
     size: "small",
     description: "Deniz, fırtına ve kısa video içeriklerini güçlendirir.",
@@ -640,6 +670,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "drone",
     categoryId: "content_equipment",
+    role: "income",
     name: "Drone",
     size: "medium",
     description: "Görsel içerik, koy, marina ve lifestyle paylaşımlarını ciddi güçlendirir.",
@@ -656,6 +687,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "editing_laptop",
     categoryId: "content_equipment",
+    role: "income",
     name: "Kurgu Laptopu",
     size: "medium",
     description: "ViewTube gelirini ve uzun video kalitesini artırır.",
@@ -671,6 +703,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "satellite_internet",
     categoryId: "content_equipment",
+    role: "income",
     name: "Uydu İnterneti",
     size: "ocean",
     description: "Denizden yayın, okyanus günlüğü ve acil iletişim için güçlü sistemdir.",
@@ -689,6 +722,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "regular_service_pack",
     categoryId: "hull_maintenance",
+    role: "risk_reduction",
     name: "Düzenli Servis Paketi",
     size: "small",
     description: "Teknenin genel tesisat, arma ve güverte bakımını içeren temel servis.",
@@ -705,6 +739,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "long_voyage_maintenance",
     categoryId: "hull_maintenance",
+    role: "risk_reduction",
     name: "Uzun Yol Bakım Seti",
     size: "medium",
     description: "Açık deniz öncesi kritik parçaların değişimi ve detaylı kontrolü.",
@@ -722,6 +757,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "antifouling",
     categoryId: "hull_maintenance",
+    role: "risk_reduction",
     name: "Antifouling",
     size: "large",
     description: "Gövde sağlığını ve seyir performansını artıran tersane bakımıdır.",
@@ -740,6 +776,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "hull_inspection",
     categoryId: "hull_maintenance",
+    role: "risk_reduction",
     name: "Gövde Kontrolü",
     size: "medium",
     description: "Hasar ve su alma riskini azaltan temel gövde kontrolüdür.",
@@ -758,6 +795,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "dinghy",
     categoryId: "auxiliary_seamanship",
+    role: "optional",
     name: "Yedek Bot",
     size: "medium",
     description: "Kıyıya çıkış, koy keşfi ve yardımcı denizcilik kapasitesi sağlar.",
@@ -775,6 +813,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "anchor_chain_set",
     categoryId: "auxiliary_seamanship",
+    role: "risk_reduction",
     name: "Çapa ve Zincir Seti",
     size: "small",
     description: "Güvenli demirleme ve marina dışı konaklama kapasitesini artırır.",
@@ -793,6 +832,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
   {
     id: "spare_parts_box",
     categoryId: "auxiliary_seamanship",
+    role: "risk_reduction",
     name: "Yedek Parça Kutusu",
     size: "small",
     description: "Deniz modunda küçük krizlerin etkisini azaltır.",

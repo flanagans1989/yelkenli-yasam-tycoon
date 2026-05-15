@@ -1471,10 +1471,10 @@ function App() {
       setUpgradesInProgress(upgrades.upgradesInProgress);
       setCurrentLocationName(parsed.currentLocationName ?? "");
       setWorldProgress(nextWorldProgress);
-      setEnergy(clampNumber(parsed.energy, 0, 100, 100));
-      setWater(clampNumber(parsed.water, 0, 100, 100));
-      setFuel(clampNumber(parsed.fuel, 0, 100, 100));
-      setBoatCondition(clampNumber(parsed.boatCondition, 0, 100, 100));
+      setEnergy(marina.completedOffline ? Math.min(100, baseEnergy + 30) : baseEnergy);
+      setWater(marina.completedOffline ? Math.min(100, baseWater + 30) : baseWater);
+      setFuel(marina.completedOffline ? Math.min(100, baseFuel + 20) : baseFuel);
+      setBoatCondition(marina.completedOffline ? Math.min(100, baseBoatCondition + 10) : baseBoatCondition);
       setCurrentRouteId(nextRouteId);
       setCompletedRouteIds(nextCompletedRouteIds);
       setVoyageTotalDays(Math.max(0, Math.floor(toFiniteNumber(parsed.voyageTotalDays, 0))));
@@ -1546,10 +1546,6 @@ function App() {
         pushToast("upgrade", "Upgrade Tamamlandı!", `${upgrade.name} kurulumu tamamlandı!`);
       });
       if (marina.completedOffline) {
-        setEnergy((prev) => Math.min(100, prev + 30));
-        setWater((prev) => Math.min(100, prev + 30));
-        setFuel((prev) => Math.min(100, prev + 20));
-        setBoatCondition((prev) => Math.min(100, prev + 10));
         pushToast("voyage", "Dinlenme Tamamlandı", "Marina hizmeti bitti. Kaynaklar toparlandı.");
       }
     } catch (e) {

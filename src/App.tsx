@@ -366,10 +366,19 @@ function App() {
   const [memberEmail, setMemberEmail] = useState("");
   const [memberPassword, setMemberPassword] = useState("");
   
-  const [credits, setCredits] = useState(0);
-  const [tokens, setTokens] = useState(STARTING_ECONOMY.startingTokens);
-  const [followers, setFollowers] = useState(0);
-  const [logs, setLogs] = useState<string[]>([]);
+  // Economy reads from gameState
+  const { credits, tokens, followers, logs } = gameState;
+  // Dispatch-backed setters (call sites unchanged; useState removed)
+  const setCredits = (arg: number | ((prev: number) => number)) =>
+    dispatch({ type: "ECONOMY/SET_CREDITS", payload: typeof arg === "function" ? arg(credits) : arg });
+  const setTokens = (arg: number | ((prev: number) => number)) =>
+    dispatch({ type: "ECONOMY/SET_TOKENS", payload: typeof arg === "function" ? arg(tokens) : arg });
+  const setFollowers = (arg: number | ((prev: number) => number)) =>
+    dispatch({ type: "ECONOMY/SET_FOLLOWERS", payload: typeof arg === "function" ? arg(followers) : arg });
+  const setLogs = (arg: string[] | ((prev: string[]) => string[])) => {
+    const next = typeof arg === "function" ? arg(logs) : arg;
+    dispatch({ type: "LOGS/SET", payload: next });
+  };
   const [firstContentDone, setFirstContentDone] = useState(false);
   const [purchasedUpgradeIds, setPurchasedUpgradeIds] = useState<string[]>([]);
   const [upgradesInProgress, setUpgradesInProgress] = useState<UpgradeInProgressItem[]>([]);
@@ -1073,6 +1082,8 @@ function App() {
     toast?: { type: "achievement" | "sponsor" | "voyage" | "content"; title: string; text: string },
   ) => {
     if (amount <= 0) return;
+    dispatch({ type: "ECONOMY/ADD_TOKENS", payload: amount });
+    dispatch({ type: "LOGS/ADD", payload: logMessage });
     setTokens((prev) => prev + amount);
     setLogs((prev) => [logMessage, ...prev.slice(0, 4)]);
     if (toast) {
@@ -1722,10 +1733,14 @@ function App() {
     if (missing <= 0) return;
     const cost = missing * 1;
     if (credits < cost) {
+      dispatch({ type: "LOGS/ADD", payload: "Su ikmali için yeterli TL yok." });
       setLogs(prev => ["Su ikmali için yeterli TL yok.", ...prev.slice(0, 4)]);
       pushToast("warning", "Yetersiz Bütçe", `Su ikmali için ${cost} TL gerekiyor.`);
       return;
     }
+    dispatch({ type: "ECONOMY/SET_CREDITS", payload: credits - cost });
+    dispatch({ type: "RESOURCES/SET", payload: { water: 100 } });
+    dispatch({ type: "LOGS/ADD", payload: `Su ikmali yapıldı: ${cost} TL.` });
     setCredits(c => c - cost);
     setWater(100);
     triggerFlash("credits");
@@ -1738,10 +1753,14 @@ function App() {
     if (missing <= 0) return;
     const cost = missing * 2;
     if (credits < cost) {
+      dispatch({ type: "LOGS/ADD", payload: "Yakıt ikmali için yeterli TL yok." });
       setLogs(prev => ["Yakıt ikmali için yeterli TL yok.", ...prev.slice(0, 4)]);
       pushToast("warning", "Yetersiz Bütçe", `Yakıt ikmali için ${cost} TL gerekiyor.`);
       return;
     }
+    dispatch({ type: "ECONOMY/SET_CREDITS", payload: credits - cost });
+    dispatch({ type: "RESOURCES/SET", payload: { fuel: 100 } });
+    dispatch({ type: "LOGS/ADD", payload: `Yakıt ikmali yapıldı: ${cost} TL.` });
     setCredits(c => c - cost);
     setFuel(100);
     triggerFlash("credits");
@@ -1762,15 +1781,20 @@ function App() {
 
   const handleRepairBoat = () => {
     if (credits < 250) {
+      dispatch({ type: "LOGS/ADD", payload: "Tekneyi onarmak için yeterli bütçe yok." });
       setLogs(prev => ["Tekneyi onarmak için yeterli bütçe yok.", ...prev.slice(0, 4)]);
       return;
     }
 
     if (boatCondition >= 100) {
+      dispatch({ type: "LOGS/ADD", payload: "Tekne zaten tam durumda." });
       setLogs(prev => ["Tekne zaten tam durumda.", ...prev.slice(0, 4)]);
       return;
     }
 
+    dispatch({ type: "ECONOMY/SET_CREDITS", payload: credits - 250 });
+    dispatch({ type: "RESOURCES/SET", payload: { boatCondition: Math.min(100, boatCondition + 35) } });
+    dispatch({ type: "LOGS/ADD", payload: "Tekne onarıldı. Durum 35 puan toparlandı." });
     setCredits(prev => prev - 250);
     setBoatCondition(prev => Math.min(100, prev + 35));
     triggerFlash("credits");

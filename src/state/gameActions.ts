@@ -23,9 +23,11 @@ export type EconomyAddCreditsAction = { type: "ECONOMY/ADD_CREDITS"; payload: nu
 export type EconomySetTokensAction = { type: "ECONOMY/SET_TOKENS"; payload: number };
 export type EconomyAddTokensAction = { type: "ECONOMY/ADD_TOKENS"; payload: number };
 export type EconomyAddFollowersAction = { type: "ECONOMY/ADD_FOLLOWERS"; payload: number };
+export type EconomySetFollowersAction = { type: "ECONOMY/SET_FOLLOWERS"; payload: number };
 
 // ── Logs ─────────────────────────────────────────────────────────────────────
 export type LogsAddAction = { type: "LOGS/ADD"; payload: string };
+export type LogsSetAction = { type: "LOGS/SET"; payload: string[] };
 
 // ── Resources ────────────────────────────────────────────────────────────────
 export type ResourcesSetAction = {
@@ -224,7 +226,9 @@ export type GameAction =
   | EconomySetTokensAction
   | EconomyAddTokensAction
   | EconomyAddFollowersAction
+  | EconomySetFollowersAction
   | LogsAddAction
+  | LogsSetAction
   | ResourcesSetAction
   | NavigationSetStepAction
   | NavigationSetTabAction

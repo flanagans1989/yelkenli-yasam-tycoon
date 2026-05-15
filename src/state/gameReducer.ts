@@ -93,10 +93,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, tokens: state.tokens + action.payload };
     case "ECONOMY/ADD_FOLLOWERS":
       return { ...state, followers: state.followers + action.payload };
+    case "ECONOMY/SET_FOLLOWERS":
+      return { ...state, followers: action.payload };
 
     // ── Logs ─────────────────────────────────────────────────────────────────
     case "LOGS/ADD":
-      return { ...state, logs: [...state.logs, action.payload].slice(-MAX_LOGS) };
+      return { ...state, logs: [action.payload, ...state.logs].slice(0, MAX_LOGS) };
+    case "LOGS/SET":
+      return { ...state, logs: action.payload.slice(0, MAX_LOGS) };
 
     // ── Resources ─────────────────────────────────────────────────────────────
     case "RESOURCES/SET":
@@ -164,7 +168,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         voyageDaysRemaining: newDaysRemaining,
         followers: state.followers + followersGained,
         credits: state.credits + creditsGained,
-        logs: eventText ? [...state.logs, eventText].slice(-MAX_LOGS) : state.logs,
+        logs: eventText ? [eventText, ...state.logs].slice(0, MAX_LOGS) : state.logs,
         step: nextStep ?? state.step,
       };
     }
@@ -324,7 +328,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         captainLevel: newLevel,
         credits: state.credits + creditBonus,
         tokens: state.tokens + tokenBonus,
-        logs: logMessage ? [...state.logs, logMessage].slice(-MAX_LOGS) : state.logs,
+        logs: logMessage ? [logMessage, ...state.logs].slice(0, MAX_LOGS) : state.logs,
       };
     }
 
@@ -353,7 +357,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         lastLoginBonus: bonusDate,
         credits: state.credits + creditsBonus,
         captainXp: state.captainXp + xpBonus,
-        logs: logMessage ? [...state.logs, logMessage].slice(-MAX_LOGS) : state.logs,
+        logs: logMessage ? [logMessage, ...state.logs].slice(0, MAX_LOGS) : state.logs,
       };
     }
 

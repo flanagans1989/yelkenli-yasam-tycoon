@@ -352,7 +352,6 @@ function App() {
   // Phases 2-5: dispatch runs alongside existing useState setters (double-write).
   // Phase 6: individual useStates removed; saveSnapshot switches to buildSaveSnapshot(gameState).
   const [gameState, dispatch] = useReducer(gameReducer, undefined, getInitialGameState);
-  void gameState;
 
   const [step, setStepState] = useState<Step>("WELCOME");
   const [activeTab, setActiveTabState] = useState<Tab>("liman");
@@ -1065,33 +1064,7 @@ function App() {
     };
   }, []);
 
-  const saveSnapshot = buildSaveSnapshot({
-    memberFullName, memberUsername, memberEmail,
-    profileIndex, marinaIndex, boatIndex, boatName,
-    credits, tokens, followers, firstContentDone, logs,
-    purchasedUpgradeIds, upgradesInProgress,
-    step, activeTab,
-    currentLocationName, worldProgress,
-    energy, water, fuel, boatCondition,
-    currentRouteId, completedRouteIds,
-    voyageTotalDays, voyageDaysRemaining,
-    currentSeaEvent, pendingDecisionId,
-    selectedPlatformId, selectedContentType, contentResult,
-    selectedUpgradeCategory,
-    brandTrust, sponsorOffers, acceptedSponsors, sponsoredContentCount,
-    contentHistory, icerikSubTab,
-    lastContentAt, marinaRestInProgress,
-    captainXp, captainLevel,
-    dailyGoals, lastDailyReset, dailyRewardClaimed,
-    totalContentProduced, hasCompletedDailyGoalsOnce,
-    firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor,
-    activeStoryHook, tutorialStep, gender,
-    completedFollowerMilestones, sponsorObligations,
-    loginStreak, lastLoginBonus, lastMarinaDebitAt,
-    marinaTasks, lastMarinaTasksLocation,
-    hasCompletedWorldTour,
-    adWatchesByFeatureByDate,
-  });
+  const saveSnapshot = buildSaveSnapshot(gameState);
   useAutoSave(saveSnapshot);
 
   const grantTokens = (

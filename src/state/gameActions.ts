@@ -86,6 +86,7 @@ export type VoyageSetPendingDecisionAction = {
   payload: string | null;
 };
 export type VoyageClearDecisionAction = { type: "VOYAGE/CLEAR_DECISION" };
+export type VoyageSetFirstEventTriggeredAction = { type: "VOYAGE/SET_FIRST_EVENT_TRIGGERED" };
 
 // ── Content ──────────────────────────────────────────────────────────────────
 export type ContentPublishAction = {
@@ -113,6 +114,7 @@ export type ContentSetSubTabAction = {
   type: "CONTENT/SET_SUB_TAB";
   payload: "produce" | "sponsor";
 };
+export type ContentSetStoryHookAction = { type: "CONTENT/SET_STORY_HOOK"; payload: StoryHook | null };
 
 // ── Upgrades ─────────────────────────────────────────────────────────────────
 export type UpgradesStartInstallAction = {
@@ -185,6 +187,7 @@ export type CaptainLoginBonusAction = {
   };
 };
 export type CaptainCompleteGoalAction = { type: "CAPTAIN/COMPLETE_GOAL"; payload: string };
+export type CaptainAddXpAction = { type: "CAPTAIN/ADD_XP"; payload: number };
 
 // ── Progress ──────────────────────────────────────────────────────────────────
 export type ProgressMilestoneReachedAction = {
@@ -233,11 +236,13 @@ export type GameAction =
   | VoyageSetSeaEventAction
   | VoyageSetPendingDecisionAction
   | VoyageClearDecisionAction
+  | VoyageSetFirstEventTriggeredAction
   | ContentPublishAction
   | ContentSetPlatformAction
   | ContentSetTypeAction
   | ContentSetResultAction
   | ContentSetSubTabAction
+  | ContentSetStoryHookAction
   | UpgradesStartInstallAction
   | UpgradesCompleteInstallAction
   | UpgradesSetCategoryAction
@@ -254,6 +259,7 @@ export type GameAction =
   | CaptainDailyGoalsCompletedAction
   | CaptainLoginBonusAction
   | CaptainCompleteGoalAction
+  | CaptainAddXpAction
   | ProgressMilestoneReachedAction
   | AdRecordWatchAction
   | AdApplyRewardAction;

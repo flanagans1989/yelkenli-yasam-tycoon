@@ -175,6 +175,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, pendingDecisionId: action.payload };
     case "VOYAGE/CLEAR_DECISION":
       return { ...state, pendingDecisionId: null, currentSeaEvent: "" };
+    case "VOYAGE/SET_FIRST_EVENT_TRIGGERED":
+      return { ...state, firstVoyageEventTriggered: true };
 
     // ── Content ───────────────────────────────────────────────────────────────
     case "CONTENT/PUBLISH": {
@@ -234,6 +236,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, contentResult: action.payload };
     case "CONTENT/SET_SUB_TAB":
       return { ...state, icerikSubTab: action.payload };
+    case "CONTENT/SET_STORY_HOOK":
+      return { ...state, activeStoryHook: action.payload };
 
     // ── Upgrades ──────────────────────────────────────────────────────────────
     case "UPGRADES/START_INSTALL":
@@ -360,6 +364,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           g.id === action.payload ? { ...g, completed: true } : g
         ),
       };
+
+    case "CAPTAIN/ADD_XP":
+      return { ...state, captainXp: state.captainXp + action.payload };
 
     // ── Progress ──────────────────────────────────────────────────────────────
     case "PROGRESS/MILESTONE_REACHED":

@@ -1811,12 +1811,17 @@ function App() {
     // BUG 1 FIX: Block day advance if any critical resource is already depleted
     const isCriticallyDepleted = energy <= 0 || water <= 0 || fuel <= 0 || boatCondition <= 0;
     if (isCriticallyDepleted) {
-      // Emergency abort — return to port without route rewards
+      dispatch({ type: "RESOURCES/SET", payload: {
+        energy: Math.max(energy, 5),
+        water: Math.max(water, 5),
+        fuel: Math.max(fuel, 5),
+      }});
+      dispatch({ type: "VOYAGE/CLEAR_DECISION" });
+      dispatch({ type: "NAVIGATION/SET_STEP_AND_TAB", payload: { step: "HUB", tab: "liman" } });
       requestStepAndTabTransition("HUB", "liman");
       setVoyageDaysRemaining(0);
       setCurrentSeaEvent("");
       setPendingDecisionId(null);
-      // Restore resources to minimal safe values so player isn't stuck
       setEnergy(e => Math.max(e, 5));
       setWater(w => Math.max(w, 5));
       setFuel(f => Math.max(f, 5));
@@ -1840,87 +1845,98 @@ function App() {
       let nextDecision = SEA_DECISION_EVENTS[Math.floor(Math.random() * SEA_DECISION_EVENTS.length)];
       if (shouldForceFirstVoyageEvent) {
         nextDecision = SEA_DECISION_EVENTS.find(e => e.id === "content_opportunity") || nextDecision;
+        dispatch({ type: "VOYAGE/SET_FIRST_EVENT_TRIGGERED" });
+        dispatch({ type: "VOYAGE/SET_PENDING_DECISION", payload: nextDecision.id });
         setFirstVoyageEventTriggered(true);
       } else {
         let validEvents = SEA_DECISION_EVENTS.filter(e => !recentSeaEventIds.includes(e.id));
         if (validEvents.length === 0) validEvents = SEA_DECISION_EVENTS.filter(e => e.id !== recentSeaEventIds[0]);
         if (validEvents.length === 0) validEvents = SEA_DECISION_EVENTS;
         nextDecision = validEvents[Math.floor(Math.random() * validEvents.length)];
+        dispatch({ type: "VOYAGE/SET_PENDING_DECISION", payload: nextDecision.id });
       }
+      dispatch({ type: "VOYAGE/SET_SEA_EVENT", payload: nextDecision.description });
       setPendingDecisionId(nextDecision.id);
       setRecentSeaEventIds(prev => [nextDecision.id, ...prev].slice(0, 2));
       setCurrentSeaEvent(nextDecision.description);
       return;
     }
 
-    setVoyageDaysRemaining(prev => {
-      const newDays = prev - 1;
-      const readinessPenalty = Math.min(currentRouteReadinessGapCount, 3);
+    const newDays = voyageDaysRemaining - 1;
+    const readinessPenalty = Math.min(currentRouteReadinessGapCount, 3);
 
-      let energyDrop = 5 + (readinessPenalty > 0 ? 1 : 0);
-      if (upgradeEnergyBonus > 20) energyDrop = 3 + (readinessPenalty > 0 ? 1 : 0);
-      else if (upgradeEnergyBonus > 10) energyDrop = 4 + (readinessPenalty > 0 ? 1 : 0);
+    let energyDrop = 5 + (readinessPenalty > 0 ? 1 : 0);
+    if (upgradeEnergyBonus > 20) energyDrop = 3 + (readinessPenalty > 0 ? 1 : 0);
+    else if (upgradeEnergyBonus > 10) energyDrop = 4 + (readinessPenalty > 0 ? 1 : 0);
 
-      let waterDrop = 4 + (readinessPenalty > 1 ? 1 : 0);
-      if (upgradeWaterBonus > 20) waterDrop = 2 + (readinessPenalty > 1 ? 1 : 0);
-      else if (upgradeWaterBonus > 10) waterDrop = 3 + (readinessPenalty > 1 ? 1 : 0);
+    let waterDrop = 4 + (readinessPenalty > 1 ? 1 : 0);
+    if (upgradeWaterBonus > 20) waterDrop = 2 + (readinessPenalty > 1 ? 1 : 0);
+    else if (upgradeWaterBonus > 10) waterDrop = 3 + (readinessPenalty > 1 ? 1 : 0);
 
-      const fuelDrop = 3 + (readinessPenalty > 2 ? 1 : 0);
+    const fuelDrop = 3 + (readinessPenalty > 2 ? 1 : 0);
 
-      setEnergy(e => Math.max(0, e - energyDrop));
-      setWater(w => Math.max(0, w - waterDrop));
-      setFuel(f => Math.max(0, f - fuelDrop));
+    const willDepleteResource =
+      energy - energyDrop <= 0 ||
+      water - waterDrop <= 0 ||
+      fuel - fuelDrop <= 0;
 
-      const willDepleteResource =
-        energy - energyDrop <= 0 ||
-        water - waterDrop <= 0 ||
-        fuel - fuelDrop <= 0;
+    let conditionDrop = willDepleteResource ? 4 : 0;
 
-      if (willDepleteResource) {
-        setBoatCondition(c => Math.max(0, c - 4));
-      }
+    let conditionDropChance = 0.7;
+    if (upgradeNavigationBonus > 15 || upgradeSafetyBonus > 15) conditionDropChance = 0.85;
+    if (readinessPenalty > 0) conditionDropChance = Math.max(0.45, conditionDropChance - readinessPenalty * 0.08);
 
-      let conditionDropChance = 0.7;
-      if (upgradeNavigationBonus > 15 || upgradeSafetyBonus > 15) conditionDropChance = 0.85;
-      if (readinessPenalty > 0) conditionDropChance = Math.max(0.45, conditionDropChance - readinessPenalty * 0.08);
+    if (Math.random() > conditionDropChance) {
+      let dmg = Math.floor(Math.random() * 3) + 1;
+      if (upgradeRiskReduction > 10) dmg = Math.max(1, dmg - 1);
+      conditionDrop += dmg;
+    }
 
-      if (Math.random() > conditionDropChance) {
-        let dmg = Math.floor(Math.random() * 3) + 1;
-        if (upgradeRiskReduction > 10) dmg = Math.max(1, dmg - 1);
-        setBoatCondition(c => Math.max(0, c - dmg));
-      }
+    type EventData = { text: string; energyExtra: number; waterExtra: number; conditionExtra: number; followersGained: number; creditsGained: number };
+    const events: EventData[] = [
+      { text: "Uygun rüzgar yakalandı. Harika bir seyir.", energyExtra: 0, waterExtra: 0, conditionExtra: 0, followersGained: 0, creditsGained: 0 },
+      { text: "Harika görüntü fırsatı! +100 takipçi.", energyExtra: 0, waterExtra: 0, conditionExtra: 0, followersGained: 100, creditsGained: 0 },
+      { text: "Hafif teknik sorun.", energyExtra: 0, waterExtra: 0, conditionExtra: 3, followersGained: 0, creditsGained: 0 },
+      { text: "Değişken hava. Enerji üretimi azaldı.", energyExtra: 3, waterExtra: 0, conditionExtra: 0, followersGained: 0, creditsGained: 0 },
+      { text: "Sakin seyir.", energyExtra: 0, waterExtra: 0, conditionExtra: 0, followersGained: 0, creditsGained: 0 },
+      { text: "Kısa video fırsatı. +150 takipçi.", energyExtra: 0, waterExtra: 0, conditionExtra: 0, followersGained: 150, creditsGained: 0 },
+      { text: "Küçük sponsor ilgisi. +100 TL.", energyExtra: 0, waterExtra: 0, conditionExtra: 0, followersGained: 0, creditsGained: 100 },
+    ];
 
-      const events = [
-        { text: "Uygun rüzgar yakalandı. Harika bir seyir.", effect: () => {} },
-        { text: "Harika görüntü fırsatı! +100 takipçi.", effect: () => { setFollowers(f => f + 100); triggerFlash("followers"); } },
-        { text: "Hafif teknik sorun.", effect: () => setBoatCondition(c => Math.max(0, c - 3)) },
-        { text: "Değişken hava. Enerji üretimi azaldı.", effect: () => setEnergy(e => Math.max(0, e - 3)) },
-        { text: "Sakin seyir.", effect: () => {} },
-        { text: "Kısa video fırsatı. +150 takipçi.", effect: () => { setFollowers(f => f + 150); triggerFlash("followers"); } },
-        { text: "Küçük sponsor ilgisi. +100 TL.", effect: () => { setCredits(cr => cr + 100); triggerFlash("credits"); } },
-      ];
+    if (hasRouteReadinessGap) {
+      events.push({ text: "Hazırlık eksikleri seyri zorlaştırdı. Kaynak tüketimi arttı.", energyExtra: 2, waterExtra: 2, conditionExtra: 2, followersGained: 0, creditsGained: 0 });
+    }
 
-      if (hasRouteReadinessGap) {
-        events.push({
-          text: "Hazırlık eksikleri seyri zorlaştırdı. Kaynak tüketimi arttı.",
-          effect: () => {
-            setEnergy(e => Math.max(0, e - 2));
-            setWater(w => Math.max(0, w - 2));
-            setBoatCondition(c => Math.max(0, c - 2));
-          },
-        });
-      }
+    const evt = events[Math.floor(Math.random() * events.length)];
 
-      const evt = events[Math.floor(Math.random() * events.length)];
-      evt.effect();
-      setCurrentSeaEvent(evt.text);
-      setLogs(logsPrev => [evt.text, ...logsPrev.slice(0, 4)]);
+    if (evt.followersGained > 0) triggerFlash("followers");
+    if (evt.creditsGained > 0) triggerFlash("credits");
 
-      if (newDays <= 0) {
-        requestStepTransition("ARRIVAL_SCREEN");
-      }
-      return newDays;
-    });
+    dispatch({ type: "VOYAGE/ADVANCE_DAY", payload: {
+      energyDrop: energyDrop + evt.energyExtra,
+      waterDrop: waterDrop + evt.waterExtra,
+      fuelDrop,
+      conditionDrop: conditionDrop + evt.conditionExtra,
+      eventText: evt.text,
+      newDaysRemaining: newDays,
+      followersGained: evt.followersGained,
+      creditsGained: evt.creditsGained,
+      nextStep: newDays <= 0 ? "ARRIVAL_SCREEN" : undefined,
+    }});
+
+    setVoyageDaysRemaining(newDays);
+    setEnergy(e => Math.max(0, e - energyDrop - evt.energyExtra));
+    setWater(w => Math.max(0, w - waterDrop - evt.waterExtra));
+    setFuel(f => Math.max(0, f - fuelDrop));
+    setBoatCondition(c => Math.max(0, c - conditionDrop - evt.conditionExtra));
+    if (evt.followersGained > 0) setFollowers(f => f + evt.followersGained);
+    if (evt.creditsGained > 0) setCredits(cr => cr + evt.creditsGained);
+    setCurrentSeaEvent(evt.text);
+    setLogs(logsPrev => [evt.text, ...logsPrev.slice(0, 4)]);
+
+    if (newDays <= 0) {
+      requestStepTransition("ARRIVAL_SCREEN");
+    }
   };
 
   const publishContent = ({
@@ -2112,6 +2128,32 @@ function App() {
     const boatConditionDelta = effect.boatCondition;
     const remainingDaysDelta = effect.remainingDays;
 
+    const newCredits = typeof creditsDelta === "number" ? Math.max(0, credits + creditsDelta) : credits;
+    const newFollowers = typeof followersDelta === "number" ? Math.max(0, followers + followersDelta) : followers;
+    const newEnergy = typeof energyDelta === "number" ? Math.max(0, Math.min(100, energy + energyDelta)) : energy;
+    const newWater = typeof waterDelta === "number" ? Math.max(0, Math.min(100, water + waterDelta)) : water;
+    const newFuel = typeof fuelDelta === "number" ? Math.max(0, Math.min(100, fuel + fuelDelta)) : fuel;
+    const newBoatCondition = typeof boatConditionDelta === "number" ? Math.max(0, Math.min(100, boatCondition + boatConditionDelta)) : boatCondition;
+    const newDaysRemaining = typeof remainingDaysDelta === "number" ? Math.max(0, voyageDaysRemaining + remainingDaysDelta) : voyageDaysRemaining;
+    const forceArrivalFromDecision = typeof remainingDaysDelta === "number" && newDaysRemaining <= 0;
+
+    dispatch({ type: "RESOURCES/SET", payload: { energy: newEnergy, water: newWater, fuel: newFuel, boatCondition: newBoatCondition } });
+    dispatch({ type: "ECONOMY/SET_CREDITS", payload: newCredits });
+    dispatch({ type: "ECONOMY/ADD_FOLLOWERS", payload: newFollowers - followers });
+    dispatch({ type: "VOYAGE/ADVANCE_DAY", payload: {
+      energyDrop: 0,
+      waterDrop: 0,
+      fuelDrop: 0,
+      conditionDrop: 0,
+      eventText: `${decision.title}: ${choice.resultText}`,
+      newDaysRemaining,
+      followersGained: newFollowers - followers,
+      creditsGained: newCredits - credits,
+      nextStep: forceArrivalFromDecision ? "ARRIVAL_SCREEN" : undefined,
+    }});
+    dispatch({ type: "CAPTAIN/ADD_XP", payload: 30 });
+    dispatch({ type: "VOYAGE/CLEAR_DECISION" });
+
     if (typeof creditsDelta === "number") {
       setCredits(prev => Math.max(0, prev + creditsDelta));
       triggerFlash("credits");
@@ -2134,7 +2176,6 @@ function App() {
     if (typeof boatConditionDelta === "number") {
       setBoatCondition(prev => Math.max(0, Math.min(100, prev + boatConditionDelta)));
     }
-    const forceArrivalFromDecision = typeof remainingDaysDelta === "number" && voyageDaysRemaining + remainingDaysDelta <= 0;
     if (typeof remainingDaysDelta === "number") {
       setVoyageDaysRemaining(prev => Math.max(0, prev + remainingDaysDelta));
     }
@@ -2153,6 +2194,8 @@ function App() {
     if (choiceKey === "choiceA") {
       const nextStoryHook = createSeaEventStoryHook(decision.id, currentRoute?.id);
       if (nextStoryHook) {
+        dispatch({ type: "CONTENT/SET_STORY_HOOK", payload: nextStoryHook });
+        dispatch({ type: "CONTENT/SET_RESULT", payload: null });
         setContentResult(null);
         setActiveStoryHook(nextStoryHook);
         pushToast("voyage", "Hikaye Yakalandi", nextStoryHook.description);
@@ -2336,24 +2379,18 @@ function App() {
       tokenReward: getSponsorAcceptTokenReward(tier.tier),
     };
 
-    setSponsorOffers(prev => {
-      const seenBrands = new Set<string>();
-
-      const cleanedOffers = prev.filter(offer => {
-        const brandName = String(offer?.brandName ?? "").trim();
-        if (!brandName) return false;
-        if (activeSponsorSet.has(brandName)) return false;
-        if (seenBrands.has(brandName)) return false;
-        seenBrands.add(brandName);
-        return true;
-      });
-
-      if (cleanedOffers.length > 0) {
-        return cleanedOffers.slice(0, 1);
-      }
-
-      return [newOffer];
+    const seenBrands = new Set<string>();
+    const cleanedOffers = sponsorOffers.filter(offer => {
+      const bn = String(offer?.brandName ?? "").trim();
+      if (!bn) return false;
+      if (activeSponsorSet.has(bn)) return false;
+      if (seenBrands.has(bn)) return false;
+      seenBrands.add(bn);
+      return true;
     });
+    const nextOffers = cleanedOffers.length > 0 ? cleanedOffers.slice(0, 1) : [newOffer];
+    dispatch({ type: "SPONSORS/SET_OFFERS", payload: nextOffers });
+    setSponsorOffers(nextOffers);
 
     if (!hasReceivedFirstSponsor) {
       setHasReceivedFirstSponsor(true);

@@ -645,8 +645,13 @@ function App() {
       { key: "10k", threshold: 10_000, label: "10.000 Takipçi!", desc: "10K kulübe hoş geldin! Micro-influencer seviyesindesin." },
       { key: "100k", threshold: 100_000, label: "100.000 Takipçi!", desc: "100K! Artık büyük markalar seni arıyor." },
     ];
-    for (const m of milestones) {
-      if (followers >= m.threshold && !completedFollowerMilestones.includes(m.key)) {
+    const newlyReached = milestones.filter(
+      m => followers >= m.threshold && !completedFollowerMilestones.includes(m.key)
+    );
+    if (newlyReached.length > 0) {
+      const nextMilestones = [...completedFollowerMilestones, ...newlyReached.map(m => m.key)];
+      dispatch({ type: "PROGRESS/MILESTONE_REACHED", payload: nextMilestones });
+      for (const m of newlyReached) {
         setCompletedFollowerMilestones(prev => [...prev, m.key]);
         setCelebrationQueue(q => [...q, { type: "achievement" as const, title: m.label, description: m.desc, icon: "🎉" }]);
       }
@@ -686,6 +691,7 @@ function App() {
     const firstTierMin = SPONSOR_TIERS[0]?.minFollowers ?? 800;
     if (followers >= firstTierMin) {
       const tier = SPONSOR_TIERS[0];
+      dispatch({ type: "SPONSORS/SET_RECEIVED_FIRST" });
       setHasReceivedFirstSponsor(true);
       setActiveCelebration({ type: "sponsor", brandName: tier?.name ?? "İlk Marka" });
     }
@@ -868,6 +874,12 @@ function App() {
       if (newLevel > prev) {
         const bonus = newLevel * 500;
         const tokenReward = getCaptainLevelTokenReward(newLevel);
+        dispatch({ type: "CAPTAIN/XP_CHANGED", payload: {
+          newLevel,
+          creditBonus: bonus,
+          tokenBonus: tokenReward,
+          logMessage: `Kaptan seviyesi yükseldi: Lv.${newLevel} (+${bonus.toLocaleString("tr-TR")} TL bonus)`,
+        }});
         setCredits(c => c + bonus);
         grantTokens(
           tokenReward,
@@ -912,7 +924,9 @@ function App() {
     if (step === "HUB") {
       const today = new Date().toISOString().slice(0, 10);
       if (lastDailyReset !== today) {
-        setDailyGoals(makeDailyGoals(today, hasCompletedWorldTour));
+        const newGoals = makeDailyGoals(today, hasCompletedWorldTour);
+        dispatch({ type: "CAPTAIN/DAILY_RESET", payload: { today, newGoals } });
+        setDailyGoals(newGoals);
         setLastDailyReset(today);
         setDailyRewardClaimed(false);
       }
@@ -920,9 +934,16 @@ function App() {
         const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
         const isConsecutive = lastLoginBonus === yesterday;
         const newStreak = isConsecutive ? loginStreak + 1 : 1;
+        const bonus = 500 + Math.min(newStreak - 1, 6) * 100;
+        dispatch({ type: "CAPTAIN/LOGIN_BONUS", payload: {
+          newStreak,
+          bonusDate: today,
+          creditsBonus: bonus,
+          xpBonus: 10,
+          logMessage: "",
+        }});
         setLoginStreak(newStreak);
         setLastLoginBonus(today);
-        const bonus = 500 + Math.min(newStreak - 1, 6) * 100;
         setCredits(c => c + bonus);
         setCaptainXp(x => x + 10);
         if (tutorialStep >= 3) {
@@ -939,6 +960,7 @@ function App() {
   useEffect(() => {
     const allDone = dailyGoals.length > 0 && dailyGoals.every(g => g.completed);
     if (allDone && !dailyRewardClaimed) {
+      dispatch({ type: "CAPTAIN/DAILY_GOALS_COMPLETED", payload: { creditsReward: 2500, tokensReward: DAILY_GOALS_TOKEN_BONUS } });
       setHasCompletedDailyGoalsOnce(true);
       setCredits(c => c + 2500);
       setDailyRewardClaimed(true);
@@ -962,7 +984,9 @@ function App() {
 
   useEffect(() => {
     if (step === "HUB" && currentLocationName && currentLocationName !== lastMarinaTasksLocation) {
-      setMarinaTasks(makeMarinaTasksForLocation(currentLocationName));
+      const newTasks = makeMarinaTasksForLocation(currentLocationName);
+      dispatch({ type: "MARINA/REFRESH_TASKS", payload: { tasks: newTasks, location: currentLocationName } });
+      setMarinaTasks(newTasks);
       setLastMarinaTasksLocation(currentLocationName);
     }
   }, [step, currentLocationName, lastMarinaTasksLocation]);
@@ -981,15 +1005,22 @@ function App() {
   }, [credits, currentLocationName, lastMarinaDebitAt, step, worldProgress]);
 
   useEffect(() => {
-    if (tutorialStep === 0 && firstContentDone) setTutorialStep(1);
+    if (tutorialStep === 0 && firstContentDone) {
+      dispatch({ type: "NAVIGATION/SET_TUTORIAL_STEP", payload: 1 });
+      setTutorialStep(1);
+    }
   }, [firstContentDone, tutorialStep]);
 
   useEffect(() => {
-    if (tutorialStep === 1 && upgradesInProgress.length > 0) setTutorialStep(2);
+    if (tutorialStep === 1 && upgradesInProgress.length > 0) {
+      dispatch({ type: "NAVIGATION/SET_TUTORIAL_STEP", payload: 2 });
+      setTutorialStep(2);
+    }
   }, [upgradesInProgress.length, tutorialStep]);
 
   useEffect(() => {
     if (tutorialStep === 2 && step === "SEA_MODE") {
+      dispatch({ type: "NAVIGATION/SET_TUTORIAL_STEP", payload: 3 });
       setTutorialStep(3);
       setShowMicoFarewell(true);
       if (farewellTimeoutRef.current !== null) {
@@ -1004,18 +1035,22 @@ function App() {
 
   useEffect(() => {
     if (step === "SEA_MODE" && activeTab !== "liman") {
+      dispatch({ type: "NAVIGATION/SET_TAB", payload: "liman" });
       setActiveTabState("liman");
     }
   }, [step, activeTab]);
 
   useEffect(() => {
     if (step === "SEA_MODE" && !currentRoute) {
+      dispatch({ type: "NAVIGATION/SET_STEP_AND_TAB", payload: { step: "HUB", tab: "liman" } });
+      dispatch({ type: "VOYAGE/CLEAR_DECISION" });
       requestStepAndTabTransition("HUB", "liman", { force: true });
       setPendingDecisionId(null);
       setCurrentSeaEvent("");
       return;
     }
     if (step === "ARRIVAL_SCREEN" && !currentRoute) {
+      dispatch({ type: "NAVIGATION/SET_STEP_AND_TAB", payload: { step: "HUB", tab: "liman" } });
       requestStepAndTabTransition("HUB", "liman", { force: true });
     }
   }, [step, currentRoute]);

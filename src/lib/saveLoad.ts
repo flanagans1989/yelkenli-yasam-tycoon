@@ -6,8 +6,20 @@ export const SAVE_VERSION = 2;
 export const MAX_OFFLINE_MINUTES = 480;
 export const MAX_OFFLINE_REWARD_MINUTES = 240;         // 4-hour baseline cap
 export const EXTENDED_OFFLINE_REWARD_MINUTES = 480;    // 8-hour cap with Captain's Quarters
-export const OFFLINE_CREDITS_PER_MINUTE = 15;
+export const OFFLINE_CREDITS_PER_MINUTE = 15;          // baseline / Lv1 — kept for back-compat
 export const OFFLINE_FOLLOWERS_PER_MINUTE = 1;
+
+/**
+ * Captain level-scaled offline credit yield (per minute).
+ * Higher-level captains earn more from passive content/sponsor work while away.
+ */
+export function getOfflineCreditsPerMinute(captainLevel: number): number {
+  if (captainLevel <= 1) return 15;
+  if (captainLevel <= 3) return 25;
+  if (captainLevel <= 6) return 40;
+  if (captainLevel <= 10) return 60;
+  return 90;
+}
 
 // Time manipulation guard: anchored at module load time once per session.
 export const SESSION_START_REAL_MS: number = Date.now();
@@ -71,8 +83,7 @@ export function validateSaveChecksum(parsed: any): boolean {
  */
 export function stripChecksum(parsed: any): any {
   if (!parsed || typeof parsed !== "object") return parsed;
-  const { _checksum: _removed, ...rest } = parsed;
-  return rest;
+  return Object.fromEntries(Object.entries(parsed).filter(([k]) => k !== "_checksum"));
 }
 
 export type UpgradeInProgressItem = {
@@ -126,7 +137,11 @@ export function migrateSave(parsed: any) {
   return null;
 }
 
-export function calculateOfflineIncome(lastSavedAt: unknown, hasCaptainsQuarters = false): { credits: number; followers: number; minutes: number } {
+export function calculateOfflineIncome(
+  lastSavedAt: unknown,
+  hasCaptainsQuarters = false,
+  captainLevel = 1,
+): { credits: number; followers: number; minutes: number } {
   if (typeof lastSavedAt !== "number" || !Number.isFinite(lastSavedAt)) {
     return { credits: 0, followers: 0, minutes: 0 };
   }
@@ -134,9 +149,10 @@ export function calculateOfflineIncome(lastSavedAt: unknown, hasCaptainsQuarters
   const offlineMs = Math.max(0, getSafeNow() - lastSavedAt);
   const cappedMinutes = Math.min(Math.floor(offlineMs / 60000), MAX_OFFLINE_MINUTES);
   const minutes = Math.min(cappedMinutes, rewardCap);
+  const creditsPerMinute = getOfflineCreditsPerMinute(captainLevel);
   return {
     minutes,
-    credits: Math.max(0, minutes * OFFLINE_CREDITS_PER_MINUTE),
+    credits: Math.max(0, minutes * creditsPerMinute),
     followers: Math.max(0, minutes * OFFLINE_FOLLOWERS_PER_MINUTE),
   };
 }

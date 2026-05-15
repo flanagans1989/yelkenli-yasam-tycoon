@@ -15,7 +15,7 @@ import type { RouteId } from "../game-data/routes";
 import { SOCIAL_PLATFORMS } from "../game-data/socialPlatforms";
 import { BOAT_UPGRADES, UPGRADE_CATEGORIES } from "../game-data/upgrades";
 import type { UpgradeCategoryId } from "../game-data/upgrades";
-import { getSponsorTierByFollowers, SPONSOR_TIERS } from "../game-data/economy";
+import { getSponsorTierByFollowers, SPONSOR_TIERS, STARTING_ECONOMY, MARINA_COST_PROFILES } from "../game-data/economy";
 import { AppBackground } from "./components/AppBackground";
 import { MicoGuide } from "./components/MicoGuide";
 import { Onboarding, getBoatSvg } from "./components/Onboarding";
@@ -42,6 +42,8 @@ import {
 import type { UpgradeInProgressItem, MarinaRestInProgress } from "./lib/saveLoad";
 import { calculateContentQuality, calculateContentRewards, formatSeaDecisionEffectSummary } from "./lib/gameLogic";
 import { startCadenceMonitor, trackCadenceEvent } from "./lib/cadenceTelemetry";
+import { makeWelcomeBackBonus, simulateWatchRewardedAd } from "./lib/rewards";
+import type { WelcomeBackBonus } from "./lib/rewards";
 
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
 const MARINA_REST_DURATION_MS = 2 * 60 * 1000;
@@ -230,6 +232,9 @@ function App() {
   const [firstContentDone, setFirstContentDone] = useState(false);
   const [purchasedUpgradeIds, setPurchasedUpgradeIds] = useState<string[]>([]);
   const [upgradesInProgress, setUpgradesInProgress] = useState<UpgradeInProgressItem[]>([]);
+  const [tokens, setTokens] = useState<number>(STARTING_ECONOMY.startingTokens);
+  const [welcomeBackBonus, setWelcomeBackBonus] = useState<WelcomeBackBonus | null>(null);
+  const marinaFeeAccumulatorRef = useRef<number>(0);
 
   // Sea Mode MVP states
   const [currentLocationName, setCurrentLocationName] = useState("");
@@ -646,6 +651,27 @@ function App() {
     }
   }, [step, lastDailyReset, lastLoginBonus, loginStreak, hasCompletedWorldTour]);
 
+  // Marina daily fee: while docked in HUB, charge a per-minute fraction of the
+  // marina's daily cost. Clamps to current credits — never produces negative balance.
+  useEffect(() => {
+    if (step !== "HUB") return;
+    const marinaCostKey = selectedMarina?.marinaCost;
+    if (!marinaCostKey) return;
+    const profile = MARINA_COST_PROFILES.find((p) => p.costLevel === marinaCostKey);
+    if (!profile) return;
+    const dailyMid = (profile.dailyCostRange.min + profile.dailyCostRange.max) / 2;
+    const perMinuteFee = dailyMid / 1440;
+    const intervalId = window.setInterval(() => {
+      marinaFeeAccumulatorRef.current += perMinuteFee;
+      const whole = Math.floor(marinaFeeAccumulatorRef.current);
+      if (whole >= 1) {
+        marinaFeeAccumulatorRef.current -= whole;
+        setCredits((prev) => Math.max(0, prev - whole));
+      }
+    }, 60_000);
+    return () => window.clearInterval(intervalId);
+  }, [step, selectedMarina?.marinaCost]);
+
   useEffect(() => {
     const allDone = dailyGoals.length > 0 && dailyGoals.every(g => g.completed);
     if (allDone && !dailyRewardClaimed) {
@@ -768,6 +794,7 @@ function App() {
         marinaTasks,
         lastMarinaTasksLocation,
         hasCompletedWorldTour,
+        tokens,
       };
       const saveWithChecksum = { ...saveObj, _checksum: computeChecksum(saveObj) };
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveWithChecksum));
@@ -783,7 +810,7 @@ function App() {
     captainXp, captainLevel, dailyGoals, lastDailyReset, dailyRewardClaimed, totalContentProduced,
     hasCompletedDailyGoalsOnce, firstVoyageEventTriggered, testMode, hasReceivedFirstSponsor, activeStoryHook,
     tutorialStep, gender, completedFollowerMilestones, sponsorObligations, loginStreak, lastLoginBonus,
-    marinaTasks, lastMarinaTasksLocation, hasCompletedWorldTour
+    marinaTasks, lastMarinaTasksLocation, hasCompletedWorldTour, tokens,
   ]);
 
   const finalizeGame = () => {
@@ -822,6 +849,9 @@ function App() {
     setLastLoginBonus("");
     setMarinaTasks([]);
     setLastMarinaTasksLocation("");
+    setTokens(STARTING_ECONOMY.startingTokens);
+    setWelcomeBackBonus(null);
+    marinaFeeAccumulatorRef.current = 0;
     setIcerikSubTab("produce");
     setLastContentAt(null);
     setMarinaRestInProgress(null);
@@ -857,9 +887,10 @@ function App() {
       const savedPurchasedIds: string[] = Array.isArray(parsed.purchasedUpgradeIds) ? parsed.purchasedUpgradeIds : [];
       const hasCaptainsQuarters = savedPurchasedIds.includes("captains_quarters");
       const wasInSeaMode = parsed.step === "SEA_MODE";
+      const savedCaptainLevel: number = typeof parsed.captainLevel === "number" ? parsed.captainLevel : 1;
       const offline = wasInSeaMode
         ? { credits: 0, followers: 0, minutes: 0 }
-        : calculateOfflineIncome(parsed.lastSavedAt, hasCaptainsQuarters);
+        : calculateOfflineIncome(parsed.lastSavedAt, hasCaptainsQuarters, savedCaptainLevel);
       const upgrades = processUpgradesFromSave(
         Array.isArray(parsed.upgradesInProgress) ? parsed.upgradesInProgress : null,
         parsed.upgradeInProgress ?? null,
@@ -963,8 +994,13 @@ function App() {
       setLastLoginBonus(parsed.lastLoginBonus ?? "");
       setMarinaTasks(Array.isArray(parsed.marinaTasks) ? parsed.marinaTasks.slice(0, 8) : []);
       setLastMarinaTasksLocation(parsed.lastMarinaTasksLocation ?? "");
+      setTokens(typeof parsed.tokens === "number" && parsed.tokens >= 0 ? parsed.tokens : STARTING_ECONOMY.startingTokens);
       setStep(safeLoadStep(parsed));
       setActiveTab(nextActiveTab);
+
+      marinaFeeAccumulatorRef.current = 0;
+      const wb = makeWelcomeBackBonus(offline.credits, offline.followers, offline.minutes);
+      if (wb) setWelcomeBackBonus(wb);
 
       upgrades.completedUpgradeObjects.forEach((upgrade) => {
         applyUpgradeEffects(upgrade);
@@ -1832,6 +1868,61 @@ function App() {
   };
 
   const handleCancelUpgradeConfirm = () => setPendingUpgradeConfirmId(null);
+
+  /**
+   * Spend tokens to instantly finish an in-progress upgrade. Token-only speedup.
+   * Does not grant followers, XP, or skip route gates.
+   */
+  const handleSpeedupUpgradeWithToken = (upgradeId: string) => {
+    const item = upgradesInProgress.find((u) => u.upgradeId === upgradeId);
+    if (!item) return;
+    const remainingMs = Math.max(0, item.completesAt - Date.now());
+    const cost = Math.max(1, Math.ceil(remainingMs / (5 * 60_000))); // 1 token per remaining 5 minutes
+    if (tokens < cost) {
+      pushToast("warning", "Yetersiz Token", `Bu hızlandırma için ${cost} token gerekli.`);
+      return;
+    }
+    setTokens((prev) => Math.max(0, prev - cost));
+    setUpgradesInProgress((prev) =>
+      prev.map((u) => (u.upgradeId === upgradeId ? { ...u, completesAt: Date.now() } : u)),
+    );
+    pushToast("upgrade", "Hızlandırıldı", `${cost} token harcandı. Kurulum hemen tamamlanacak.`);
+  };
+
+  const handleClaimWelcomeBack = async (doubled: boolean) => {
+    if (!welcomeBackBonus) return;
+    if (doubled && welcomeBackBonus.adOffer) {
+      const watched = await simulateWatchRewardedAd(welcomeBackBonus.adOffer);
+      if (watched) {
+        const mult = welcomeBackBonus.adOffer.multiplier;
+        const bonusCredits = Math.floor(welcomeBackBonus.baseCredits * (mult - 1));
+        const bonusFollowers = Math.floor(welcomeBackBonus.baseFollowers * (mult - 1));
+        if (bonusCredits > 0) setCredits((c) => c + bonusCredits);
+        if (bonusFollowers > 0) setFollowers((f) => f + bonusFollowers);
+        pushToast(
+          "content",
+          "Hoş Geldin Bonusu 2×",
+          `+${bonusCredits.toLocaleString("tr-TR")} TL · +${bonusFollowers.toLocaleString("tr-TR")} takipçi (reklam ödülü).`,
+        );
+      }
+    }
+    setWelcomeBackBonus(null);
+  };
+
+  const handleDismissWelcomeBack = () => setWelcomeBackBonus(null);
+
+  // Expose token/welcome-back hooks for QA, dev tooling, and future UI wiring.
+  // No-op in production builds — tree-shaken when import.meta.env.DEV is false.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    (window as unknown as { __econ?: unknown }).__econ = {
+      tokens,
+      welcomeBackBonus,
+      speedupUpgrade: handleSpeedupUpgradeWithToken,
+      claimWelcomeBack: handleClaimWelcomeBack,
+      dismissWelcomeBack: handleDismissWelcomeBack,
+    };
+  }, [tokens, welcomeBackBonus, handleSpeedupUpgradeWithToken, handleClaimWelcomeBack, handleDismissWelcomeBack]);
 
   const renderLimanTab = () => (
     <LimanTab

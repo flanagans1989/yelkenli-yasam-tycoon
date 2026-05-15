@@ -16,6 +16,15 @@ export type MarinaRequirement = "any" | "medium" | "large" | "shipyard";
 
 export type UpgradeSize = "small" | "medium" | "large" | "ocean";
 
+export type UpgradeRole =
+  | "essential"     // core resource / readiness — needed for progression
+  | "performance"   // speed / efficiency boosts
+  | "safety"        // safety equipment
+  | "ocean"         // ocean-crossing / blue-water specific
+  | "content"       // content / camera / streaming gear
+  | "comfort"       // quality of life
+  | "optional";     // luxury / late-game progression-lux
+
 export interface UpgradeEffects {
   energy?: number;
   navigation?: number;
@@ -50,6 +59,29 @@ export interface BoatUpgrade {
   effects: UpgradeEffects;
   compatibility: BoatCompatibility[];
   unlockHint: string;
+  /** Optional explicit role tag. Falls back to category-derived default via getUpgradeRole(). */
+  role?: UpgradeRole;
+}
+
+const CATEGORY_TO_DEFAULT_ROLE: Record<UpgradeCategoryId, UpgradeRole> = {
+  energy: "essential",
+  navigation: "essential",
+  safety: "safety",
+  sail_speed: "performance",
+  engine_mechanical: "essential",
+  water_life: "essential",
+  comfort: "comfort",
+  content_equipment: "content",
+  hull_maintenance: "essential",
+  auxiliary_seamanship: "performance",
+};
+
+/**
+ * Returns the role label for an upgrade. Explicit `role` overrides win;
+ * otherwise the category default is used. Every BoatUpgrade has a role.
+ */
+export function getUpgradeRole(upgrade: BoatUpgrade): UpgradeRole {
+  return upgrade.role ?? CATEGORY_TO_DEFAULT_ROLE[upgrade.categoryId];
 }
 
 export interface UpgradeCategory {
@@ -323,6 +355,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
     },
     compatibility: allBoatsNormal,
     unlockHint: "Tersane gerekir.",
+    role: "ocean",
   },
   {
     id: "basic_safety_kit",
@@ -373,6 +406,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
     },
     compatibility: allBoatsNormal,
     unlockHint: "Büyük marina gerekir.",
+    role: "ocean",
   },
   {
     id: "storm_equipment",
@@ -552,6 +586,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       },
     ],
     unlockHint: "Büyük marina gerekir.",
+    role: "ocean",
   },
   {
     id: "better_beds",
@@ -656,6 +691,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       },
     ],
     unlockHint: "Büyük marina gerekir. Çevrimdışı geliri 8 saate kadar biriktirir.",
+    role: "optional",
   },
   {
     id: "action_camera",
@@ -720,6 +756,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
     },
     compatibility: allBoatsNormal,
     unlockHint: "Büyük marina gerekir.",
+    role: "ocean",
   },
   {
     id: "regular_service_pack",

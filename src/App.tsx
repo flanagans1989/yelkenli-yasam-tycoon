@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, lazy, Suspense, useEffectEvent } from "react";
+import { useState, useEffect, useReducer, useRef, lazy, Suspense } from "react";
+import { gameReducer, getInitialGameState } from "./state/gameReducer";
 import { Capacitor } from "@capacitor/core";
 import "./App.css";
 import { audioManager } from "./lib/audioManager";
@@ -347,6 +348,12 @@ const createSeaEventStoryHook = (decisionId: string, routeId?: string): StoryHoo
 
 function App() {
   const { audioEnabled, setAudioEnabled } = useAudioSettings();
+  // Reducer — mirrors useState during migration; will become the sole source of truth in Phase 6.
+  // Phases 2-5: dispatch runs alongside existing useState setters (double-write).
+  // Phase 6: individual useStates removed; saveSnapshot switches to buildSaveSnapshot(gameState).
+  const [gameState, dispatch] = useReducer(gameReducer, undefined, getInitialGameState);
+  void gameState;
+
   const [step, setStepState] = useState<Step>("WELCOME");
   const [activeTab, setActiveTabState] = useState<Tab>("liman");
   const [profileIndex, setProfileIndex] = useState(0);
@@ -918,14 +925,16 @@ function App() {
         const bonus = 500 + Math.min(newStreak - 1, 6) * 100;
         setCredits(c => c + bonus);
         setCaptainXp(x => x + 10);
-        pushToast(
-          "content",
-          `Günlük Giriş Bonusu — Gün ${newStreak}`,
-          `+${bonus} TL · +10 XP · ${newStreak > 1 ? `${newStreak} günlük seri!` : "Yarın için geri gel!"}`,
-        );
+        if (tutorialStep >= 3) {
+          pushToast(
+            "content",
+            `Günlük Giriş Bonusu — Gün ${newStreak}`,
+            `+${bonus} TL · +10 XP · ${newStreak > 1 ? `${newStreak} günlük seri!` : "Yarın için geri gel!"}`,
+          );
+        }
       }
     }
-  }, [step, lastDailyReset, lastLoginBonus, loginStreak, hasCompletedWorldTour]);
+  }, [step, lastDailyReset, lastLoginBonus, loginStreak, hasCompletedWorldTour, tutorialStep]);
 
   useEffect(() => {
     const allDone = dailyGoals.length > 0 && dailyGoals.every(g => g.completed);
@@ -1050,7 +1059,7 @@ function App() {
   });
   useAutoSave(saveSnapshot);
 
-  const grantTokens = useEffectEvent((
+  const grantTokens = (
     amount: number,
     logMessage: string,
     toast?: { type: "achievement" | "sponsor" | "voyage" | "content"; title: string; text: string },
@@ -1061,7 +1070,7 @@ function App() {
     if (toast) {
       pushToast(toast.type, toast.title, toast.text);
     }
-  });
+  };
 
   const applyMarinaDebit = (now: number = getSafeNow(), options?: { announce?: boolean }) => {
     if (step !== "HUB" || !currentLocationName) {
@@ -1105,6 +1114,53 @@ function App() {
     }
 
     setOnboardingMessage("");
+    dispatch({ type: "GAME/INITIALIZE", payload: {
+      memberFullName, memberUsername, memberEmail,
+      profileIndex, marinaIndex, boatIndex, boatName, gender,
+      credits: STARTING_BUDGET - selectedBoat.purchaseCost,
+      tokens: STARTING_ECONOMY.startingTokens,
+      followers: 0,
+      firstContentDone: false,
+      logs: ["Kariyer başladı. Limana giriş yapıldı."],
+      purchasedUpgradeIds: [],
+      upgradesInProgress: [],
+      step: "HUB",
+      activeTab: "liman",
+      currentLocationName: selectedMarina.name,
+      worldProgress: 0,
+      energy: 100, water: 100, fuel: 100, boatCondition: 100,
+      currentRouteId: "turkiye_start",
+      completedRouteIds: [],
+      voyageTotalDays: 0, voyageDaysRemaining: 0,
+      currentSeaEvent: "",
+      pendingDecisionId: null,
+      selectedPlatformId: null, selectedContentType: null, contentResult: null,
+      selectedUpgradeCategory: "energy",
+      brandTrust: 10,
+      sponsorOffers: [], acceptedSponsors: [], sponsoredContentCount: 0,
+      contentHistory: [],
+      icerikSubTab: "produce",
+      lastContentAt: null,
+      marinaRestInProgress: null,
+      captainXp: 0, captainLevel: 1,
+      dailyGoals: makeDailyGoals(),
+      lastDailyReset: "",
+      dailyRewardClaimed: false,
+      totalContentProduced: 0,
+      hasCompletedDailyGoalsOnce: false,
+      firstVoyageEventTriggered: false,
+      testMode: false,
+      hasReceivedFirstSponsor: false,
+      activeStoryHook: null,
+      tutorialStep: 0,
+      completedFollowerMilestones: [],
+      sponsorObligations: {},
+      loginStreak: 0, lastLoginBonus: "",
+      lastMarinaDebitAt: getSafeNow(),
+      marinaTasks: [], lastMarinaTasksLocation: "",
+      hasCompletedWorldTour: false,
+      adWatchesByFeatureByDate: {},
+    }});
     setCredits(STARTING_BUDGET - selectedBoat.purchaseCost);
     setTokens(STARTING_ECONOMY.startingTokens);
     setFollowers(0);
@@ -1247,6 +1303,80 @@ function App() {
       suppressAchievementCelebrationRef.current = true;
       suppressFollowerCelebrationRef.current = true;
 
+      const loadedTab = loadedStep === "SEA_MODE" ? "liman" : nextActiveTab;
+      const baseEnergy = clampNumber(parsed.energy, 0, 100, 100);
+      const baseWater = clampNumber(parsed.water, 0, 100, 100);
+      const baseFuel = clampNumber(parsed.fuel, 0, 100, 100);
+      const baseBoatCondition = clampNumber(parsed.boatCondition, 0, 100, 100);
+      dispatch({ type: "GAME/LOAD", payload: {
+        memberFullName: parsed.memberFullName ?? "",
+        memberUsername: parsed.memberUsername ?? "",
+        memberEmail: parsed.memberEmail ?? "",
+        profileIndex: nextProfileIndex,
+        marinaIndex: nextMarinaIndex,
+        boatIndex: nextBoatIndex,
+        boatName: parsed.boatName ?? "",
+        credits: Math.max(0, safeBaseCredits - appliedMarinaDebit),
+        tokens: Math.max(0, Math.floor(toFiniteNumber(parsed.tokens, STARTING_ECONOMY.startingTokens))),
+        followers: safeBaseFollowers,
+        firstContentDone: parsed.firstContentDone ?? false,
+        logs: nextLogs,
+        purchasedUpgradeIds: upgrades.purchasedUpgradeIds,
+        upgradesInProgress: upgrades.upgradesInProgress,
+        step: loadedStep,
+        activeTab: loadedTab,
+        currentLocationName: parsed.currentLocationName ?? "",
+        worldProgress: nextWorldProgress,
+        energy: marina.completedOffline ? Math.min(100, baseEnergy + 30) : baseEnergy,
+        water: marina.completedOffline ? Math.min(100, baseWater + 30) : baseWater,
+        fuel: marina.completedOffline ? Math.min(100, baseFuel + 20) : baseFuel,
+        boatCondition: marina.completedOffline ? Math.min(100, baseBoatCondition + 10) : baseBoatCondition,
+        currentRouteId: nextRouteId,
+        completedRouteIds: nextCompletedRouteIds,
+        voyageTotalDays: Math.max(0, Math.floor(toFiniteNumber(parsed.voyageTotalDays, 0))),
+        voyageDaysRemaining: Math.max(0, Math.floor(toFiniteNumber(parsed.voyageDaysRemaining, 0))),
+        currentSeaEvent: nextSeaEvent || (parsed.currentSeaEvent ?? ""),
+        pendingDecisionId: typeof parsed.pendingDecisionId === "string" ? parsed.pendingDecisionId : null,
+        selectedPlatformId: parsed.selectedPlatformId ?? null,
+        selectedContentType: parsed.selectedContentType ?? null,
+        contentResult: parsed.contentResult ?? null,
+        selectedUpgradeCategory: parsed.selectedUpgradeCategory ?? "energy",
+        brandTrust: Math.max(0, Math.min(100, Number(parsed.brandTrust ?? 10) || 10)),
+        sponsorOffers: Array.isArray(parsed.sponsorOffers) ? parsed.sponsorOffers : [],
+        acceptedSponsors: nextAcceptedSponsors.slice(0, 12),
+        sponsoredContentCount: Math.max(0, Math.floor(toFiniteNumber(parsed.sponsoredContentCount, 0))),
+        contentHistory: Array.isArray(parsed.contentHistory) ? parsed.contentHistory : [],
+        icerikSubTab: parsed.icerikSubTab ?? "produce",
+        lastContentAt: parsed.lastContentAt == null ? null : Math.max(0, Math.floor(toFiniteNumber(parsed.lastContentAt, Date.now()))),
+        marinaRestInProgress: marina.completedOffline ? null : marina.marinaRest,
+        captainXp: Math.max(0, Number(parsed.captainXp ?? 0) || 0),
+        captainLevel: nextCaptainLevel,
+        dailyGoals: Array.isArray(parsed.dailyGoals) ? parsed.dailyGoals : makeDailyGoals(),
+        lastDailyReset: parsed.lastDailyReset ?? "",
+        dailyRewardClaimed: parsed.dailyRewardClaimed ?? false,
+        totalContentProduced: nextTotalContentProduced,
+        hasCompletedDailyGoalsOnce: nextHasCompletedDailyGoalsOnce,
+        firstVoyageEventTriggered: parsed.firstVoyageEventTriggered ?? false,
+        testMode: parsed.testMode ?? false,
+        hasReceivedFirstSponsor: parsed.hasReceivedFirstSponsor ?? false,
+        activeStoryHook: parsed.activeStoryHook ?? null,
+        tutorialStep: clampNumber(parsed.tutorialStep, 0, 3, 3),
+        gender: parsed.gender ?? "unspecified",
+        completedFollowerMilestones: Array.isArray(parsed.completedFollowerMilestones) ? parsed.completedFollowerMilestones : [],
+        sponsorObligations: parsed.sponsorObligations && typeof parsed.sponsorObligations === "object" ? parsed.sponsorObligations : {},
+        loginStreak: Math.max(0, Math.floor(toFiniteNumber(parsed.loginStreak, 0))),
+        lastLoginBonus: parsed.lastLoginBonus ?? "",
+        lastMarinaDebitAt: loadedStep === "HUB" && parsed.currentLocationName
+          ? (marinaDebitInfo?.nextDebitAt ?? getSafeNow())
+          : null,
+        marinaTasks: Array.isArray(parsed.marinaTasks) ? parsed.marinaTasks.slice(0, 8) : [],
+        lastMarinaTasksLocation: parsed.lastMarinaTasksLocation ?? "",
+        hasCompletedWorldTour: parsed.hasCompletedWorldTour ?? false,
+        adWatchesByFeatureByDate: parsed.adWatchesByFeatureByDate && typeof parsed.adWatchesByFeatureByDate === "object"
+          ? parsed.adWatchesByFeatureByDate
+          : {},
+      }});
+
       setProfileIndex(nextProfileIndex);
       setMemberFullName(parsed.memberFullName ?? "");
       setMemberUsername(parsed.memberUsername ?? "");
@@ -1332,7 +1462,6 @@ function App() {
             }
           : null,
       );
-      const loadedTab = loadedStep === "SEA_MODE" ? "liman" : nextActiveTab;
       requestStepAndTabTransition(loadedStep, loadedTab, { force: true });
 
       upgrades.completedUpgradeObjects.forEach((upgrade) => {
@@ -2398,7 +2527,7 @@ function App() {
   const handleCancelUpgradeConfirm = () => setPendingUpgradeConfirmId(null);
 
   const renderLimanTab = () => (
-    <Suspense fallback={<ScreenFallback />}>
+    <Suspense fallback={null}>
     <LimanTab
       selectedBoatId={selectedBoat.id}
       currentLocationName={currentLocationName}
@@ -2870,7 +2999,7 @@ function App() {
       return (compatibility?.compatible ?? false) && credits >= upgrade.cost;
     });
     const isSponsorProgressClose = Boolean(nextSponsorTier && followers >= nextSponsorTier.minFollowers * 0.75);
-    const showNextActionCard = !(step === "HUB" && tutorialStep < 3);
+    const showNextActionCard = !(step === "HUB" && tutorialStep < 3) && activeTab !== "liman";
 
     let nextActionTitle = "Dünya turuna devam";
 
@@ -2888,11 +3017,11 @@ function App() {
       <>
         <div className="progress-strip">
           <div className="progress-strip-summary">
-            <span className="progress-strip-item">Kpt. Lv.{captainLevel} · {captainXp} XP</span>
+            <span className="progress-strip-item">Lv.{captainLevel}</span>
             <span className="progress-strip-sep">|</span>
             <span className="progress-strip-item">{followers.toLocaleString("tr-TR")} takipçi</span>
             <span className="progress-strip-sep">|</span>
-            <span className="progress-strip-item">Dünya Turu: {completedRouteIds.length}/{WORLD_ROUTES.length} Rota</span>
+            <span className="progress-strip-item">Tur {completedRouteIds.length}/{WORLD_ROUTES.length}</span>
           </div>
 
         </div>
@@ -3116,41 +3245,45 @@ function App() {
           </div>
         ))}
       </div>
-      <button
-        onClick={() => setTestMode(!testMode)}
-        style={{
-          position: 'fixed', bottom: 4, left: 4, zIndex: 9999,
-          background: testMode ? 'red' : 'transparent', color: testMode ? 'white' : 'rgba(255,255,255,0.1)',
-          border: 'none', fontSize: 10, padding: '2px 4px', cursor: 'pointer', borderRadius: '4px'
-        }}
-      >
-        {testMode ? "DEV MODE ON" : "v1.0"}
-      </button>
-      {testMode && (
-        <div style={{
-          position: 'fixed', bottom: 30, left: 4, zIndex: 9999,
-          background: 'rgba(0,0,0,0.85)', border: '1px solid red', padding: '8px', color: 'white',
-          display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px', borderRadius: '6px',
-          maxHeight: '70vh', overflowY: 'auto', width: '160px'
-        }}>
-          <strong style={{color:'red', textAlign:'center', borderBottom:'1px solid red', paddingBottom:'4px'}}>TEST ACTIONS</strong>
-          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setCredits(c => c + 10000)}>+10K TL</button>
-          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => { setFollowers(f => f + 1000); triggerFlash("followers"); }}>+1K Followers</button>
-          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => { setEnergy(100); setWater(100); setFuel(100); setBoatCondition(100); }}>Fill Resources</button>
-          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setLastContentAt(0)}>Reset Content CD</button>
-          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setUpgradesInProgress(prev => prev.map(u => ({ ...u, completesAt: 0 })))}>Finish Upgrades</button>
-          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setMarinaRestInProgress(null)}>Finish Marina Rest</button>
-          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => {
-             if (step === "SEA_MODE") {
-                const evt = SEA_DECISION_EVENTS[Math.floor(Math.random() * SEA_DECISION_EVENTS.length)];
-                setPendingDecisionId(evt.id);
-                setCurrentSeaEvent(evt.description);
-             } else {
-                pushToast("voyage", "Sea Mode", "You must be in Sea Mode to trigger an event.");
-             }
-          }}>Trigger Sea Event</button>
-          <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setCaptainXp(prev => prev + 500)}>+500 XP</button>
-        </div>
+      {import.meta.env.DEV && (
+        <>
+          <button
+            onClick={() => setTestMode(!testMode)}
+            style={{
+              position: 'fixed', bottom: 4, left: 4, zIndex: 9999,
+              background: testMode ? 'red' : 'transparent', color: testMode ? 'white' : 'rgba(255,255,255,0.1)',
+              border: 'none', fontSize: 10, padding: '2px 4px', cursor: 'pointer', borderRadius: '4px'
+            }}
+          >
+            {testMode ? "DEV MODE ON" : "v1.0"}
+          </button>
+          {testMode && (
+            <div style={{
+              position: 'fixed', bottom: 30, left: 4, zIndex: 9999,
+              background: 'rgba(0,0,0,0.85)', border: '1px solid red', padding: '8px', color: 'white',
+              display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px', borderRadius: '6px',
+              maxHeight: '70vh', overflowY: 'auto', width: '160px'
+            }}>
+              <strong style={{color:'red', textAlign:'center', borderBottom:'1px solid red', paddingBottom:'4px'}}>TEST ACTIONS</strong>
+              <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setCredits(c => c + 10000)}>+10K TL</button>
+              <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => { setFollowers(f => f + 1000); triggerFlash("followers"); }}>+1K Followers</button>
+              <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => { setEnergy(100); setWater(100); setFuel(100); setBoatCondition(100); }}>Fill Resources</button>
+              <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setLastContentAt(0)}>Reset Content CD</button>
+              <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setUpgradesInProgress(prev => prev.map(u => ({ ...u, completesAt: 0 })))}>Finish Upgrades</button>
+              <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setMarinaRestInProgress(null)}>Finish Marina Rest</button>
+              <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => {
+                 if (step === "SEA_MODE") {
+                    const evt = SEA_DECISION_EVENTS[Math.floor(Math.random() * SEA_DECISION_EVENTS.length)];
+                    setPendingDecisionId(evt.id);
+                    setCurrentSeaEvent(evt.description);
+                 } else {
+                    pushToast("voyage", "Sea Mode", "You must be in Sea Mode to trigger an event.");
+                 }
+              }}>Trigger Sea Event</button>
+              <button style={{background:'#222', color:'#fff', border:'1px solid #444', padding:'4px', borderRadius:'4px', cursor:'pointer'}} onClick={() => setCaptainXp(prev => prev + 500)}>+500 XP</button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

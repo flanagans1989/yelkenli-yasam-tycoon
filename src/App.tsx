@@ -1090,6 +1090,7 @@ function App() {
       return 0;
     }
 
+    dispatch({ type: "MARINA/APPLY_DEBIT", payload: { debit: debitAmount, now: debitInfo.nextDebitAt } });
     setCredits((prev) => Math.max(0, prev - debitAmount));
     if (options?.announce) {
       setLogs((prev) => [
@@ -1518,6 +1519,7 @@ function App() {
   const completeMarinaRestService = () => {
     setMarinaRestInProgress((current) => {
       if (!current) return null;
+      dispatch({ type: "MARINA/COMPLETE_REST" });
       setEnergy((prev) => Math.min(100, prev + 30));
       setLogs((prev) => ["Marina dinlenme hizmeti tamamlandı. Kaptan dinlendi, enerji toparlandı.", ...prev.slice(0, 4)]);
       pushToast("voyage", "Dinlenme Tamamlandı", "Marina hizmeti bitti. Enerji toparlandı.");
@@ -2349,6 +2351,27 @@ function App() {
       baseReward = Math.floor(baseReward * 1.1);
     }
 
+    const newCount = sponsoredContentCount + 1;
+    const newBrandTrust = newCount % 3 === 0 ? brandTrust : Math.min(100, brandTrust + 2);
+    // nextAccepted / nextOffers are pre-computed for the dispatch payload; Phase 6 will use them to replace functional setters
+    const nextAccepted = [...new Set([...acceptedSponsors.map(n => String(n).trim()).filter(Boolean), brandName])]; void nextAccepted;
+    const nextOffers = (() => {
+      const seen = new Set<string>();
+      return sponsorOffers.filter(o => {
+        const n = String(o?.brandName ?? "").trim();
+        if (o.id === offerId || n === brandName || !n || seen.has(n)) return false;
+        seen.add(n);
+        return true;
+      });
+    })(); void nextOffers;
+    dispatch({ type: "SPONSORS/ACCEPT", payload: {
+      offerId,
+      sponsorName: brandName,
+      creditsGained: baseReward,
+      tokenGained: tokenReward,
+      newBrandTrust,
+      newSponsoredCount: newCount,
+    }});
     setCredits(prev => prev + baseReward);
     grantTokens(
       tokenReward,
@@ -2397,7 +2420,6 @@ function App() {
       `${brandName} · +${baseReward.toLocaleString("tr-TR")} TL · +${tokenReward} token`,
     );
 
-    const newCount = sponsoredContentCount + 1;
     setSponsoredContentCount(newCount);
 
     if (newCount % 3 === 0) {
@@ -2458,6 +2480,7 @@ function App() {
       return;
     }
 
+    dispatch({ type: "UPGRADES/COMPLETE_INSTALL", payload: { upgradeId } });
     setPurchasedUpgradeIds(prev => (prev.includes(upgradeId) ? prev : [...prev, upgradeId]));
     applyUpgradeEffects(upgrade);
     setUpgradesInProgress(prev => prev.filter((item) => item.upgradeId !== upgradeId));
@@ -2493,6 +2516,7 @@ function App() {
 
     const readinessRiskText = hasRouteReadinessGap ? " Hazırlık eksikleri bu rotada riski artırıyor." : "";
 
+    dispatch({ type: "VOYAGE/START", payload: { routeId: currentRoute.id, locationName: currentLocationName, totalDays: days, step: "SEA_MODE" } });
     setVoyageTotalDays(days);
     setVoyageDaysRemaining(days);
     setPendingDecisionId(null);
@@ -2583,8 +2607,15 @@ function App() {
       return;
     }
 
+    const installItem = { upgradeId, completesAt, startedAt, durationMs: installMs, slot };
+    dispatch({ type: "UPGRADES/START_INSTALL", payload: {
+      creditsCost: upgrade.cost,
+      installItem,
+      updatedDailyGoals: dailyGoals.map(g => g.type === "buy_upgrade" && !g.completed ? { ...g, completed: true } : g),
+      updatedMarinaTasks: marinaTasks, // no marina task type for buy_upgrade
+    }});
     setCredits(prev => prev - upgrade.cost);
-    setUpgradesInProgress(prev => [...prev, { upgradeId, completesAt, startedAt, durationMs: installMs, slot }]);
+    setUpgradesInProgress(prev => [...prev, installItem]);
     triggerFlash("credits");
     audioManager.play("upgradeStart");
     setLogs(prev => [`Kurulum başladı: ${upgrade.name}. Tahmini tamamlanma: ${installMinutes} dakika.`, ...prev.slice(0, 4)]);

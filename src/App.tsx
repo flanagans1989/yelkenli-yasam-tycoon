@@ -239,7 +239,7 @@ function App() {
   const [fuel, setFuel] = useState(100);
   const [boatCondition, setBoatCondition] = useState(100);
   
-  const [currentRouteId, setCurrentRouteId] = useState<string>("greek_islands");
+  const [currentRouteId, setCurrentRouteId] = useState<string>("turkiye_start");
   const [completedRouteIds, setCompletedRouteIds] = useState<string[]>([]);
   
   const [voyageTotalDays, setVoyageTotalDays] = useState(0);
@@ -805,7 +805,7 @@ function App() {
     setFuel(100);
     setBoatCondition(100);
     setCompletedRouteIds([]);
-    setCurrentRouteId("greek_islands");
+    setCurrentRouteId("turkiye_start");
     setPendingDecisionId(null);
     setContentResult(null);
     setSelectedPlatformId(null);
@@ -856,7 +856,10 @@ function App() {
 
       const savedPurchasedIds: string[] = Array.isArray(parsed.purchasedUpgradeIds) ? parsed.purchasedUpgradeIds : [];
       const hasCaptainsQuarters = savedPurchasedIds.includes("captains_quarters");
-      const offline = calculateOfflineIncome(parsed.lastSavedAt, hasCaptainsQuarters);
+      const wasInSeaMode = parsed.step === "SEA_MODE";
+      const offline = wasInSeaMode
+        ? { credits: 0, followers: 0, minutes: 0 }
+        : calculateOfflineIncome(parsed.lastSavedAt, hasCaptainsQuarters);
       const upgrades = processUpgradesFromSave(
         Array.isArray(parsed.upgradesInProgress) ? parsed.upgradesInProgress : null,
         parsed.upgradeInProgress ?? null,
@@ -872,7 +875,7 @@ function App() {
       const nextBoatIndex = clampIndex(parsed.boatIndex, STARTING_BOATS.length);
       const nextRouteId = WORLD_ROUTES.some((route) => route.id === parsed.currentRouteId)
         ? parsed.currentRouteId
-        : "greek_islands";
+        : "turkiye_start";
       const nextActiveTab = safeTab(parsed.activeTab);
       const safeBaseCredits = Math.max(0, Math.min(Number(parsed.credits ?? 0) || 0, 5_000_000));
       const safeBaseFollowers = Math.max(0, Math.min(Number(parsed.followers ?? 0) || 0, 50_000_000));
@@ -1709,11 +1712,6 @@ function App() {
     }
 
     if (!currentRoute) return;
-
-    if (currentOceanReadiness < 60) {
-      pushToast("warning", "Hazırlık Yetersiz", `Okyanus hazırlığın %${currentOceanReadiness} — rotaya çıkmak için en az %60 gerekli. Tekne upgrade'leri yap.`);
-      return;
-    }
 
     if (hasRouteReadinessGap) {
       pushToast("warning", "Hazırlık Eksik", "Rota için gereken tüm hazırlık kriterleri tamamlanmadan seyir başlatılamaz.");

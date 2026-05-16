@@ -4,8 +4,8 @@ import process from "node:process";
 
 const ROOT = process.cwd();
 const css = readFileSync(join(ROOT, "src", "App.css"), "utf8");
-const sea = readFileSync(join(ROOT, "src", "components", "SeaModeTab.tsx"), "utf8");
-const onboarding = readFileSync(join(ROOT, "src", "components", "Onboarding.tsx"), "utf8");
+const sea = readFileSync(join(ROOT, "src", "features", "voyage", "SeaModeTab.tsx"), "utf8");
+const onboarding = readFileSync(join(ROOT, "src", "features", "onboarding", "Onboarding.tsx"), "utf8");
 const docs = readFileSync(join(ROOT, "docs", "GAME_LOGIC_AUDIT.md"), "utf8");
 
 const results = [];
@@ -19,7 +19,7 @@ const hasBoatScrollPadding = css.includes('.ob-boat-screen-v2 .ob-boat-scroll') 
 expect(
   hasBoatScrollClass && hasStickyBoatActions && hasBoatScrollPadding,
   'PASS Boat selection keeps a sticky CTA with matching bottom-safe scroll padding.',
-  'FAIL Boat selection sticky CTA safety is incomplete. Check .ob-boat-scroll, sticky .ob-screen-actions, and bottom safe-area padding in src/App.css / src/components/Onboarding.tsx.'
+  'FAIL Boat selection sticky CTA safety is incomplete. Check .ob-boat-scroll, sticky .ob-screen-actions, and bottom safe-area padding in src/App.css / src/features/onboarding/Onboarding.tsx.'
 );
 
 const hasShortScreenBreakpoint = /@media \(max-height:\s*700px\)/.test(css) && css.includes('.ob-boat-screen-v2 .ob-boat-scroll');
@@ -49,7 +49,7 @@ const hasSeaChoicePreviewStyles = css.includes('.sea-choice-effects') && css.inc
 expect(
   hasSeaChoicePreviewRender && hasSeaChoicePreviewStyles,
   'PASS Sea event choice outcome previews exist in component render and CSS.',
-  'FAIL Sea choice outcome preview guardrails are missing. Check src/components/SeaModeTab.tsx and src/App.css.'
+  'FAIL Sea choice outcome preview guardrails are missing. Check src/features/voyage/SeaModeTab.tsx and src/App.css.'
 );
 
 const helperClasses = ['.ui-helper-card', '.ui-helper-note', '.ui-helper-title', '.ui-helper-copy'];

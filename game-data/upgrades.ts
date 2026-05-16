@@ -130,7 +130,7 @@ export const UPGRADE_CATEGORIES: UpgradeCategory[] = [
   },
 ];
 
-const allBoatsNormal: BoatCompatibility[] = [
+const allBoatsCompatible: BoatCompatibility[] = [
   {
     boatId: "kirlangic_28",
     compatible: true,
@@ -163,11 +163,11 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
     installDays: 1,
     marinaRequirement: "any",
     effects: {
-      energy: 8,
+      energy: 10,
       contentQuality: 2,
       oceanReadiness: 2,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Başlangıçtan itibaren alınabilir.",
   },
   {
@@ -256,11 +256,11 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
     installDays: 1,
     marinaRequirement: "any",
     effects: {
-      navigation: 8,
+      navigation: 10,
       oceanReadiness: 2,
       riskReduction: 2,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Başlangıçtan itibaren alınabilir.",
   },
   {
@@ -278,7 +278,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 6,
       riskReduction: 4,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Orta seviye marina gerekir.",
   },
   {
@@ -336,7 +336,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 5,
       riskReduction: 3,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Tersane gerekir.",
   },
   {
@@ -353,7 +353,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       safety: 8,
       riskReduction: 3,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Başlangıçtan itibaren alınabilir.",
   },
   {
@@ -371,7 +371,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 8,
       riskReduction: 5,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Orta seviye marina gerekir.",
   },
   {
@@ -389,7 +389,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 10,
       riskReduction: 7,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Büyük marina gerekir.",
   },
   {
@@ -407,7 +407,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 7,
       riskReduction: 8,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Orta seviye marina gerekir.",
   },
   {
@@ -426,7 +426,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 7,
       riskReduction: 4,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Orta seviye marina gerekir.",
   },
   {
@@ -445,7 +445,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 3,
       riskReduction: 4,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Başlangıçtan itibaren alınabilir.",
   },
   {
@@ -464,7 +464,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 3,
       riskReduction: 5,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Başlangıçtan itibaren yapılabilir.",
   },
   {
@@ -483,7 +483,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 6,
       riskReduction: 5,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Büyük marina gerekir.",
   },
   {
@@ -497,10 +497,10 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
     installDays: 0,
     marinaRequirement: "any",
     effects: {
-      water: 8,
+      water: 10,
       oceanReadiness: 1,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Başlangıçtan itibaren alınabilir.",
   },
   {
@@ -593,7 +593,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       comfort: 10,
       contentQuality: 3,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Başlangıçtan itibaren alınabilir.",
   },
   {
@@ -612,7 +612,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       contentQuality: 3,
       oceanReadiness: 2,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Orta seviye marina gerekir.",
   },
   {
@@ -664,7 +664,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
     effects: {
       contentQuality: 10,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Başlangıçtan itibaren alınabilir.",
   },
   {
@@ -681,7 +681,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       contentQuality: 20,
       sponsorPotential: 0,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Orta seviye marina veya şehir içi alışveriş gerekir.",
   },
   {
@@ -697,7 +697,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
     effects: {
       contentQuality: 18,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Orta seviye marina veya şehir alışverişi gerekir.",
   },
   {
@@ -716,7 +716,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       safety: 5,
       oceanReadiness: 6,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Büyük marina gerekir.",
   },
   {
@@ -733,7 +733,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       maintenance: 8,
       riskReduction: 3,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Başlangıçtan itibaren alınabilir.",
   },
   {
@@ -751,7 +751,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 5,
       riskReduction: 4,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Orta seviye marina gerekir.",
   },
   {
@@ -770,7 +770,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 6,
       riskReduction: 4,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Tersane veya güçlü teknik marina gerekir.",
   },
   {
@@ -789,7 +789,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 6,
       riskReduction: 6,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Orta seviye marina gerekir.",
   },
   {
@@ -807,7 +807,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       contentQuality: 5,
       oceanReadiness: 2,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Orta seviye marina gerekir.",
   },
   {
@@ -826,7 +826,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 3,
       riskReduction: 4,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Başlangıçtan itibaren alınabilir.",
   },
   {
@@ -846,7 +846,7 @@ export const BOAT_UPGRADES: BoatUpgrade[] = [
       oceanReadiness: 3,
       riskReduction: 5,
     },
-    compatibility: allBoatsNormal,
+    compatibility: allBoatsCompatible,
     unlockHint: "Başlangıçtan itibaren alınabilir.",
   },
 ];

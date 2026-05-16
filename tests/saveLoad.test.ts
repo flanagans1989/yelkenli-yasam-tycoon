@@ -14,7 +14,7 @@ import {
   safeLoadStep,
   stripChecksum,
   validateSaveChecksum,
-} from "../src/lib/saveLoad";
+} from "../src/core/save/saveLoad";
 
 describe("saveLoad helpers", () => {
   it("computes, validates, and strips checksums", () => {

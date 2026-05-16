@@ -1090,7 +1090,7 @@ Hedef:
 
 \- Gerektiğinde denizcilik gerçekliği veren
 
-\- Yapay zekâ kokmayan
+\- Yapay zeka kokmayan
 
 
 
@@ -1521,4 +1521,3 @@ Bu belge kilitlendikten sonra sıradaki ana tasarım bölümü:
 
 
 > MVP Yapım Planı V1.0
-

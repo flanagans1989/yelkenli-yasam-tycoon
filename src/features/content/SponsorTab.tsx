@@ -1,5 +1,5 @@
 import { SponsorOfferList } from "./SponsorOfferList";
-import type { SponsorOffer } from "../types/game";
+import type { SponsorOffer } from "../../types/game";
 
 type SponsorTierInfo = {
   name: string;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { WORLD_ROUTES } from "../game-data/routes";
-import { buildSaveSnapshot } from "../src/lib/buildSaveSnapshot";
-import { migrateSave, processUpgradesFromSave } from "../src/lib/saveLoad";
+import { buildSaveSnapshot } from "../src/core/save/buildSaveSnapshot";
+import { migrateSave, processUpgradesFromSave } from "../src/core/save/saveLoad";
 
 describe("prestige voyage audit", () => {
   it("keeps the main world-tour progression at 17 routes", () => {

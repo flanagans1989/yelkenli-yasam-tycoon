@@ -178,7 +178,7 @@ async function main() {
   const routesSrc = readFileSync(join(ROOT, "game-data/routes.ts"), "utf8");
   const upgradesSrc = readFileSync(join(ROOT, "game-data/upgrades.ts"), "utf8");
   const appTsx = readFileSync(join(ROOT, "src/App.tsx"), "utf8");
-  const rotaTabTsx = readFileSync(join(ROOT, "src/components/RotaTab.tsx"), "utf8");
+  const rotaTabTsx = readFileSync(join(ROOT, "src/features/voyage/RotaTab.tsx"), "utf8");
 
   const WORLD_ROUTES = extractRoutes(routesSrc);
   const BOAT_UPGRADES = extractUpgrades(upgradesSrc);

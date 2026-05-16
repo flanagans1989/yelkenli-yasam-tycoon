@@ -25,6 +25,7 @@ import {
   calculateProportionalMarinaDebit,
   DAILY_GOALS_TOKEN_BONUS,
   getRouteCompletionTokenReward,
+  getRouteCompletionRewards,
   getSponsorTierByFollowers,
   getSponsorAcceptTokenReward,
   getTokenSpeedupCost,
@@ -251,38 +252,6 @@ const getLocationBonusLabel = (region: string): { contentType: string; label: st
   if (r.includes("akdeniz") || r.includes("antalya")) return { contentType: "sailing_vlog", label: "📍 Akdeniz: Seyir Vlogu +10 kalite" };
   if (r.includes("marmara") || r.includes("istanbul")) return { contentType: "city_trip", label: "📍 Marmara: Şehir Gezisi +10 kalite" };
   return null;
-};
-
-const getRouteCompletionRewards = (route: (typeof WORLD_ROUTES)[number]) => {
-  const contentPotentialMultipliers: Record<string, number> = {
-    low: 0.75,
-    low_medium: 0.9,
-    medium: 1,
-    medium_high: 1.25,
-    high: 1.5,
-    very_high: 2,
-  };
-
-  const riskLevelMultipliers: Record<string, number> = {
-    low: 0.8,
-    low_medium: 0.9,
-    medium: 1,
-    medium_high: 1.25,
-    high: 1.5,
-    // Ocean crossings should feel meaningful without single-handedly funding a major upgrade.
-    very_high: 1.33,
-    final: 1.6,
-  };
-
-  const riskMultiplier =
-    route.difficulty === "final"
-      ? riskLevelMultipliers.final
-      : (riskLevelMultipliers[route.riskLevel] ?? 1);
-  const progressMultiplier = 1 + (Math.max(0, route.worldProgressPercent) / 100);
-  const credits = Math.floor(8000 * riskMultiplier * progressMultiplier);
-  const followers = Math.floor(2500 * (contentPotentialMultipliers[route.contentPotential] ?? 1));
-
-  return { credits, followers };
 };
 
 const getStoryHookBonusesByPotential = (contentPotential: (typeof WORLD_ROUTES)[number]["contentPotential"]) => {

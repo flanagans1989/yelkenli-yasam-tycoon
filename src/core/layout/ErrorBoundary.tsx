@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { SAVE_KEY } from '../lib/saveLoad';
+import { SAVE_KEY } from "../save/saveLoad";
 
 interface Props {
   children: ReactNode;

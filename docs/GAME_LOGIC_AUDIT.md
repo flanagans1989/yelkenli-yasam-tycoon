@@ -170,7 +170,7 @@ Examples that must fail:
 ### Arrival / Story Hook
 - [ ] Finish route → Arrival screen shows rewards.
 - [ ] Primary CTA remains `Marinaya Giriş Yap`.
-- [ ] After entering marina, Content tab shows the `Yolculuk Hikâyesi` card ready.
+- [ ] After entering marina, Content tab shows the `Yolculuk Hikayesi` card ready.
 
 ### Encoding
 - [ ] No broken Turkish characters or emoji appear in Sea Mode, Route, Arrival, or Tekne screens.
@@ -261,4 +261,3 @@ The audit is a guardrail, not a replacement for playtesting.
 - WARN = balance risk, investigate
 - PASS = technically achievable
 - Manual playtesting required for pacing and fun
-

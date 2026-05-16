@@ -4,8 +4,8 @@ import {
   getTokenSpeedupCost,
   isTokenActionAllowed,
 } from "../game-data/economy";
-import { buildSaveSnapshot } from "../src/lib/buildSaveSnapshot";
-import { migrateSave } from "../src/lib/saveLoad";
+import { buildSaveSnapshot } from "../src/core/save/buildSaveSnapshot";
+import { migrateSave } from "../src/core/save/saveLoad";
 
 describe("token economy audit", () => {
   it("limits live token actions to time speedups only", () => {

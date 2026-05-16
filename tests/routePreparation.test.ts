@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { WORLD_ROUTES } from "../game-data/routes";
-import { buildRoutePreparationGuidance } from "../src/lib/routePreparation";
+import { buildRoutePreparationGuidance } from "../src/core/utils/routePreparation";
 
 describe("route preparation guidance", () => {
   it("suggests soft preparation for early routes without blocking them", () => {

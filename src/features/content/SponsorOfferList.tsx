@@ -1,4 +1,4 @@
-import type { SponsorOffer } from "../types/game";
+import type { SponsorOffer } from "../../types/game";
 
 type SponsorOfferListProps = {
   offers: SponsorOffer[];

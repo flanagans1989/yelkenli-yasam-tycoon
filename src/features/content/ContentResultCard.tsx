@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { ContentResult } from "../types/game";
+import type { ContentResult } from "../../types/game";
 
 type ContentResultCardProps = {
   result: ContentResult;

@@ -1,3 +1,5 @@
+import type { WorldRoute } from "./routes";
+
 export type CurrencyKey = "credit" | "token";
 
 export type IncomeSource =
@@ -117,6 +119,39 @@ export const DAILY_GOALS_TOKEN_BONUS = 3;
 export const TOKEN_STORE_FRONT_ENABLED = false;
 export const TOKEN_STORE_DEFAULT_CURRENCY = "TRY" as const;
 export const TOKEN_STORE_PURCHASE_FLOW = "placeholder_only" as const;
+export const ROUTE_COMPLETION_CREDIT_BASE = 8000;
+export const ROUTE_COMPLETION_FOLLOWER_BASE = 2500;
+export const ROUTE_COMPLETION_REWARD_MULTIPLIER = 1.15;
+
+export type RouteCompletionRewardInput = Pick<
+  WorldRoute,
+  "difficulty" | "riskLevel" | "worldProgressPercent" | "contentPotential"
+>;
+
+const ROUTE_COMPLETION_CONTENT_POTENTIAL_MULTIPLIERS: Record<
+  RouteCompletionRewardInput["contentPotential"],
+  number
+> = {
+  low: 0.75,
+  low_medium: 0.9,
+  medium: 1,
+  medium_high: 1.25,
+  high: 1.5,
+  very_high: 2,
+};
+
+const ROUTE_COMPLETION_RISK_LEVEL_MULTIPLIERS: Record<
+  RouteCompletionRewardInput["riskLevel"] | "final",
+  number
+> = {
+  low: 0.8,
+  low_medium: 0.9,
+  medium: 1,
+  medium_high: 1.25,
+  high: 1.5,
+  very_high: 1.33,
+  final: 1.6,
+};
 
 export const CURRENCIES: CurrencyDefinition[] = [
   {
@@ -166,6 +201,30 @@ export function getContentViralChance(quality: number): number {
   if (safeQuality >= 70) return 0.10;
   if (safeQuality >= 40) return 0.03;
   return 0;
+}
+
+export function getRouteCompletionRewards(
+  route: RouteCompletionRewardInput,
+): { credits: number; followers: number } {
+  const riskMultiplier =
+    route.difficulty === "final"
+      ? ROUTE_COMPLETION_RISK_LEVEL_MULTIPLIERS.final
+      : ROUTE_COMPLETION_RISK_LEVEL_MULTIPLIERS[route.riskLevel];
+  const progressMultiplier = 1 + Math.max(0, route.worldProgressPercent) / 100;
+
+  return {
+    credits: Math.floor(
+      ROUTE_COMPLETION_CREDIT_BASE *
+        ROUTE_COMPLETION_REWARD_MULTIPLIER *
+        riskMultiplier *
+        progressMultiplier,
+    ),
+    followers: Math.floor(
+      ROUTE_COMPLETION_FOLLOWER_BASE *
+        ROUTE_COMPLETION_REWARD_MULTIPLIER *
+        ROUTE_COMPLETION_CONTENT_POTENTIAL_MULTIPLIERS[route.contentPotential],
+    ),
+  };
 }
 
 export function getBaseContentRewardForQuality(quality: number): {

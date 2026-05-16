@@ -4,7 +4,7 @@ import {
   applyWelcomeBackRewardClaim,
   buildWelcomeBackAdHook,
 } from "../src/lib/welcomeBackRewards";
-import { calculateOfflineIncome } from "../src/lib/saveLoad";
+import { calculateOfflineIncome } from "../src/core/save/saveLoad";
 
 const welcomeBackConfig: AdRewardConfig = {
   featureId: "welcome_back_offline_bonus",

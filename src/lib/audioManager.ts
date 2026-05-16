@@ -14,6 +14,16 @@ class AudioManager {
   private ctx: AudioContext | null = null;
   private enabled = true;
 
+  constructor() {
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && this.ctx?.state === "suspended") {
+          this.ctx.resume().catch(() => {});
+        }
+      });
+    }
+  }
+
   private getCtx(): AudioContext | null {
     try {
       if (!this.ctx) this.ctx = new AudioContext();

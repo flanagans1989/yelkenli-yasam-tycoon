@@ -3,6 +3,7 @@ import { gameReducer, getInitialGameState } from "./state/gameReducer";
 import { Capacitor } from "@capacitor/core";
 import "./App.css";
 import { audioManager } from "./lib/audioManager";
+import { applyMarinaDebitToStore } from "./lib/applyMarinaDebit";
 import { useAudioSettings } from "./lib/useAudioSettings";
 import { useFlashState } from "./hooks/useFlashState";
 import { useRewardFloaters } from "./hooks/useRewardFloaters";
@@ -83,6 +84,27 @@ const ScreenFallback = ({ label = "Yükleniyor..." }: { label?: string } = {}) =
   </div>
 );
 
+function TabErrorFallback() {
+  return (
+    <div
+      style={{
+        padding: "32px 16px",
+        textAlign: "center",
+        color: "#9bbecf",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "8px",
+      }}
+    >
+      <span style={{ fontSize: "32px", lineHeight: 1 }}>⚓</span>
+      <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.5 }}>
+        Bu sekme yüklenemedi. Başka bir sekmeye geçip tekrar dene.
+      </p>
+    </div>
+  );
+}
+
 const FullScreenFallback = () => (
   <div
     role="status"
@@ -104,6 +126,7 @@ const FullScreenFallback = () => (
     Yükleniyor...
   </div>
 );
+import { ErrorBoundary } from "./core/layout/ErrorBoundary";
 import { SEA_DECISION_EVENTS } from "./data/seaEvents";
 import { ACHIEVEMENTS, ACHIEVEMENT_ICONS, getAchievementTokenReward } from "./data/achievements";
 import { getContentComment } from "./data/contentComments";
@@ -315,6 +338,15 @@ const createSeaEventStoryHook = (decisionId: string, routeId?: string): StoryHoo
   return null;
 };
 
+type AdvanceDayEventData = {
+  text: string;
+  energyExtra: number;
+  waterExtra: number;
+  conditionExtra: number;
+  followersGained: number;
+  creditsGained: number;
+};
+
 function App() {
   const { audioEnabled, setAudioEnabled } = useAudioSettings();
   // Reducer — mirrors useState during migration; will become the sole source of truth in Phase 6.
@@ -513,11 +545,11 @@ function App() {
     "WELCOME",
     "ACCOUNT_SETUP",
     "MAIN_MENU",
+    "CAPTAIN_INFO",
     "PICK_PROFILE",
     "PICK_MARINA",
     "PICK_BOAT",
     "NAME_BOAT",
-    "PICK_GENDER",
   ];
   const isOnboardingStep = (value: Step) => ONBOARDING_STEPS.includes(value);
 
@@ -686,7 +718,6 @@ function App() {
       const nextMilestones = [...completedFollowerMilestones, ...newlyReached.map(m => m.key)];
       dispatch({ type: "PROGRESS/MILESTONE_REACHED", payload: nextMilestones });
       for (const m of newlyReached) {
-        setCompletedFollowerMilestones(prev => [...prev, m.key]);
         setCelebrationQueue(q => [...q, { type: "achievement" as const, title: m.label, description: m.desc, icon: "🎉" }]);
       }
     }
@@ -952,7 +983,7 @@ function App() {
       }]);
     }
     prevCaptainLevelRef.current = captainLevel;
-  }, [captainLevel]);
+  }, [captainLevel, setCelebrationQueue]);
 
   useEffect(() => {
     if (step === "HUB") {
@@ -960,9 +991,6 @@ function App() {
       if (lastDailyReset !== today) {
         const newGoals = makeDailyGoals(today, hasCompletedWorldTour);
         dispatch({ type: "CAPTAIN/DAILY_RESET", payload: { today, newGoals } });
-        setDailyGoals(newGoals);
-        setLastDailyReset(today);
-        setDailyRewardClaimed(false);
       }
       if (lastLoginBonus !== today) {
         const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
@@ -976,10 +1004,6 @@ function App() {
           xpBonus: 10,
           logMessage: "",
         }});
-        setLoginStreak(newStreak);
-        setLastLoginBonus(today);
-        setCredits(c => c + bonus);
-        setCaptainXp(x => x + 10);
         if (tutorialStep >= 3) {
           pushToast(
             "content",
@@ -1110,40 +1134,14 @@ function App() {
     if (amount <= 0) return;
     dispatch({ type: "ECONOMY/ADD_TOKENS", payload: amount });
     dispatch({ type: "LOGS/ADD", payload: logMessage });
-    setTokens((prev) => prev + amount);
-    setLogs((prev) => [logMessage, ...prev.slice(0, 4)]);
     if (toast) {
       pushToast(toast.type, toast.title, toast.text);
     }
   };
 
   const applyMarinaDebit = (now: number = getSafeNow(), options?: { announce?: boolean }) => {
-    if (step !== "HUB" || !currentLocationName) {
-      return 0;
-    }
-
-    const debitInfo = calculateProportionalMarinaDebit(lastMarinaDebitAt, now, worldProgress);
-    if (debitInfo.nextDebitAt !== lastMarinaDebitAt) {
-      setLastMarinaDebitAt(debitInfo.nextDebitAt);
-    }
-    if (debitInfo.debit <= 0) {
-      return 0;
-    }
-
-    const debitAmount = Math.min(credits, debitInfo.debit);
-    if (debitAmount <= 0) {
-      return 0;
-    }
-
-    dispatch({ type: "MARINA/APPLY_DEBIT", payload: { debit: debitAmount, now: debitInfo.nextDebitAt } });
-    setCredits((prev) => Math.max(0, prev - debitAmount));
-    if (options?.announce) {
-      setLogs((prev) => [
-        `Marina ucreti tahsil edildi: -${debitAmount.toLocaleString("tr-TR")} TL (${Math.floor(debitInfo.elapsedMinutes)} dk baglama).`,
-        ...prev.slice(0, 4),
-      ]);
-    }
-    return debitAmount;
+    if (step !== "HUB" || !currentLocationName) return 0;
+    return applyMarinaDebitToStore(dispatch, { lastMarinaDebitAt, now, worldProgress, credits }, options);
   };
 
   useEffect(() => {
@@ -1558,14 +1556,10 @@ function App() {
   };
 
   const completeMarinaRestService = () => {
-    setMarinaRestInProgress((current) => {
-      if (!current) return null;
-      dispatch({ type: "MARINA/COMPLETE_REST" });
-      setEnergy((prev) => Math.min(100, prev + 30));
-      setLogs((prev) => ["Marina dinlenme hizmeti tamamlandı. Kaptan dinlendi, enerji toparlandı.", ...prev.slice(0, 4)]);
-      pushToast("voyage", "Dinlenme Tamamlandı", "Marina hizmeti bitti. Enerji toparlandı.");
-      return null;
-    });
+    if (!marinaRestInProgress) return;
+    dispatch({ type: "MARINA/COMPLETE_REST" });
+    dispatch({ type: "LOGS/ADD", payload: "Marina dinlenme hizmeti tamamlandı. Kaptan dinlendi, enerji toparlandı." });
+    pushToast("voyage", "Dinlenme Tamamlandı", "Marina hizmeti bitti. Enerji toparlandı.");
   };
 
   const getContentCooldownRemainingMs = () => {
@@ -1763,10 +1757,7 @@ function App() {
     dispatch({ type: "ECONOMY/SET_CREDITS", payload: credits - cost });
     dispatch({ type: "RESOURCES/SET", payload: { water: 100 } });
     dispatch({ type: "LOGS/ADD", payload: `Su ikmali yapıldı: ${cost} TL.` });
-    setCredits(c => c - cost);
-    setWater(100);
     triggerFlash("credits");
-    setLogs(prev => [`Su ikmali yapıldı: ${cost} TL.`, ...prev.slice(0, 4)]);
     completeMarinaTask("refill_water", Math.max(0, MARINA_TASK_REWARD - cost));
   };
 
@@ -1783,10 +1774,7 @@ function App() {
     dispatch({ type: "ECONOMY/SET_CREDITS", payload: credits - cost });
     dispatch({ type: "RESOURCES/SET", payload: { fuel: 100 } });
     dispatch({ type: "LOGS/ADD", payload: `Yakıt ikmali yapıldı: ${cost} TL.` });
-    setCredits(c => c - cost);
-    setFuel(100);
     triggerFlash("credits");
-    setLogs(prev => [`Yakıt ikmali yapıldı: ${cost} TL.`, ...prev.slice(0, 4)]);
     completeMarinaTask("refill_fuel", Math.max(0, MARINA_TASK_REWARD - cost));
   };
 
@@ -1817,10 +1805,7 @@ function App() {
     dispatch({ type: "ECONOMY/SET_CREDITS", payload: credits - 250 });
     dispatch({ type: "RESOURCES/SET", payload: { boatCondition: Math.min(100, boatCondition + 35) } });
     dispatch({ type: "LOGS/ADD", payload: "Tekne onarıldı. Durum 35 puan toparlandı." });
-    setCredits(prev => prev - 250);
-    setBoatCondition(prev => Math.min(100, prev + 35));
     triggerFlash("credits");
-    setLogs(prev => ["Tekne onarıldı. Durum 35 puan toparlandı.", ...prev.slice(0, 4)]);
     completeMarinaTask("repair_boat", Math.max(0, MARINA_TASK_REWARD - 250));
   };
 
@@ -1839,11 +1824,6 @@ function App() {
       dispatch({ type: "NAVIGATION/SET_STEP_AND_TAB", payload: { step: "HUB", tab: "liman" } });
       requestStepAndTabTransition("HUB", "liman");
       setVoyageDaysRemaining(0);
-      setCurrentSeaEvent("");
-      setPendingDecisionId(null);
-      setEnergy(e => Math.max(e, 5));
-      setWater(w => Math.max(w, 5));
-      setFuel(f => Math.max(f, 5));
       pushToast(
         "warning",
         "Seyir Yarıda Kesildi",
@@ -1861,23 +1841,29 @@ function App() {
     }
 
     if (shouldTriggerEvent) {
-      let nextDecision = SEA_DECISION_EVENTS[Math.floor(Math.random() * SEA_DECISION_EVENTS.length)];
+      const defaultEvent = SEA_DECISION_EVENTS[0];
+      let nextDecision = SEA_DECISION_EVENTS[Math.floor(Math.random() * SEA_DECISION_EVENTS.length)] ?? defaultEvent;
       if (shouldForceFirstVoyageEvent) {
-        nextDecision = SEA_DECISION_EVENTS.find(e => e.id === "content_opportunity") || nextDecision;
+        nextDecision = SEA_DECISION_EVENTS.find(e => e.id === "content_opportunity") ?? nextDecision;
         dispatch({ type: "VOYAGE/SET_FIRST_EVENT_TRIGGERED" });
         dispatch({ type: "VOYAGE/SET_PENDING_DECISION", payload: nextDecision.id });
-        setFirstVoyageEventTriggered(true);
       } else {
+        // Cascading dedup: exclude recently seen events, fall back to full pool if needed.
+        // maxAttempts guard ensures we never spin indefinitely in pathological edge cases.
+        const maxAttempts = 10;
         let validEvents = SEA_DECISION_EVENTS.filter(e => !recentSeaEventIds.includes(e.id));
         if (validEvents.length === 0) validEvents = SEA_DECISION_EVENTS.filter(e => e.id !== recentSeaEventIds[0]);
         if (validEvents.length === 0) validEvents = SEA_DECISION_EVENTS;
-        nextDecision = validEvents[Math.floor(Math.random() * validEvents.length)];
+        let picked = validEvents[Math.floor(Math.random() * validEvents.length)];
+        for (let attempt = 0; attempt < maxAttempts && !picked; attempt++) {
+          picked = validEvents[Math.floor(Math.random() * validEvents.length)];
+        }
+        nextDecision = picked ?? defaultEvent;
         dispatch({ type: "VOYAGE/SET_PENDING_DECISION", payload: nextDecision.id });
       }
+      if (!nextDecision) return;
       dispatch({ type: "VOYAGE/SET_SEA_EVENT", payload: nextDecision.description });
-      setPendingDecisionId(nextDecision.id);
       setRecentSeaEventIds(prev => [nextDecision.id, ...prev].slice(0, 2));
-      setCurrentSeaEvent(nextDecision.description);
       return;
     }
 
@@ -1911,8 +1897,7 @@ function App() {
       conditionDrop += dmg;
     }
 
-    type EventData = { text: string; energyExtra: number; waterExtra: number; conditionExtra: number; followersGained: number; creditsGained: number };
-    const events: EventData[] = [
+    const events: AdvanceDayEventData[] = [
       { text: "Uygun rüzgar yakalandı. Harika bir seyir.", energyExtra: 0, waterExtra: 0, conditionExtra: 0, followersGained: 0, creditsGained: 0 },
       { text: "Harika görüntü fırsatı! +100 takipçi.", energyExtra: 0, waterExtra: 0, conditionExtra: 0, followersGained: 100, creditsGained: 0 },
       { text: "Hafif teknik sorun.", energyExtra: 0, waterExtra: 0, conditionExtra: 3, followersGained: 0, creditsGained: 0 },
@@ -1943,15 +1928,7 @@ function App() {
       nextStep: newDays <= 0 ? "ARRIVAL_SCREEN" : undefined,
     }});
 
-    setVoyageDaysRemaining(newDays);
-    setEnergy(e => Math.max(0, e - energyDrop - evt.energyExtra));
-    setWater(w => Math.max(0, w - waterDrop - evt.waterExtra));
-    setFuel(f => Math.max(0, f - fuelDrop));
-    setBoatCondition(c => Math.max(0, c - conditionDrop - evt.conditionExtra));
-    if (evt.followersGained > 0) setFollowers(f => f + evt.followersGained);
-    if (evt.creditsGained > 0) setCredits(cr => cr + evt.creditsGained);
     setCurrentSeaEvent(evt.text);
-    setLogs(logsPrev => [evt.text, ...logsPrev.slice(0, 4)]);
 
     if (newDays <= 0) {
       requestStepTransition("ARRIVAL_SCREEN");
@@ -2717,6 +2694,7 @@ function App() {
   const handleCancelUpgradeConfirm = () => setPendingUpgradeConfirmId(null);
 
   const renderLimanTab = () => (
+    <ErrorBoundary fallback={<TabErrorFallback />}>
     <Suspense fallback={null}>
     <LimanTab
       selectedBoatId={selectedBoat.id}
@@ -2754,6 +2732,7 @@ function App() {
       hasCompletedWorldTour={hasCompletedWorldTour}
     />
     </Suspense>
+    </ErrorBoundary>
   );
 
   const renderSeaModeTab = () => (
@@ -2885,6 +2864,7 @@ function App() {
     };
 
     return (
+      <ErrorBoundary fallback={<TabErrorFallback />}>
       <Suspense fallback={<ScreenFallback />}>
       <IcerikTab
         icerikSubTab={icerikSubTab}
@@ -2965,12 +2945,14 @@ function App() {
         }
       />
       </Suspense>
+      </ErrorBoundary>
     );
   };
 
   const renderRotaTab = () => {
     const nextRouteData = currentRoute ? getNextRoute(currentRoute.id as RouteId) : undefined;
     return (
+    <ErrorBoundary fallback={<TabErrorFallback />}>
     <Suspense fallback={<ScreenFallback />}>
     <>
       <RotaTab
@@ -3011,6 +2993,7 @@ function App() {
       />
     </>
     </Suspense>
+    </ErrorBoundary>
   );
   };
 
@@ -3073,6 +3056,7 @@ function App() {
     });
 
     return (
+      <ErrorBoundary fallback={<TabErrorFallback />}>
       <Suspense fallback={<ScreenFallback />}>
       <TekneTab
         boatSvg={getBoatSvg(selectedBoat.id)}
@@ -3110,10 +3094,12 @@ function App() {
         installedUpgradeLabels={purchasedUpgradeObjects.map(u => u.name)}
       />
       </Suspense>
+      </ErrorBoundary>
     );
   };
 
   const renderKaptanTab = () => (
+    <ErrorBoundary fallback={<TabErrorFallback />}>
     <Suspense fallback={<ScreenFallback />}>
     <KaptanTab
       selectedProfile={selectedProfile}
@@ -3129,6 +3115,7 @@ function App() {
       loginStreak={loginStreak}
     />
     </Suspense>
+    </ErrorBoundary>
   );
 
   const completeGoal = (type: DailyGoal["type"]) => {
@@ -3334,7 +3321,7 @@ function App() {
           <div className="game-toast-text">{activeToast.text}</div>
         </div>
       )}
-      {["WELCOME", "ACCOUNT_SETUP", "MAIN_MENU", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT", "PICK_GENDER"].includes(step) && (
+      {["WELCOME", "ACCOUNT_SETUP", "MAIN_MENU", "CAPTAIN_INFO", "PICK_PROFILE", "PICK_MARINA", "PICK_BOAT", "NAME_BOAT"].includes(step) && (
         <Suspense fallback={<FullScreenFallback />}>
         <Onboarding
           step={step}
@@ -3364,6 +3351,7 @@ function App() {
           hasSave={hasSave}
           saveBoatName={saveBoatName}
           onLoadGame={loadGame}
+          onStartNewGame={() => requestStepTransition("CAPTAIN_INFO")}
           onFinalizeGame={finalizeGame}
           gender={gender}
           onSetGender={setGender}

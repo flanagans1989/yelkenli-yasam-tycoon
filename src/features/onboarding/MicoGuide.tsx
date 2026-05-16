@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import micoImg from "../../assets/mico.png";
 
 export function useTypewriterText(message: string, active: boolean, speedMs = 18) {
   const [visibleLength, setVisibleLength] = useState(active ? 0 : message.length);
@@ -34,27 +35,14 @@ export function useTypewriterText(message: string, active: boolean, speedMs = 18
 
 export function MicoSvg({ size = 64 }: { size?: number }) {
   return (
-    <svg
-      viewBox="0 0 64 64"
+    <img
+      src={micoImg}
       width={size}
       height={size}
+      alt="Miço"
       aria-hidden="true"
-      style={{ display: "block", flexShrink: 0 }}
-    >
-      <rect x="19" y="7" width="26" height="13" rx="3" fill="#0c2a47" />
-      <rect x="11" y="18" width="42" height="5" rx="2.5" fill="#0c2a47" />
-      <rect x="19" y="16" width="26" height="4" fill="#ffd982" />
-      <text x="32" y="15" textAnchor="middle" fontSize="7" fill="#0c2a47" fontFamily="sans-serif">⚓</text>
-      <circle cx="32" cy="38" r="14" fill="#f5b98a" />
-      <circle cx="24" cy="41" r="3.5" fill="#e8845a" opacity="0.35" />
-      <circle cx="40" cy="41" r="3.5" fill="#e8845a" opacity="0.35" />
-      <circle cx="27" cy="35" r="2.2" fill="#06182c" />
-      <circle cx="37" cy="35" r="2.2" fill="#06182c" />
-      <circle cx="28" cy="34" r="0.8" fill="#ffffff" />
-      <circle cx="38" cy="34" r="0.8" fill="#ffffff" />
-      <path d="M 27 42 Q 32 48 37 42" stroke="#a0522d" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-      <path d="M 20 50 Q 32 56 44 50" stroke="#5eeaf8" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-    </svg>
+      style={{ display: "block", flexShrink: 0, borderRadius: "50%", objectFit: "cover", objectPosition: "center top" }}
+    />
   );
 }
 
@@ -135,7 +123,10 @@ export function MicoGuide({
         <span className="mico-name-tag">Miço</span>
       </div>
       <div className="mico-speech-bubble glass-card">
-        <p className={`mico-speech-text${isComplete ? "" : " mico-typewriter"}`}>{typedMessage}</p>
+        <div className="mico-speech-body">
+          <p className="mico-speech-sizer" aria-hidden="true">{message}</p>
+          <p className={`mico-speech-text${isComplete ? "" : " mico-typewriter"}`}>{typedMessage}</p>
+        </div>
         {(onAction || onDismiss) && (
           <div className="mico-action-row">
             {onDismiss && tutorialDismissLabel && (

@@ -1,7 +1,8 @@
 ﻿import './Onboarding.css';
+import yelkenliImg from '../../assets/yelkenli.png';
 import { useRef, useState } from "react";
 import type { Dispatch, SetStateAction, TouchEvent as ReactTouchEvent } from "react";
-import { MicoSvg, MicoGuide, useTypewriterText } from "./MicoGuide";
+import { MicoGuide } from "./MicoGuide";
 import type { Step, MarinaFilter, Gender } from "../../types/game";
 import { PLAYER_PROFILES } from "../../../game-data/playerProfiles";
 import { STARTING_MARINAS } from "../../../game-data/marinas";
@@ -9,6 +10,28 @@ import { STARTING_BOATS, STARTING_BUDGET } from "../../../game-data/boats";
 import { skillLabels, profileIcons, ratingToScore } from "../../data/labels";
 import { boatClassMeta } from "../../data/boats";
 import { getBoatSvg } from "../../data/boatSvg";
+
+import erkekAile from '../../assets/characters/family_lifestyle_erkek.png';
+import erkekEski from '../../assets/characters/old_captain_erkek.png';
+import erkekIcerik from '../../assets/characters/content_creator_erkek.png';
+import erkekMacerac from '../../assets/characters/adventure_traveler_erkek.png';
+import erkekSosyal from '../../assets/characters/social_entrepreneur_erkek.png';
+import erkekTeknik from '../../assets/characters/technical_master_erkek.png';
+import bayanAile from '../../assets/characters/family_lifestyle_bayan.png';
+import bayanEski from '../../assets/characters/old_captain_bayan.png';
+import bayanIcerik from '../../assets/characters/content_creator_bayan.png';
+import bayanMacerac from '../../assets/characters/adventure_traveler_bayan.png';
+import bayanSosyal from '../../assets/characters/social_entrepreneur_bayan.png';
+import bayanTeknik from '../../assets/characters/technical_master_bayan.png';
+
+const PROFILE_PHOTOS: Record<string, { male: string; female: string }> = {
+  family_lifestyle:    { male: erkekAile,    female: bayanAile },
+  old_captain:         { male: erkekEski,    female: bayanEski },
+  content_creator:     { male: erkekIcerik,  female: bayanIcerik },
+  adventure_traveler:  { male: erkekMacerac, female: bayanMacerac },
+  social_entrepreneur: { male: erkekSosyal,  female: bayanSosyal },
+  technical_master:    { male: erkekTeknik,  female: bayanTeknik },
+};
 
 const getMarinaFilterCategory = (region: string): MarinaFilter => {
   const normalized = region.toLocaleLowerCase("tr-TR");
@@ -48,12 +71,6 @@ interface OnboardingProps {
   onSetGender: (g: Gender) => void;
 }
 
-const WELCOME_SLIDES = [
-  "Kaptan, hoşgeldin! Ben Miço — senin güverte arkadaşın. Şehirden sıkıldın mı?",
-  "Denizler seni bekliyor. Türkiye'den başlayıp dünyayı dolaşacağız. Her adımda yanında olacağım!",
-  "Haydi başlayalım. Önce seni tanıyayım...",
-];
-
 const MICO_MESSAGES: Partial<Record<string, string>> = {
   PICK_PROFILE:
     "Her kaptanın kendi güçlü yönü vardır. Hangi tip seni en iyi tanımlıyor? Sola veya sağa kaydır ve bak!",
@@ -65,7 +82,6 @@ const MICO_MESSAGES: Partial<Record<string, string>> = {
     "Teknen seni bekliyor! Ona güzel bir isim ver — artık senin, kimsenin değil.",
 };
 
-const ENABLE_ACCOUNT_SETUP = false;
 
 export function Onboarding({
   step, setStep,
@@ -84,7 +100,6 @@ export function Onboarding({
   gender, onSetGender,
 }: OnboardingProps) {
   const startNewGame = onStartNewGame ?? (() => undefined);
-  const [welcomeSlide, setWelcomeSlide] = useState(0);
   const selectedProfile = PLAYER_PROFILES[profileIndex];
   const selectedMarina = STARTING_MARINAS[marinaIndex];
   const selectedBoat = STARTING_BOATS[boatIndex];
@@ -93,11 +108,6 @@ export function Onboarding({
   const captainSwipeStart = useRef<{ x: number; y: number } | null>(null);
   const marinaSwipeStart = useRef<{ x: number; y: number } | null>(null);
   const boatSwipeStart = useRef<{ x: number; y: number } | null>(null);
-  const welcomeMessage = WELCOME_SLIDES[welcomeSlide] ?? "";
-  const { text: typedWelcomeMessage, isComplete: welcomeTypingComplete } = useTypewriterText(
-    welcomeMessage,
-    step === "WELCOME",
-  );
 
   const handleCaptainTouchStart = (e: ReactTouchEvent<HTMLDivElement>) => {
     const touch = e.touches[0];
@@ -183,48 +193,88 @@ export function Onboarding({
     else onPrev();
   };
 
-  const renderWelcome = () => {
-    const isLast = welcomeSlide >= WELCOME_SLIDES.length - 1;
-    return (
-      <div className="mico-welcome">
-        <div className="mico-welcome-stage">
-          <div className="mico-welcome-glow" aria-hidden="true" />
-          <div className="mico-welcome-rings" aria-hidden="true">
-            <span className="ob-ring ob-ring--outer-gold" />
-            <span className="ob-ring ob-ring--mid-cyan" />
-          </div>
-          <MicoSvg size={112} />
-        </div>
+  const renderCaptainInfo = () => {
+    const emailLooksValid = memberEmail.trim() === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(memberEmail.trim());
+    const canContinue = memberFullName.trim().length >= 2 && gender !== "unspecified";
 
-        <div className="mico-welcome-card glass-card fade-in" key={welcomeSlide}>
-          <span className="mico-welcome-name">Miço</span>
-          <p className={`mico-welcome-text${welcomeTypingComplete ? "" : " mico-typewriter"}`}>{typedWelcomeMessage}</p>
-          <div className="mico-welcome-dots" aria-hidden="true">
-            {WELCOME_SLIDES.map((_, i) => (
-              <span key={i} className={`mico-dot ${i === welcomeSlide ? "mico-dot--active" : ""}`} />
+    return (
+      <div className="ob-account-screen ob-account-screen-v2 fade-in">
+        <div className="ob-step-header">
+          <div className="ob-step-eyebrow">YENİ OYUN</div>
+          <h2 className="ob-step-title">KAPTAN, SENİ TANIYAYIM</h2>
+        </div>
+        <MicoGuide
+          message="Adını ve cinsiyetini öğrenmeden denize çıkmam. Haydi, mürettebat defterine kaydedelim!"
+          visible
+        />
+
+        <div className="ob-account-card glass-card">
+          <div className="ob-account-grid">
+            <label className="ob-form-field">
+              <span className="ob-form-label">Adın</span>
+              <input
+                className="ob-form-input"
+                type="text"
+                placeholder="Kaptan adını yaz"
+                value={memberFullName}
+                onChange={(e) => setMemberFullName(e.target.value)}
+                autoComplete="name"
+              />
+            </label>
+
+            <label className="ob-form-field">
+              <span className="ob-form-label">E-posta (isteğe bağlı)</span>
+              <input
+                className={`ob-form-input${!emailLooksValid ? " ob-form-input--error" : ""}`}
+                type="email"
+                placeholder="kaptan@deniz.com"
+                value={memberEmail}
+                onChange={(e) => setMemberEmail(e.target.value)}
+                autoCapitalize="off"
+                autoCorrect="off"
+                autoComplete="email"
+              />
+            </label>
+          </div>
+
+          <div className="ob-gender-options ob-gender-options--inline">
+            {([
+              { value: "male" as const, label: "Erkek Kaptan", icon: "👨‍✈️" },
+              { value: "female" as const, label: "Kadın Kaptan", icon: "👩‍✈️" },
+            ] as const).map((opt) => (
+              <button
+                key={opt.value}
+                className={`ob-gender-btn${gender === opt.value ? " ob-gender-btn--active" : ""}`}
+                onClick={() => onSetGender(opt.value)}
+              >
+                <span className="ob-gender-icon">{opt.icon}</span>
+                <span>{opt.label}</span>
+              </button>
             ))}
           </div>
         </div>
 
-        <button
-          className="primary-button primary-button--pulse mico-welcome-btn"
-          onClick={() => {
-            if (isLast) {
-              setWelcomeSlide(0);
-              setStep(ENABLE_ACCOUNT_SETUP ? "ACCOUNT_SETUP" : "MAIN_MENU");
-            } else {
-              setWelcomeSlide((s) => s + 1);
-            }
-          }}
-        >
-          {isLast ? "⚓ Başlayalım!" : "Devam →"}
-        </button>
+        <div className="ob-screen-actions">
+          <button className="secondary-button" onClick={() => setStep("MAIN_MENU")}>Geri</button>
+          <button
+            className="primary-button primary-button--pulse"
+            onClick={() => setStep("PICK_PROFILE")}
+            disabled={!canContinue}
+          >
+            PROFILINI SEÇ →
+          </button>
+        </div>
       </div>
     );
   };
 
   const renderMainMenu = () => (
     <div className="ob-main-menu ob-main-menu-v2">
+      <div className="ob-starfield" aria-hidden="true">
+        <span className="ob-stars ob-stars--sm" />
+        <span className="ob-stars ob-stars--md" />
+        <span className="ob-stars ob-stars--lg" />
+      </div>
       <div className="ob-corners" aria-label="Yakında gelecek özellikler">
         {([
           { icon: "⚙", label: "AYARLAR" },
@@ -242,16 +292,18 @@ export function Onboarding({
 
       <div className="ob-menu-hero">
         <div className="ob-menu-eyebrow">⚓ YENİ MACERA SENİ BEKLİYOR</div>
-        <div className="ob-menu-boat-stage">
+        <div className="ob-menu-boat-stage ob-boat-bob">
           <div className="ob-menu-boat-glow" aria-hidden="true" />
           <div className="ob-ring-stack" aria-hidden="true">
             <span className="ob-ring ob-ring--outer-gold" />
             <span className="ob-ring ob-ring--mid-cyan" />
             <span className="ob-ring ob-ring--inner-dot" />
           </div>
-          <div className="ob-menu-boat-svg ob-boat-bob">
-            {getBoatSvg("denizkusu_34")}
-          </div>
+          <img
+            className="ob-menu-boat-img"
+            src={yelkenliImg}
+            alt="Yelkenli tekne"
+          />
         </div>
       </div>
 
@@ -394,7 +446,7 @@ export function Onboarding({
     return (
       <div className="ob-profile-screen ob-profile-screen-v2">
         <div className="ob-step-header">
-          <div className="ob-step-eyebrow">ADIM 1 / 5</div>
+          <div className="ob-step-eyebrow">ADIM 1 / 4</div>
           <h2 className="ob-step-title">KAPTANINI SEÇ</h2>
         </div>
         <MicoGuide message={MICO_MESSAGES.PICK_PROFILE!} visible className="ob-mico-guide" />
@@ -414,8 +466,16 @@ export function Onboarding({
               <div className="ob-portrait-ring-outer" aria-hidden="true" />
               <div className="ob-portrait-ring-inner" aria-hidden="true" />
               <span className="ob-ring ob-ring--inner-dot ob-ring--dot-on-portrait" aria-hidden="true" />
-              <div className="ob-portrait-circle">
-                <span className="ob-portrait-emoji">{profileIcons[selectedProfile.id] || "👤"}</span>
+              <div className="ob-portrait-circle ob-portrait-circle--photo">
+                {PROFILE_PHOTOS[selectedProfile.id] ? (
+                  <img
+                    className="ob-portrait-photo"
+                    src={gender === "female" ? PROFILE_PHOTOS[selectedProfile.id].female : PROFILE_PHOTOS[selectedProfile.id].male}
+                    alt={selectedProfile.name}
+                  />
+                ) : (
+                  <span className="ob-portrait-emoji">{profileIcons[selectedProfile.id] || "👤"}</span>
+                )}
               </div>
             </div>
 
@@ -451,7 +511,7 @@ export function Onboarding({
           ))}
         </div>
         <div className="ob-screen-actions">
-          <button className="secondary-button" onClick={() => setStep("MAIN_MENU")}>Geri</button>
+          <button className="secondary-button" onClick={() => setStep("CAPTAIN_INFO")}>Geri</button>
           <button className="primary-button" onClick={() => setStep("PICK_MARINA")}>LİMANLARA BAK →</button>
         </div>
       </div>
@@ -542,7 +602,7 @@ export function Onboarding({
     return (
       <div className="ob-marina-screen ob-marina-screen-v2 ob-marina-screen-v3 ob-marina-screen-v4">
         <div className="ob-step-header">
-          <div className="ob-step-eyebrow">ADIM 2 / 5</div>
+          <div className="ob-step-eyebrow">ADIM 2 / 4</div>
           <h2 className="ob-step-title">ÇIKIŞ LİMANINI SEÇ</h2>
         </div>
         <MicoGuide message={MICO_MESSAGES.PICK_MARINA!} visible />
@@ -802,7 +862,7 @@ export function Onboarding({
       <div className="ob-boat-screen ob-boat-screen-v2">
         <div className="ob-boat-scroll">
         <div className="ob-step-header">
-          <div className="ob-step-eyebrow">ADIM 3 / 5</div>
+          <div className="ob-step-eyebrow">ADIM 3 / 4</div>
           <h2 className="ob-step-title">TEKNENİ SEÇ</h2>
         </div>
         <MicoGuide message={MICO_MESSAGES.PICK_BOAT!} visible />
@@ -893,7 +953,7 @@ export function Onboarding({
       <MicoGuide message={MICO_MESSAGES.NAME_BOAT!} visible />
       <div className="ob-naming-hero-header">
         <h2 className="ob-naming-title">SON HAZIRLIK</h2>
-        <div className="ob-step-eyebrow">ADIM 4 / 5</div>
+        <div className="ob-step-eyebrow">ADIM 4 / 4</div>
       </div>
 
       <div className="ob-naming-hero">
@@ -932,58 +992,23 @@ export function Onboarding({
         <button className="secondary-button" onClick={() => setStep("PICK_BOAT")}>Geri</button>
         <button
           className="primary-button primary-button--pulse"
-          onClick={() => setStep("PICK_GENDER")}
+          onClick={onFinalizeGame}
           disabled={!boatName.trim()}
         >
-          Devam →
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderPickGender = () => (
-    <div className="ob-naming-screen fade-in">
-      <div className="ob-naming-hero-header">
-        <h2 className="ob-naming-title">SON BİR ŞEY</h2>
-        <div className="ob-step-eyebrow">ADIM 5 / 5</div>
-      </div>
-      <MicoGuide
-        message="Seni daha iyi tanımak istiyorum, Kaptan — nasıl hitap edeyim?"
-        visible
-      />
-      <div className="ob-gender-options">
-        {([
-          { value: "male" as const, label: "Kaptan (Erkek)", icon: "👨‍✈️" },
-          { value: "female" as const, label: "Kaptan (Kadın)", icon: "👩‍✈️" },
-          { value: "unspecified" as const, label: "Belirtmek İstemiyorum", icon: "⚓" },
-        ] as const).map((opt) => (
-          <button
-            key={opt.value}
-            className={`ob-gender-btn${gender === opt.value ? " ob-gender-btn--active" : ""}`}
-            onClick={() => onSetGender(opt.value)}
-          >
-            <span className="ob-gender-icon">{opt.icon}</span>
-            <span>{opt.label}</span>
-          </button>
-        ))}
-      </div>
-      <div className="ob-screen-actions" style={{ marginTop: "auto", paddingTop: "16px" }}>
-        <button className="secondary-button" onClick={() => setStep("NAME_BOAT")}>Geri</button>
-        <button className="primary-button primary-button--pulse" onClick={onFinalizeGame}>
           ⚓ DENİZE İNDİR
         </button>
       </div>
     </div>
   );
 
-  if (step === "WELCOME") return renderWelcome();
+  if (step === "WELCOME") return renderMainMenu();
   if (step === "ACCOUNT_SETUP") return renderAccountSetup();
   if (step === "MAIN_MENU") return renderMainMenu();
+  if (step === "CAPTAIN_INFO") return renderCaptainInfo();
   if (step === "PICK_PROFILE") return renderProfileSelection();
   if (step === "PICK_MARINA") return renderMarinaSelection();
   if (step === "PICK_BOAT") return renderBoatSelection();
   if (step === "NAME_BOAT") return renderBoatNaming();
-  if (step === "PICK_GENDER") return renderPickGender();
   return null;
 }
 

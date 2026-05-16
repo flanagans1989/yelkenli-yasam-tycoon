@@ -18,10 +18,12 @@ export function useAutoSave(
   onSaved?: (snapshot: GameSaveSnapshot) => void,
 ): void {
   const lastSerializedRef = useRef<string>("");
-  const serializedSnapshot = JSON.stringify(snapshot);
+  const onSavedRef = useRef(onSaved);
+  onSavedRef.current = onSaved;
 
   useEffect(() => {
     if (!PERSIST_STEPS.has(snapshot.step)) return;
+    const serializedSnapshot = JSON.stringify(snapshot);
     if (serializedSnapshot === lastSerializedRef.current) return;
     lastSerializedRef.current = serializedSnapshot;
 
@@ -29,9 +31,9 @@ export function useAutoSave(
     const withChecksum = { ...payload, _checksum: computeChecksum(payload) };
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(withChecksum));
-      onSaved?.(snapshot);
+      onSavedRef.current?.(snapshot);
     } catch (err) {
       console.error("[useAutoSave] localStorage write failed:", err);
     }
-  }, [serializedSnapshot, snapshot, onSaved]);
+  }, [snapshot]);
 }

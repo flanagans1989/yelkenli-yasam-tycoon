@@ -1,10 +1,10 @@
 ﻿import { useEffect, useState } from "react";
 import type { Dispatch } from "react";
 import { BOAT_UPGRADES } from "../../../game-data/upgrades";
-import { calculateProportionalMarinaDebit } from "../../../game-data/economy";
 import type { GameAction } from "../../core/state/gameActions";
 import type { GameState } from "../../core/state/gameReducer";
 import { getSafeNow } from "../../core/save/saveLoad";
+import { applyMarinaDebitToStore } from "../../lib/applyMarinaDebit";
 
 const UPGRADE_INSTALL_CHECK_INTERVAL_MS = 30000;
 const TIMER_TICK_MS = 30000;
@@ -90,21 +90,12 @@ export function useGameTimers(
     }
 
     const tickId = window.setInterval(() => {
-      const now = getSafeNow();
-      const debitInfo = calculateProportionalMarinaDebit(
-        gameState.lastMarinaDebitAt,
-        now,
-        gameState.worldProgress,
-      );
-      if (debitInfo.debit <= 0) {
-        if (debitInfo.nextDebitAt !== gameState.lastMarinaDebitAt) {
-          dispatch({ type: "GAME/PATCH", payload: { lastMarinaDebitAt: debitInfo.nextDebitAt } });
-        }
-        return;
-      }
-      const debitAmount = Math.min(gameState.credits, debitInfo.debit);
-      if (debitAmount <= 0) return;
-      dispatch({ type: "MARINA/APPLY_DEBIT", payload: { debit: debitAmount, now: debitInfo.nextDebitAt } });
+      applyMarinaDebitToStore(dispatch, {
+        lastMarinaDebitAt: gameState.lastMarinaDebitAt,
+        now: getSafeNow(),
+        worldProgress: gameState.worldProgress,
+        credits: gameState.credits,
+      });
     }, MARINA_DEBIT_INTERVAL_MS);
 
     return () => window.clearInterval(tickId);

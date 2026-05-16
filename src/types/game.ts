@@ -2,11 +2,11 @@ export type Step =
   | "WELCOME"
   | "ACCOUNT_SETUP"
   | "MAIN_MENU"
+  | "CAPTAIN_INFO"
   | "PICK_PROFILE"
   | "PICK_MARINA"
   | "PICK_BOAT"
   | "NAME_BOAT"
-  | "PICK_GENDER"
   | "HUB"
   | "SEA_MODE"
   | "ARRIVAL_SCREEN";

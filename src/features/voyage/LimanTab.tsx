@@ -347,7 +347,7 @@ export function LimanTab({
               <p className="lh-log-empty">Henüz olay yok.</p>
             ) : (
               logs.map((log, i) => (
-                <div key={i} className="lh-log-entry">{log}</div>
+                <div key={log + i} className="lh-log-entry">{log}</div>
               ))
             )}
           </div>

@@ -400,11 +400,28 @@ button {
   border-color: transparent rgba(94,234,248,0.18) transparent transparent;
 }
 
+.mico-speech-body {
+  position: relative;
+}
+
+.mico-speech-sizer {
+  font-size: 13px;
+  line-height: 1.5;
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+  margin: 0;
+}
+
 .mico-speech-text {
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-primary);
   margin: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 
 .mico-action-btn {
@@ -1029,8 +1046,13 @@ button {
 .naming-selection-screen,
 .marina-selection-screen {
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(30, 159, 212, 0.45) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.boat-selection-screen::-webkit-scrollbar,
+.naming-selection-screen::-webkit-scrollbar,
+.marina-selection-screen::-webkit-scrollbar {
+  display: none;
 }
 
 .progress-header {
@@ -2334,12 +2356,15 @@ button {
   padding: 24px;
   overflow-y: auto;
   padding-bottom: 132px;
-  scrollbar-gutter: stable;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hub-content::-webkit-scrollbar {
+  display: none;
 }
 
 .hub-content--tekne {
   padding-top: 18px;
-  scrollbar-gutter: auto;
 }
 
 .tab-content {

@@ -3,6 +3,7 @@ import { SAVE_KEY } from "../save/saveLoad";
 
 interface Props {
   children: ReactNode;
+  fallback?: ReactNode;
 }
 
 interface State {
@@ -41,6 +42,10 @@ export class ErrorBoundary extends Component<Props, State> {
   render(): ReactNode {
     if (!this.state.hasError) {
       return this.props.children;
+    }
+
+    if (this.props.fallback !== undefined) {
+      return this.props.fallback;
     }
 
     const message = this.state.error?.message ?? 'Bilinmeyen bir hata oluştu.';

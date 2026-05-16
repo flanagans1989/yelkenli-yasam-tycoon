@@ -1,6 +1,7 @@
 ﻿import './KaptanTab.css';
 import type { PlayerProfile } from "../../../game-data/playerProfiles";
 import { profileIcons, skillLabels } from "../../data/labels";
+import { CAPTAIN_LEVEL_THRESHOLDS } from "../../data/captainData";
 
 type AchievementStatus = {
   id: string;
@@ -22,8 +23,6 @@ interface KaptanTabProps {
   totalCreditsEarned: number;
   loginStreak: number;
 }
-
-const CAPTAIN_LEVEL_THRESHOLDS = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 6000, 8200, 11000, 14500, 19000, 25000];
 
 export function KaptanTab({
   selectedProfile,

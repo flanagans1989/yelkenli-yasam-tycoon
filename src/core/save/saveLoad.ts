@@ -155,6 +155,38 @@ function applySaveDefaults(parsed: any, dailyGoalsCompleted: boolean = false) {
       parsed.hasCompletedDailyGoalsOnce ?? Boolean(dailyGoalsCompleted && parsed.dailyRewardClaimed),
     hasCompletedWorldTour: parsed.hasCompletedWorldTour ?? false,
     adWatchesByFeatureByDate: sanitizeAdWatchesByFeatureByDate(parsed.adWatchesByFeatureByDate),
+    // Array fields that may be absent in older saves
+    logs: Array.isArray(parsed.logs) ? parsed.logs : [],
+    purchasedUpgradeIds: Array.isArray(parsed.purchasedUpgradeIds) ? parsed.purchasedUpgradeIds : [],
+    upgradesInProgress: Array.isArray(parsed.upgradesInProgress) ? parsed.upgradesInProgress : [],
+    completedRouteIds: Array.isArray(parsed.completedRouteIds) ? parsed.completedRouteIds : [],
+    acceptedSponsors: Array.isArray(parsed.acceptedSponsors) ? parsed.acceptedSponsors : [],
+    sponsorOffers: Array.isArray(parsed.sponsorOffers) ? parsed.sponsorOffers : [],
+    contentHistory: Array.isArray(parsed.contentHistory) ? parsed.contentHistory : [],
+    dailyGoals: Array.isArray(parsed.dailyGoals) ? parsed.dailyGoals : [],
+    completedFollowerMilestones: Array.isArray(parsed.completedFollowerMilestones) ? parsed.completedFollowerMilestones : [],
+    marinaTasks: Array.isArray(parsed.marinaTasks) ? parsed.marinaTasks : [],
+    // Numeric fields with safe fallbacks
+    captainXp: typeof parsed.captainXp === 'number' && Number.isFinite(parsed.captainXp) ? parsed.captainXp : 0,
+    captainLevel: typeof parsed.captainLevel === 'number' && parsed.captainLevel >= 1 ? parsed.captainLevel : 1,
+    loginStreak: typeof parsed.loginStreak === 'number' && Number.isFinite(parsed.loginStreak) ? parsed.loginStreak : 0,
+    brandTrust: typeof parsed.brandTrust === 'number' && Number.isFinite(parsed.brandTrust) ? parsed.brandTrust : 0,
+    sponsoredContentCount: typeof parsed.sponsoredContentCount === 'number' ? parsed.sponsoredContentCount : 0,
+    worldProgress: typeof parsed.worldProgress === 'number' ? parsed.worldProgress : 0,
+    tutorialStep: typeof parsed.tutorialStep === 'number' ? parsed.tutorialStep : 0,
+    // Object fields
+    sponsorObligations: (parsed.sponsorObligations && typeof parsed.sponsorObligations === 'object' && !Array.isArray(parsed.sponsorObligations))
+      ? parsed.sponsorObligations
+      : {},
+    // String fields with safe fallbacks
+    lastDailyReset: typeof parsed.lastDailyReset === 'string' ? parsed.lastDailyReset : '',
+    lastLoginBonus: typeof parsed.lastLoginBonus === 'string' ? parsed.lastLoginBonus : '',
+    lastMarinaTasksLocation: typeof parsed.lastMarinaTasksLocation === 'string' ? parsed.lastMarinaTasksLocation : '',
+    // Boolean fields
+    dailyRewardClaimed: Boolean(parsed.dailyRewardClaimed),
+    firstContentDone: Boolean(parsed.firstContentDone),
+    firstVoyageEventTriggered: Boolean(parsed.firstVoyageEventTriggered),
+    hasReceivedFirstSponsor: Boolean(parsed.hasReceivedFirstSponsor),
   };
 }
 
